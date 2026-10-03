@@ -310,13 +310,8 @@ This enables dynamic chunk loading via Vite. Users downloading the public landin
 #### Q29: What testing framework did you use and what is currently tested?
 **Answer:**
 "We used **Vitest** with **Supertest** for fast TypeScript integration testing.
-We have 6 test suites and 67 tests passing:
-- `tests/health.test.ts` (liveness and readiness checks)
-- `tests/rate-limit.test.ts` (rate limiter enforcement)
-- `tests/auth.test.ts` (registration, password validation, login, refresh, logout, `/me`)
-- `tests/rbac.test.ts` (permission boundaries across all four roles)
-- `tests/events.test.ts` (event CRUD, lifecycle transitions, filtering)
-- `tests/memberships.test.ts` (applications, approvals, renewals, status changes)"
+The default suite is `npm test` in `backend/`. It currently includes health, rate-limit, auth, RBAC, events, memberships, registrations, payments, check-in, and Phase 4 merchandise/announcement tests. Those tests use an in-memory Prisma double.
+PostgreSQL concurrency for merchandise is a separate command, `npm run test:postgres`, and it runs only when `PHASE4_TEST_DATABASE_URL` points at localhost."
 
 #### Q30: How do your tests verify authorization boundaries?
 **Answer:**
@@ -328,12 +323,12 @@ We have 6 test suites and 67 tests passing:
 
 #### Q31: What is the current status of the frontend Events and Members views?
 **Answer:**
-"To be completely transparent: our backend Events (`/api/events`) and Membership (`/api/memberships`) modules are 100% complete with Prisma schemas, validation, services, and passing Vitest test suites.
-However, on the frontend, `EventListPage.tsx` and `MemberListPage.tsx` currently consume mock datasets (`MOCK_EVENTS`, `MOCK_MEMBERS`) from `frontend/src/lib/mockData.ts`. Our immediate next development milestone is connecting these pages to our existing backend endpoints using Axios."
+"The backend Events (`/api/events`) and Membership (`/api/memberships`) modules are implemented with Prisma, Zod validation, and Vitest coverage.
+On the frontend, `EventListPage.tsx` and `MemberListPage.tsx` still fall back to `MOCK_EVENTS` and `MOCK_MEMBERS` in `frontend/src/lib/mockData.ts` when the API is not used. The shop, order history, and announcement feed are already wired to the real API."
 
 #### Q32: What modules are currently frontend-only prototypes?
 **Answer:**
-"The **Merchandise Shop**, **Treasury Ledger**, **Fundraiser Campaigns**, and **QR Ticket Scanner** have complete UI views and mock stores (`cartStore.ts`), but do not yet have corresponding Prisma models or backend database tables. They represent our Phase 3 development roadmap."
+"Merchandise, pickup orders, and announcements now have Prisma models and backend routes (`/api/products`, `/api/orders`, `/api/announcements`). The shop and announcement screens call those APIs. Treasury and fundraisers are still mock UI with no backend tables. The check-in page still simulates a scan; the real endpoint is `POST /api/events/:eventId/check-in`. Tickets and Razorpay were Phase 3, not a future phase."
 
 #### Q33: If you had another sprint, what would you improve?
 **Answer:**

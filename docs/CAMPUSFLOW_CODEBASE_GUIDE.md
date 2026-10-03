@@ -76,7 +76,7 @@ graph LR
 | **Database & ORM** | PostgreSQL (Neon) + Prisma 6 | PostgreSQL provides ACID-compliant transactions (essential for ledger balances, token consumption, and ticket capacity). Prisma provides type-safe query generation and automated SQL schema migrations. |
 | **Security & Auth** | JWT (`jsonwebtoken`) + `bcryptjs` | Stateless short-lived access tokens (15-minute TTL) paired with database-backed opaque refresh token families (7-day TTL) featuring single-use rotation and replay detection. |
 | **Schema Validation** | Zod | Declarative schema validation ensuring incoming request payloads are strictly validated, sanitizing strings and emails before hitting business services. |
-| **Testing** | Vitest + Supertest | Blazing fast in-memory execution. Full suite of 67 unit and integration tests executes in ~9 seconds using an in-memory Prisma mock. |
+| **Testing** | Vitest + Supertest | Default `npm test` uses an in-memory Prisma double. `npm run test:postgres` is separate and only runs against a localhost database named by `PHASE4_TEST_DATABASE_URL`. |
 
 ---
 
@@ -90,7 +90,9 @@ D:\Projects\CampusFlow\
 │   │   │   ├── 20261002120000_phase00_system_health_checks/
 │   │   │   ├── 20261003120000_add_auth_users_and_refresh_tokens/
 │   │   │   ├── 20261003130000_phase02_membership_and_events/
-│   │   │   └── 20261003160000_canonical_four_role_rbac/
+│   │   │   ├── 20261003160000_canonical_four_role_rbac/
+│   │   │   ├── 20261003190000_phase03_tickets_payments_checkin/
+│   │   │   └── 20261003220000_phase04_merchandise_and_announcements/
 │   │   ├── schema.prisma                      # Prisma database schema definition
 │   │   └── seed.ts                            # Idempotent database seeder for 4 canonical roles
 │   ├── src/
@@ -248,17 +250,19 @@ pie title Implementation State of CampusFlow Features
 ### 🟡 2. Backend Fully Implemented, Frontend Partially Connected
 1. **Events Management**:
    - **Backend**: Complete Prisma model and REST API (`GET /api/events`, `POST /api/events`, `GET /api/events/:id`, `PATCH /api/events/:id`, `POST /api/events/:id/publish`, `POST /api/events/:id/cancel`). Includes draft access control, capacity tracking, and validation.
-   - **Frontend**: [EventListPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/events/pages/EventListPage.tsx) and [EventDetailPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/events/pages/EventDetailPage.tsx) currently read static data from [mockData.ts](file:///D:/Projects/CampusFlow/frontend/src/lib/mockData.ts). The backend routes are tested with 13 Vitest tests, but the frontend has not yet replaced `MOCK_EVENTS` with an `api.get('/events')` hook.
+   - **Frontend**: [EventListPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/events/pages/EventListPage.tsx) and [EventDetailPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/events/pages/EventDetailPage.tsx) still fall back to `MOCK_EVENTS` in [mockData.ts](file:///D:/Projects/CampusFlow/frontend/src/lib/mockData.ts).
 2. **Membership Passes**:
    - **Backend**: Complete Prisma model and REST API (`POST /api/memberships`, `POST /api/memberships/apply`, `GET /api/memberships/me`, `GET /api/memberships`, `GET /api/memberships/:id`, `POST /api/memberships/:id/renew`, `PATCH /api/memberships/:id/status`). Includes unique member code generation, renewal counts, and status state machine.
    - **Frontend**: [MemberListPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/members/pages/MemberListPage.tsx) and [MemberPassPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/members/pages/MemberPassPage.tsx) display static data from `MOCK_MEMBERS`.
 
-### ⚪ 3. Prototype Views (Frontend UI Exists, Backend Not Built Yet)
-These screens feature polished UI layouts adhering to [DESIGN.md](file:///D:/Projects/CampusFlow/DESIGN.md), but store state locally in memory:
-- **Merchandise & Stock** (`/admin/shop`, `/shop`): Mock catalog of hoodies and tees. No `Product` or `Order` Prisma model in the backend schema yet.
-- **Door Staff QR Scanner** (`/checkin/:eventId`): Interactive camera/simulator interface in [CheckinPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/tickets/pages/CheckinPage.tsx). No `Ticket` Prisma model in the database yet.
-- **Treasury Ledger & Reimbursements** (`/admin/treasury`): Detailed cash flow UI with charts and approval modals in [TreasuryDashboard.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/treasury/pages/TreasuryDashboard.tsx). No `LedgerTransaction` or `Reimbursement` model in the backend schema yet.
-- **Volunteer Tasks & Fundraisers** (`/admin/fundraisers`): Campaign progress bars and task Kanban board in [FundraiserPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/fundraisers/pages/FundraiserPage.tsx).
+### ⚪ 3. What is implemented vs still a prototype
+Merchandise, pickup orders, and announcements have Prisma models and APIs. Setup and stock rules are in [PHASE04_MERCHANDISE_ANNOUNCEMENTS.md](file:///D:/Projects/CampusFlow/docs/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md).
+
+- **Merchandise & Stock** (`/shop`, `/shop/:id`, `/admin/shop`, `/member/orders`): These screens call `/api/products` and `/api/orders`. The landing page still renders `MOCK_PRODUCTS`.
+- **Announcements** (`/announcements`, `/announcements/:id`, `/admin/announcements`): These screens call `/api/announcements`. Drafts are not public. The member home tile still uses `MOCK_ANNOUNCEMENTS`.
+- **Door Staff QR Scanner** (`/checkin/:eventId`): [CheckinPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/tickets/pages/CheckinPage.tsx) still simulates a scan. The backend endpoint is `POST /api/events/:eventId/check-in`. Tickets already exist in Prisma.
+- **Treasury Ledger & Reimbursements** (`/admin/treasury`): Still mock UI in [TreasuryDashboard.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/treasury/pages/TreasuryDashboard.tsx). No ledger tables yet.
+- **Volunteer Tasks & Fundraisers** (`/admin/fundraisers`): Still mock UI in [FundraiserPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/fundraisers/pages/FundraiserPage.tsx).
 
 ---
 
