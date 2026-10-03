@@ -1,21 +1,92 @@
-@import './styles/variables.css';
-@import './styles/typography.css';
-@import './styles/layout.css';
+@import "tailwindcss";
+@import "./design-system/tokens.css";
+@import "./design-system/typography.css";
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-primary-pressed: var(--color-primary-pressed);
+  --color-primary-deep: var(--color-primary-deep);
+  --color-primary-tint: var(--color-primary-tint);
+  --color-on-primary: var(--color-on-primary);
+  --color-brand-navy: var(--color-brand-navy);
+  --color-brand-navy-mid: var(--color-brand-navy-mid);
+  --color-sunset: var(--color-sunset);
+  --color-sunset-deep: var(--color-sunset-deep);
+  --color-sunset-tint: var(--color-sunset-tint);
+  --color-primary-strong: var(--color-primary-strong);
+
+  --color-canvas: var(--color-canvas);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-surface-sunken: var(--color-surface-sunken);
+  --color-hairline: var(--color-hairline);
+  --color-hairline-strong: var(--color-hairline-strong);
+
+  --color-ink: var(--color-ink);
+  --color-on-ink: var(--color-on-ink);
+  --color-body: var(--color-body);
+  --color-muted: var(--color-muted);
+  --color-subtle: var(--color-subtle);
+  --color-on-dark: var(--color-on-dark);
+  --color-on-dark-muted: var(--color-on-dark-muted);
+
+  --color-tint-sky: var(--color-tint-sky);
+  --color-tint-sky-deep: var(--color-tint-sky-deep);
+  --color-tint-peach: var(--color-tint-peach);
+  --color-tint-peach-deep: var(--color-tint-peach-deep);
+  --color-tint-lavender: var(--color-tint-lavender);
+  --color-tint-lavender-deep: var(--color-tint-lavender-deep);
+  --color-tint-mint: var(--color-tint-mint);
+  --color-tint-mint-deep: var(--color-tint-mint-deep);
+  --color-tint-butter: var(--color-tint-butter);
+  --color-tint-butter-deep: var(--color-tint-butter-deep);
+  --color-tint-sage: var(--color-tint-sage);
+  --color-tint-sage-deep: var(--color-tint-sage-deep);
+
+  --color-success: var(--color-success);
+  --color-success-tint: var(--color-success-tint);
+  --color-success-deep: var(--color-success-deep);
+  --color-warning: var(--color-warning);
+  --color-warning-tint: var(--color-warning-tint);
+  --color-warning-deep: var(--color-warning-deep);
+  --color-error: var(--color-error);
+  --color-error-tint: var(--color-error-tint);
+  --color-error-deep: var(--color-error-deep);
+
+  --color-money-in: var(--color-money-in);
+  --color-money-out: var(--color-money-out);
+  --color-money-negative: var(--color-money-negative);
+
+  --color-checkin-valid: var(--color-checkin-valid);
+  --color-checkin-used: var(--color-checkin-used);
+  --color-checkin-invalid: var(--color-checkin-invalid);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-xxl: 28px;
+  --radius-full: 9999px;
+}
 
 *, *::before, *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  height: 100%;
 }
 
 body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-canvas);
+  color: var(--color-body);
+  font-family: var(--font-body);
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
@@ -24,20 +95,8 @@ body {
   flex-direction: column;
 }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
+/* Accessible focus ring per DESIGN.md */
+:focus-visible {
   outline: none;
-  background: none;
-}
-
-input, select, textarea {
-  font-family: inherit;
-  font-size: 1rem;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
+  box-shadow: var(--elevation-focus-ring);
 }
