@@ -412,7 +412,7 @@ Check-in updates the ticket from `ISSUED` to `USED` only when that is still its 
 
 ## 7. Phase 04 — merchandise and announcements
 
-Prices are whole INR rupees. Orders are pickup reservations: placing an order decrements stock immediately. Razorpay is not used for merchandise. A repeat with the same `idempotencyKey` returns the original order and does not decrement stock again. Cancelling a `PLACED` order restores stock once.
+Prices are whole INR rupees. Orders are pickup reservations: placing an order decrements stock immediately. Razorpay is not used for merchandise. A repeat with the same `idempotencyKey` returns **200** and the original order. The stored key is scoped to the caller (`userId:idempotencyKey`). A generated order-number collision is retried; that retry does not decrement stock twice. Cancelling a `PLACED` order restores stock once. A second cancel returns **409** `ORDER_NOT_CANCELLABLE`. If the size row is gone, cancel returns **409** `STOCK_RESTORE_FAILED` and stays `PLACED`.
 
 | Method and path | Auth | Behavior |
 |---|---|---|
@@ -421,17 +421,17 @@ Prices are whole INR rupees. Orders are pickup reservations: placing an order de
 | `GET /api/products/:productId` | Public for active products. Admins can read inactive products | **404** when hidden |
 | `PATCH /api/products/:productId` | `merchandise.manage` | Edit fields or set `INACTIVE`. Historical order prices stay unchanged |
 | `PATCH /api/products/:productId/stock` | `merchandise.manage` | Body `{ size, stock, expectedStock }`. Updates only when `expectedStock` still matches the database. **409** `STOCK_CONFLICT` asks the admin to reload. Rejects negative stock |
-| `POST /api/orders` | `orders.create` | Body `{ items: [{ productId, size, quantity }], idempotencyKey? }`. Server prices. **409** `INSUFFICIENT_STOCK` or `PRODUCT_UNAVAILABLE` |
+| `POST /api/orders` | `orders.create` | Body `{ items: [{ productId, size, quantity }], idempotencyKey? }`. Server prices. Repeated sizes are reserved as one quantity. **201** for a new order, **200** when `idempotencyKey` matches an existing order. **409** `INSUFFICIENT_STOCK` or `PRODUCT_UNAVAILABLE` |
 | `GET /api/orders/me` | `orders.read_own` | Own orders |
 | `GET /api/orders` | `orders.read_all` | All orders |
 | `GET /api/orders/:orderId` | Owner or `orders.read_all` | Anyone else **404** |
-| `POST /api/orders/:orderId/cancel` | Owner or `merchandise.manage` | Restores stock once |
+| `POST /api/orders/:orderId/cancel` | Owner or `merchandise.manage` | Restores stock once. **409** `ORDER_NOT_CANCELLABLE` if it is not `PLACED`. **409** `STOCK_RESTORE_FAILED` if the size row is missing; the order stays `PLACED` |
 | `GET /api/announcements` | Public | Published only |
 | `GET /api/announcements/manage` | `announcements.create` or `announcements.publish` | Drafts the caller may manage |
 | `POST /api/announcements` | `announcements.create` | Creates a draft. Members cannot set status |
 | `GET /api/announcements/:announcementId` | Public if published. Drafts are **404** unless the author or a publisher | |
 | `PATCH /api/announcements/:announcementId` | Author with `announcements.create`, or `announcements.publish` | |
-| `POST /api/announcements/:announcementId/publish` | `announcements.publish` | Sets `publishedAt` |
+| `POST /api/announcements/:announcementId/publish` | `announcements.publish` | Sets `publishedAt` only while the row is `DRAFT`. **409** `ALREADY_PUBLISHED` otherwise |
 | `POST /api/announcements/:announcementId/unpublish` | `announcements.publish` | Returns the row to `DRAFT` and clears `publishedAt` |
 
-Stock for an order is reduced with `UPDATE ... WHERE stock >= quantity`. If any line fails, the transaction rolls back and no order row remains. Variant stock cannot go below zero.
+Stock for an order is reduced with `UPDATE ... WHERE stock >= quantity`. Quantities for the same product and size are added first, then applied in that one update. If any reservation fails, the transaction rolls back and no order row remains. Variant stock cannot go below zero. An order-number collision retries the whole transaction with a new number.

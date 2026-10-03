@@ -1,10 +1,10 @@
 # Phase 04 — Merchandise and announcements
 
-Merchandise prices are whole INR rupees, the same unit as event prices. An active membership receives `memberPrice`. Orders are club pickup reservations: the server decrements size stock when the order is placed and does not call Razorpay. Cancelling a `PLACED` order puts that stock back once.
+Merchandise prices are whole INR rupees, the same unit as event prices. An active membership receives `memberPrice`. Orders are club pickup reservations: the server decrements size stock when the order is placed and does not call Razorpay. Cancelling a `PLACED` order puts that stock back once. If a size row cannot be restored, the cancellation is rolled back and the API returns **409** `STOCK_RESTORE_FAILED`.
 
-Inventory for purchases uses a conditional update (`stock >= quantity`) inside one database transaction. A multi-item order that cannot fill every line leaves stock and orders unchanged. Repeating `idempotencyKey` returns the existing order.
+Inventory for purchases uses a conditional update (`stock >= quantity`) inside one database transaction. Several lines for the same product and size are reserved together, using the summed quantity. A multi-item order that cannot fill every line leaves stock and orders unchanged. Repeating `idempotencyKey` returns the existing order with **200** and does not decrement stock again. The stored key is `userId:idempotencyKey`, so one member cannot replay another member's key. If the generated order number collides, the server retries with a new number. The failed attempt rolls back, so stock is taken only once.
 
-Announcements are created as drafts. Only `announcements.publish` (ADMIN) can publish or unpublish them. The public list and detail endpoints return published rows. A draft id returns 404 to everyone else.
+Announcements are created as drafts. Only `announcements.publish` (ADMIN) can publish or unpublish them. Publish succeeds only while the row is still `DRAFT` and sets `publishedAt`. Unpublish succeeds only while the row is still `PUBLISHED`, returns it to `DRAFT`, and clears `publishedAt`. The public list and detail endpoints return published rows. A draft id returns 404 to everyone else.
 
 Apply the migration from `backend/`:
 
