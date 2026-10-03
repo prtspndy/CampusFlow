@@ -1551,6 +1551,20 @@ export function installPrismaMemory(): void {
     return withAuthor(row) as never;
   });
 
+  vi.spyOn(prisma.announcement, 'updateMany').mockImplementation(async (args) => {
+    const data = args.data as { publishedAt?: Date | null; status?: string };
+    let count = 0;
+    for (const row of announcements) {
+      if (!matchesWhere(row as unknown as Record<string, unknown>, args.where as any)) continue;
+      applyPatch(row as unknown as Record<string, any>, data as any);
+      if (data && 'publishedAt' in data) {
+        row.publishedAt = data.publishedAt ? new Date(data.publishedAt) : null;
+      }
+      count += 1;
+    }
+    return { count } as never;
+  });
+
   vi.spyOn(prisma.announcement, 'update').mockImplementation(async (args) => {
     const where = args.where as { id: string };
     const match = announcements.find((row) => row.id === where.id);

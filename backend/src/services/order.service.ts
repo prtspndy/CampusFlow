@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { MembershipStatus, MerchOrderStatus, Prisma, ProductStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
-import { isPrismaCode } from '../lib/prisma-errors.js';
+import { isPrismaCode, uniqueConstraintIncludes } from '../lib/prisma-errors.js';
 import { AuthenticatedUser, hasPermission } from '../types/auth.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../utils/errors.js';
 import { CreateOrderInput } from '../validators/phase4.validators.js';
@@ -70,81 +70,100 @@ export async function createOrder(user: AuthenticatedUser, input: CreateOrderInp
     if (existing) return { order: presentOrder(existing), alreadyExisted: true };
   }
 
-  try {
-    let alreadyExisted = false;
-    const order = await prisma.$transaction(async (tx) => {
-      if (idempotencyKey) {
-        const existing = await tx.merchOrder.findUnique({
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      let alreadyExisted = false;
+      const order = await prisma.$transaction(async (tx) => {
+        if (idempotencyKey) {
+          const existing = await tx.merchOrder.findUnique({
+            where: { idempotencyKey },
+            include: orderInclude,
+          });
+          if (existing) {
+            alreadyExisted = true;
+            return existing;
+          }
+        }
+
+        const member = await memberPriceApplies(tx, user.id);
+        const lines: Prisma.MerchOrderItemCreateWithoutOrderInput[] = [];
+        const reservations = new Map<string, { name: string; size: string; quantity: number }>();
+
+        for (const item of input.items) {
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+            include: { variants: true },
+          });
+          if (!product) throw new NotFoundError('Product not found');
+          if (product.status !== ProductStatus.ACTIVE) {
+            throw new ConflictError(`${product.name} is not available`, 'PRODUCT_UNAVAILABLE');
+          }
+          const variant = product.variants.find((entry) => entry.size === item.size);
+          if (!variant) {
+            throw new BadRequestError(`${product.name} is not offered in size ${item.size}`);
+          }
+
+          const reserved = reservations.get(variant.id) ?? {
+            name: product.name,
+            size: item.size,
+            quantity: 0,
+          };
+          reserved.quantity += item.quantity;
+          reservations.set(variant.id, reserved);
+
+          const unitPrice = member ? product.memberPrice : product.standardPrice;
+          lines.push({
+            product: { connect: { id: product.id } },
+            size: item.size,
+            productName: product.name,
+            unitPrice,
+            quantity: item.quantity,
+            lineTotal: unitPrice * item.quantity,
+          });
+        }
+
+        for (const [variantId, reservation] of reservations) {
+          const updated = await tx.productVariant.updateMany({
+            where: { id: variantId, stock: { gte: reservation.quantity } },
+            data: { stock: { decrement: reservation.quantity } },
+          });
+          if (updated.count !== 1) {
+            throw new ConflictError(
+              `Not enough stock for ${reservation.name} (${reservation.size})`,
+              'INSUFFICIENT_STOCK',
+            );
+          }
+        }
+
+        const totalAmount = lines.reduce((sum, line) => sum + line.lineTotal, 0);
+        return tx.merchOrder.create({
+          data: {
+            userId: user.id,
+            orderNumber: `CFM-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+            status: MerchOrderStatus.PLACED,
+            totalAmount,
+            currency: 'INR',
+            idempotencyKey,
+            items: { create: lines },
+          },
+          include: orderInclude,
+        });
+      });
+      return { order: presentOrder(order), alreadyExisted };
+    } catch (error) {
+      if (!isPrismaCode(error, 'P2002')) throw error;
+      if (idempotencyKey && !uniqueConstraintIncludes(error, 'orderNumber')) {
+        const existing = await prisma.merchOrder.findUnique({
           where: { idempotencyKey },
           include: orderInclude,
         });
-        if (existing) {
-          alreadyExisted = true;
-          return existing;
-        }
+        if (existing) return { order: presentOrder(existing), alreadyExisted: true };
       }
-
-      const member = await memberPriceApplies(tx, user.id);
-      const lines: Prisma.MerchOrderItemCreateWithoutOrderInput[] = [];
-
-      for (const item of input.items) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-          include: { variants: true },
-        });
-        if (!product) throw new NotFoundError('Product not found');
-        if (product.status !== ProductStatus.ACTIVE) {
-          throw new ConflictError(`${product.name} is not available`, 'PRODUCT_UNAVAILABLE');
-        }
-        const variant = product.variants.find((entry) => entry.size === item.size);
-        if (!variant) {
-          throw new BadRequestError(`${product.name} is not offered in size ${item.size}`);
-        }
-
-        const reserved = await tx.productVariant.updateMany({
-          where: { id: variant.id, stock: { gte: item.quantity } },
-          data: { stock: { decrement: item.quantity } },
-        });
-        if (reserved.count !== 1) {
-          throw new ConflictError(`Not enough stock for ${product.name} (${item.size})`, 'INSUFFICIENT_STOCK');
-        }
-
-        const unitPrice = member ? product.memberPrice : product.standardPrice;
-        lines.push({
-          product: { connect: { id: product.id } },
-          size: item.size,
-          productName: product.name,
-          unitPrice,
-          quantity: item.quantity,
-          lineTotal: unitPrice * item.quantity,
-        });
-      }
-
-      const totalAmount = lines.reduce((sum, line) => sum + line.lineTotal, 0);
-      return tx.merchOrder.create({
-        data: {
-          userId: user.id,
-          orderNumber: `CFM-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
-          status: MerchOrderStatus.PLACED,
-          totalAmount,
-          currency: 'INR',
-          idempotencyKey,
-          items: { create: lines },
-        },
-        include: orderInclude,
-      });
-    });
-    return { order: presentOrder(order), alreadyExisted };
-  } catch (error) {
-    if (isPrismaCode(error, 'P2002') && idempotencyKey) {
-      const existing = await prisma.merchOrder.findUnique({
-        where: { idempotencyKey },
-        include: orderInclude,
-      });
-      if (existing) return { order: presentOrder(existing), alreadyExisted: true };
+      if (uniqueConstraintIncludes(error, 'orderNumber') && attempt < 2) continue;
+      throw error;
     }
-    throw error;
   }
+  throw new ConflictError('Could not allocate an order number', 'ORDER_NUMBER_CONFLICT');
 }
 
 export async function listOwnOrders(userId: string, page: number, limit: number) {
@@ -204,10 +223,13 @@ export async function cancelOrder(user: AuthenticatedUser, orderId: string) {
       throw new ConflictError('Order cannot be cancelled', 'ORDER_NOT_CANCELLABLE');
     }
     for (const item of existing.items) {
-      await tx.productVariant.updateMany({
+      const restored = await tx.productVariant.updateMany({
         where: { productId: item.productId, size: item.size },
         data: { stock: { increment: item.quantity } },
       });
+      if (restored.count !== 1) {
+        throw new ConflictError('Stock could not be restored for this order', 'STOCK_RESTORE_FAILED');
+      }
     }
   });
 

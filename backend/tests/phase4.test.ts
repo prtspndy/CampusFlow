@@ -441,5 +441,43 @@ describe('Phase 4 merchandise, orders, and announcements', () => {
     const hiddenAgain = await request(app).get('/api/announcements');
     expect(hiddenAgain.body.data.announcements).toHaveLength(0);
     expect(memoryAnnouncements()[0]?.status).toBe('DRAFT');
+    expect(memoryAnnouncements()[0]?.publishedAt).toBeNull();
+  });
+
+  it('retries an order-number collision without decrementing stock twice', async () => {
+    const admin = await login('admin@campus.edu', 'ADMIN');
+    const member = await login('ada@campus.edu');
+    const created = await createHoodie(admin.token);
+    const productId = created.body.data.id as string;
+    const create = prisma.merchOrder.create as unknown as {
+      getMockImplementation: () => ((args: unknown) => Promise<unknown>) | undefined;
+      mockImplementation: (impl: (args: unknown) => Promise<unknown>) => void;
+    };
+    const original = create.getMockImplementation();
+    let calls = 0;
+    create.mockImplementation(async (args) => {
+      calls += 1;
+      if (calls === 1) {
+        const error = new Error('Unique constraint failed') as Error & {
+          code: string;
+          meta: { target: string[] };
+        };
+        error.code = 'P2002';
+        error.meta = { target: ['orderNumber'] };
+        throw error;
+      }
+      if (!original) throw new Error('Order create mock is missing');
+      return original(args);
+    });
+
+    const response = await request(app)
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${member.token}`)
+      .send({ items: [{ productId, size: 'M', quantity: 1 }] });
+
+    expect(response.status).toBe(201);
+    expect(calls).toBe(2);
+    expect(memoryVariants().find((row) => row.size === 'M')?.stock).toBe(4);
+    expect(memoryMerchOrders()).toHaveLength(1);
   });
 });
