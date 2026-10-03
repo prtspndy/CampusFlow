@@ -18,14 +18,14 @@ export class AppError extends Error {
 }
 
 export class NotFoundError extends AppError {
-  constructor(message = 'Resource not found') {
-    super(message, 404, 'NOT_FOUND');
+  constructor(message = 'Resource not found', code = 'NOT_FOUND') {
+    super(message, 404, code);
   }
 }
 
 export class BadRequestError extends AppError {
-  constructor(message = 'Bad request', details: unknown[] = []) {
-    super(message, 400, 'BAD_REQUEST', details);
+  constructor(message = 'Bad request', details: unknown[] = [], code = 'BAD_REQUEST') {
+    super(message, 400, code, details);
   }
 }
 

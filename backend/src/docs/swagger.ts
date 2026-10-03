@@ -5,6 +5,11 @@ import {
   membershipOpenApiTags,
 } from './membership.openapi.js';
 import { eventOpenApiPaths, eventOpenApiSchemas, eventOpenApiTags } from './event.openapi.js';
+import {
+  ticketingOpenApiPaths,
+  ticketingOpenApiSchemas,
+  ticketingOpenApiTags,
+} from './ticketing.openapi.js';
 
 export const openApiSpec = {
   openapi: '3.0.3',
@@ -12,7 +17,7 @@ export const openApiSpec = {
     title: 'CampusFlow API',
     version: '0.2.0',
     description:
-      'Student Organization Management System API — Phase 00 foundation, Phase 01 authentication, and Phase 02 membership & events management.',
+      'Student Organization Management System API — authentication, membership, events, tickets, payments, and check-in.',
     contact: {
       name: 'CampusFlow Engineering Team',
     },
@@ -31,6 +36,7 @@ export const openApiSpec = {
     ...authOpenApiTags,
     ...membershipOpenApiTags,
     ...eventOpenApiTags,
+    ...ticketingOpenApiTags,
   ],
   paths: {
     '/': {
@@ -106,6 +112,7 @@ export const openApiSpec = {
     ...authOpenApiPaths,
     ...membershipOpenApiPaths,
     ...eventOpenApiPaths,
+    ...ticketingOpenApiPaths,
   },
   components: {
     securitySchemes: {
@@ -119,6 +126,7 @@ export const openApiSpec = {
       ...authOpenApiSchemas,
       ...membershipOpenApiSchemas,
       ...eventOpenApiSchemas,
+      ...ticketingOpenApiSchemas,
       ApiInfoResponse: {
         type: 'object',
         properties: {

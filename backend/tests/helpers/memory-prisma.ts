@@ -3,7 +3,14 @@ import crypto from 'node:crypto';
 import { vi } from 'vitest';
 import { prisma } from '../../src/lib/prisma.js';
 import { normalizeRole, type AccountStatus, type UserRole } from '../../src/types/auth.js';
-import { MembershipStatus, EventStatus } from '@prisma/client';
+import {
+  MembershipStatus,
+  EventStatus,
+  RegistrationStatus,
+  PaymentStatus,
+  TicketStatus,
+  TicketTier,
+} from '@prisma/client';
 
 export interface MemoryUser {
   id: string;
@@ -49,10 +56,16 @@ export interface MemoryEvent {
   description: string;
   category: string;
   venue: string;
+  imageUrl: string | null;
   startsAt: Date;
   endsAt: Date;
   capacity: number;
   price: number;
+  memberPrice: number;
+  standardPrice: number;
+  totalCapacity: number | null;
+  registeredCount: number;
+  isFeatured: boolean;
   status: EventStatus;
   organizerId: string;
   createdAt: Date;
@@ -60,20 +73,92 @@ export interface MemoryEvent {
   organizer?: MemoryUser;
 }
 
+export interface MemoryRegistration {
+  id: string;
+  eventId: string;
+  userId: string;
+  status: RegistrationStatus;
+  tier: TicketTier;
+  amountPaise: number;
+  currency: string;
+  cancelledAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryPayment {
+  id: string;
+  registrationId: string;
+  eventId: string;
+  userId: string;
+  razorpayOrderId: string | null;
+  razorpayPaymentId: string | null;
+  amountPaise: number;
+  currency: string;
+  status: PaymentStatus;
+  signatureVerifiedAt: Date | null;
+  failureReason: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryTicket {
+  id: string;
+  registrationId: string;
+  eventId: string;
+  userId: string;
+  status: TicketStatus;
+  verificationTokenHash: string;
+  encryptedVerificationToken: string;
+  issuedAt: Date;
+  checkedInAt: Date | null;
+  checkedInById: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryCheckIn {
+  id: string;
+  ticketId: string;
+  eventId: string;
+  staffUserId: string;
+  checkedInAt: Date;
+}
+
+export interface MemoryWebhookDelivery {
+  id: string;
+  eventType: string;
+  razorpayOrderId: string | null;
+  outcome: string;
+  createdAt: Date;
+}
+
 const users: MemoryUser[] = [];
 const refreshTokens: MemoryRefreshToken[] = [];
 const memberships: MemoryMembership[] = [];
 const events: MemoryEvent[] = [];
+const registrations: MemoryRegistration[] = [];
+const payments: MemoryPayment[] = [];
+const tickets: MemoryTicket[] = [];
+const checkIns: MemoryCheckIn[] = [];
+const webhookDeliveries: MemoryWebhookDelivery[] = [];
 let refreshReadWaiters: Array<() => void> | null = null;
 let refreshReadTarget = 0;
+let transactionQueue: Promise<void> = Promise.resolve();
 
 export function resetMemoryDb(): void {
   users.length = 0;
   refreshTokens.length = 0;
   memberships.length = 0;
   events.length = 0;
+  registrations.length = 0;
+  payments.length = 0;
+  tickets.length = 0;
+  checkIns.length = 0;
+  webhookDeliveries.length = 0;
   refreshReadWaiters = null;
   refreshReadTarget = 0;
+  transactionQueue = Promise.resolve();
 }
 
 /**
@@ -101,6 +186,73 @@ export function memoryMemberships(): MemoryMembership[] {
 
 export function memoryEvents(): MemoryEvent[] {
   return events.map((event) => ({ ...event }));
+}
+
+export function memoryRegistrations(): MemoryRegistration[] {
+  return registrations.map((row) => ({ ...row }));
+}
+
+export function memoryPayments(): MemoryPayment[] {
+  return payments.map((row) => ({ ...row }));
+}
+
+export function memoryTickets(): MemoryTicket[] {
+  return tickets.map((row) => ({ ...row }));
+}
+
+export function memoryCheckIns(): MemoryCheckIn[] {
+  return checkIns.map((row) => ({ ...row }));
+}
+
+export function insertRegistration(
+  partial: Partial<MemoryRegistration> &
+    Pick<MemoryRegistration, 'eventId' | 'userId' | 'status' | 'tier' | 'amountPaise'>,
+): MemoryRegistration {
+  const now = new Date();
+  const row: MemoryRegistration = {
+    id: partial.id ?? crypto.randomUUID(),
+    eventId: partial.eventId,
+    userId: partial.userId,
+    status: partial.status,
+    tier: partial.tier,
+    amountPaise: partial.amountPaise,
+    currency: partial.currency ?? 'INR',
+    cancelledAt: partial.cancelledAt ?? null,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+  };
+  registrations.push(row);
+  return { ...row };
+}
+
+export function insertTicket(
+  partial: Partial<MemoryTicket> &
+    Pick<
+      MemoryTicket,
+      | 'registrationId'
+      | 'eventId'
+      | 'userId'
+      | 'verificationTokenHash'
+      | 'encryptedVerificationToken'
+    >,
+): MemoryTicket {
+  const now = new Date();
+  const row: MemoryTicket = {
+    id: partial.id ?? crypto.randomUUID(),
+    registrationId: partial.registrationId,
+    eventId: partial.eventId,
+    userId: partial.userId,
+    status: partial.status ?? TicketStatus.ISSUED,
+    verificationTokenHash: partial.verificationTokenHash,
+    encryptedVerificationToken: partial.encryptedVerificationToken,
+    issuedAt: partial.issuedAt ?? now,
+    checkedInAt: partial.checkedInAt ?? null,
+    checkedInById: partial.checkedInById ?? null,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+  };
+  tickets.push(row);
+  return { ...row };
 }
 
 export function insertUser(
@@ -159,16 +311,23 @@ export function insertEvent(
     >,
 ): MemoryEvent {
   const now = new Date();
+  const price = partial.price ?? 0;
   const event: MemoryEvent = {
     id: partial.id ?? crypto.randomUUID(),
     title: partial.title,
     description: partial.description,
     category: partial.category,
     venue: partial.venue,
+    imageUrl: partial.imageUrl ?? null,
     startsAt: partial.startsAt,
     endsAt: partial.endsAt,
     capacity: partial.capacity,
-    price: partial.price ?? 0,
+    price,
+    memberPrice: partial.memberPrice ?? price,
+    standardPrice: partial.standardPrice ?? price,
+    totalCapacity: partial.totalCapacity === undefined ? partial.capacity : partial.totalCapacity,
+    registeredCount: partial.registeredCount ?? 0,
+    isFeatured: partial.isFeatured ?? false,
     status: partial.status ?? EventStatus.DRAFT,
     organizerId: partial.organizerId,
     createdAt: partial.createdAt ?? now,
@@ -193,26 +352,21 @@ export function setUserStatus(email: string, status: AccountStatus): void {
   user.status = status;
 }
 
-function snapshotState(): {
-  users: MemoryUser[];
-  refreshTokens: MemoryRefreshToken[];
-  memberships: MemoryMembership[];
-  events: MemoryEvent[];
-} {
+function snapshotState() {
   return {
     users: users.map((user) => ({ ...user })),
     refreshTokens: refreshTokens.map((token) => ({ ...token })),
     memberships: memberships.map((m) => ({ ...m })),
     events: events.map((e) => ({ ...e })),
+    registrations: registrations.map((row) => ({ ...row })),
+    payments: payments.map((row) => ({ ...row })),
+    tickets: tickets.map((row) => ({ ...row })),
+    checkIns: checkIns.map((row) => ({ ...row })),
+    webhookDeliveries: webhookDeliveries.map((row) => ({ ...row })),
   };
 }
 
-function restoreState(state: {
-  users: MemoryUser[];
-  refreshTokens: MemoryRefreshToken[];
-  memberships: MemoryMembership[];
-  events: MemoryEvent[];
-}): void {
+function restoreState(state: ReturnType<typeof snapshotState>): void {
   users.splice(0, users.length, ...state.users.map((user) => ({ ...user })));
   refreshTokens.splice(
     0,
@@ -221,6 +375,78 @@ function restoreState(state: {
   );
   memberships.splice(0, memberships.length, ...state.memberships.map((m) => ({ ...m })));
   events.splice(0, events.length, ...state.events.map((e) => ({ ...e })));
+  registrations.splice(0, registrations.length, ...state.registrations.map((row) => ({ ...row })));
+  payments.splice(0, payments.length, ...state.payments.map((row) => ({ ...row })));
+  tickets.splice(0, tickets.length, ...state.tickets.map((row) => ({ ...row })));
+  checkIns.splice(0, checkIns.length, ...state.checkIns.map((row) => ({ ...row })));
+  webhookDeliveries.splice(
+    0,
+    webhookDeliveries.length,
+    ...state.webhookDeliveries.map((row) => ({ ...row })),
+  );
+}
+
+function uniqueError(): Error {
+  const error = new Error('Unique constraint failed') as Error & { code: string };
+  error.code = 'P2002';
+  return error;
+}
+
+function matchesPrimitive(actual: unknown, filter: unknown): boolean {
+  if (filter === undefined) return true;
+  if (filter === null) return actual === null;
+  if (typeof filter !== 'object' || filter instanceof Date) {
+    if (actual instanceof Date && (filter instanceof Date || typeof filter === 'string')) {
+      return actual.getTime() === new Date(filter as Date).getTime();
+    }
+    return actual === filter;
+  }
+  const ops = filter as Record<string, unknown>;
+  if (Array.isArray(ops.in)) return ops.in.includes(actual);
+  if ('gt' in ops) {
+    if (actual instanceof Date) return actual.getTime() > new Date(ops.gt as Date).getTime();
+    return typeof actual === 'number' && actual > Number(ops.gt);
+  }
+  if ('lt' in ops) return typeof actual === 'number' && actual < Number(ops.lt);
+  return false;
+}
+
+function matchesWhere(record: Record<string, unknown>, where?: Record<string, unknown>): boolean {
+  if (!where) return true;
+  if (Array.isArray(where.AND) && !where.AND.every((clause) => matchesWhere(record, clause))) {
+    return false;
+  }
+  if (Array.isArray(where.OR) && !where.OR.some((clause) => matchesWhere(record, clause))) {
+    return false;
+  }
+  return Object.entries(where).every(([key, value]) => {
+    if (key === 'AND' || key === 'OR') return true;
+    return matchesPrimitive(record[key], value);
+  });
+}
+
+function applyPatch(target: Record<string, any>, data: Record<string, any>): void {
+  for (const [key, value] of Object.entries(data)) {
+    if (
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      !(value instanceof Date) &&
+      (typeof value.increment === 'number' || typeof value.decrement === 'number')
+    ) {
+      const current = typeof target[key] === 'number' ? target[key] : 0;
+      if (typeof value.increment === 'number') target[key] = current + value.increment;
+      if (typeof value.decrement === 'number') target[key] = current - value.decrement;
+      continue;
+    }
+    target[key] = value;
+  }
+  if (data.startsAt) target.startsAt = new Date(data.startsAt);
+  if (data.endsAt) target.endsAt = new Date(data.endsAt);
+  if (data.checkedInAt) target.checkedInAt = new Date(data.checkedInAt);
+  if (data.cancelledAt) target.cancelledAt = new Date(data.cancelledAt);
+  if (data.signatureVerifiedAt) target.signatureVerifiedAt = new Date(data.signatureVerifiedAt);
+  target.updatedAt = new Date();
 }
 
 export function installPrismaMemory(): void {
@@ -228,13 +454,25 @@ export function installPrismaMemory(): void {
     if (typeof callback !== 'function') {
       return Promise.reject(new Error('Expected an interactive transaction')) as never;
     }
-    const snapshot = snapshotState();
-    return Promise.resolve()
-      .then(() => callback(prisma))
-      .catch((error: unknown) => {
+    const run = async () => {
+      const snapshot = snapshotState();
+      try {
+        return await (callback as (tx: typeof prisma) => Promise<unknown>)(prisma);
+      } catch (error) {
         restoreState(snapshot);
         throw error;
-      }) as never;
+      }
+    };
+    // The refresh-token overlap test needs two transactions to read before either writes.
+    if (refreshReadWaiters) {
+      return run() as never;
+    }
+    const queued = transactionQueue.then(run, run);
+    transactionQueue = queued.then(
+      () => undefined,
+      () => undefined,
+    );
+    return queued as never;
   });
 
   vi.spyOn(prisma.user, 'findUnique').mockImplementation(async (args) => {
@@ -386,6 +624,11 @@ export function installPrismaMemory(): void {
         if (typeof where.status === 'string' && m.status !== where.status) return false;
         if (where.status?.in && !where.status.in.includes(m.status)) return false;
       }
+      if (where?.validUntil?.gt) {
+        if (!m.validUntil || m.validUntil.getTime() <= new Date(where.validUntil.gt).getTime()) {
+          return false;
+        }
+      }
       return true;
     });
     return (match ? { ...match } : null) as never;
@@ -479,16 +722,24 @@ export function installPrismaMemory(): void {
   vi.spyOn(prisma.event, 'create').mockImplementation(async (args) => {
     const data = args.data as any;
     const now = new Date();
+    const price = data.standardPrice ?? data.price ?? 0;
     const event: MemoryEvent = {
       id: data.id ?? crypto.randomUUID(),
       title: data.title,
       description: data.description,
-      category: data.category,
+      category: data.category ?? '',
       venue: data.venue,
+      imageUrl: data.imageUrl ?? null,
       startsAt: new Date(data.startsAt),
       endsAt: new Date(data.endsAt),
-      capacity: data.capacity,
-      price: data.price ?? 0,
+      capacity: data.capacity ?? data.totalCapacity ?? 0,
+      price,
+      memberPrice: data.memberPrice ?? 0,
+      standardPrice: price,
+      totalCapacity:
+        data.totalCapacity === undefined ? (data.capacity ?? null) : data.totalCapacity,
+      registeredCount: data.registeredCount ?? 0,
+      isFeatured: data.isFeatured ?? false,
       status: data.status ?? EventStatus.DRAFT,
       organizerId: data.organizerId,
       createdAt: now,
@@ -582,10 +833,379 @@ export function installPrismaMemory(): void {
       err.code = 'P2025';
       throw err;
     }
-    Object.assign(match, data);
-    if (data.startsAt) match.startsAt = new Date(data.startsAt);
-    if (data.endsAt) match.endsAt = new Date(data.endsAt);
-    match.updatedAt = new Date();
+    applyPatch(match, data);
+    return { ...match } as never;
+  });
+
+  vi.spyOn(prisma.event, 'updateMany').mockImplementation(async (args) => {
+    const where = args.where as Record<string, unknown>;
+    const data = args.data as Record<string, unknown>;
+    let count = 0;
+    for (const event of events) {
+      if (!matchesWhere(event as unknown as Record<string, unknown>, where)) continue;
+      applyPatch(event as unknown as Record<string, any>, data);
+      count += 1;
+    }
+    return { count } as never;
+  });
+
+  const presentRegistration = (row: MemoryRegistration, include?: any) => {
+    const result: any = { ...row };
+    if (include?.user) {
+      const user = users.find((entry) => entry.id === row.userId);
+      result.user = user ? { id: user.id, name: user.name, email: user.email } : null;
+    }
+    if (include?.event === true || include?.event) {
+      result.event = events.find((event) => event.id === row.eventId) ?? null;
+    }
+    if (include?.ticket) {
+      result.ticket = tickets.find((ticket) => ticket.registrationId === row.id) ?? null;
+    }
+    return result;
+  };
+
+  vi.spyOn(prisma.eventRegistration, 'findFirst').mockImplementation(async (args) => {
+    const match = registrations.find((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    return (match ? { ...match } : null) as never;
+  });
+
+  vi.spyOn(prisma.eventRegistration, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as { id: string };
+    const match = registrations.find((row) => row.id === where.id);
+    if (!match) return null as never;
+    return presentRegistration(match, args?.include) as never;
+  });
+
+  vi.spyOn(prisma.eventRegistration, 'findMany').mockImplementation(async (args) => {
+    let matches = registrations.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    if ((args?.orderBy as any)?.createdAt === 'desc') {
+      matches = [...matches].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches
+      .slice(skip, skip + take)
+      .map((row) => presentRegistration(row, args?.include)) as never;
+  });
+
+  vi.spyOn(prisma.eventRegistration, 'count').mockImplementation(async (args) => {
+    return registrations.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.eventRegistration, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const active = registrations.some(
+      (row) =>
+        row.eventId === data.eventId &&
+        row.userId === data.userId &&
+        (row.status === RegistrationStatus.PENDING_PAYMENT ||
+          row.status === RegistrationStatus.CONFIRMED) &&
+        (data.status === RegistrationStatus.PENDING_PAYMENT ||
+          data.status === RegistrationStatus.CONFIRMED),
+    );
+    if (active) throw uniqueError();
+    const now = new Date();
+    const row: MemoryRegistration = {
+      id: data.id ?? crypto.randomUUID(),
+      eventId: data.eventId,
+      userId: data.userId,
+      status: data.status,
+      tier: data.tier,
+      amountPaise: data.amountPaise,
+      currency: data.currency ?? 'INR',
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    registrations.push(row);
+    return { ...row } as never;
+  });
+
+  vi.spyOn(prisma.eventRegistration, 'updateMany').mockImplementation(async (args) => {
+    const where = args.where as any;
+    const data = args.data as any;
+    let count = 0;
+    for (const row of registrations) {
+      if (!matchesWhere(row as unknown as Record<string, unknown>, where)) continue;
+      applyPatch(row as unknown as Record<string, any>, data);
+      count += 1;
+    }
+    return { count } as never;
+  });
+
+  vi.spyOn(prisma.payment, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const match = payments.find((row) => {
+      if (where.id) return row.id === where.id;
+      if (where.razorpayOrderId) return row.razorpayOrderId === where.razorpayOrderId;
+      if (where.razorpayPaymentId) return row.razorpayPaymentId === where.razorpayPaymentId;
+      return false;
+    });
+    return (match ? { ...match } : null) as never;
+  });
+
+  vi.spyOn(prisma.payment, 'findFirst').mockImplementation(async (args) => {
+    let matches = payments.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    if ((args?.orderBy as any)?.createdAt === 'desc') {
+      matches = [...matches].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+    return (matches[0] ? { ...matches[0] } : null) as never;
+  });
+
+  vi.spyOn(prisma.payment, 'findMany').mockImplementation(async (args) => {
+    let matches = payments.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    if ((args?.orderBy as any)?.createdAt === 'desc') {
+      matches = [...matches].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map((row) => ({ ...row })) as never;
+  });
+
+  vi.spyOn(prisma.payment, 'count').mockImplementation(async (args) => {
+    return payments.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.payment, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    if (
+      data.razorpayOrderId &&
+      payments.some((row) => row.razorpayOrderId === data.razorpayOrderId)
+    ) {
+      throw uniqueError();
+    }
+    if (
+      data.razorpayPaymentId &&
+      payments.some((row) => row.razorpayPaymentId === data.razorpayPaymentId)
+    ) {
+      throw uniqueError();
+    }
+    const sameRegistration = payments.filter((row) => row.registrationId === data.registrationId);
+    if (
+      (data.status === PaymentStatus.CREATED || data.status === PaymentStatus.PENDING) &&
+      sameRegistration.some(
+        (row) => row.status === PaymentStatus.CREATED || row.status === PaymentStatus.PENDING,
+      )
+    ) {
+      throw uniqueError();
+    }
+    if (
+      (data.status === PaymentStatus.PAID || data.status === PaymentStatus.REFUNDED) &&
+      sameRegistration.some(
+        (row) => row.status === PaymentStatus.PAID || row.status === PaymentStatus.REFUNDED,
+      )
+    ) {
+      throw uniqueError();
+    }
+    const now = new Date();
+    const row: MemoryPayment = {
+      id: data.id ?? crypto.randomUUID(),
+      registrationId: data.registrationId,
+      eventId: data.eventId,
+      userId: data.userId,
+      razorpayOrderId: data.razorpayOrderId ?? null,
+      razorpayPaymentId: data.razorpayPaymentId ?? null,
+      amountPaise: data.amountPaise,
+      currency: data.currency ?? 'INR',
+      status: data.status ?? PaymentStatus.CREATED,
+      signatureVerifiedAt: null,
+      failureReason: data.failureReason ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    payments.push(row);
+    return { ...row } as never;
+  });
+
+  vi.spyOn(prisma.payment, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = payments.find((row) => row.id === where.id);
+    if (!match) {
+      const error = new Error('Payment not found') as Error & { code: string };
+      error.code = 'P2025';
+      throw error;
+    }
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
+    return { ...match } as never;
+  });
+
+  vi.spyOn(prisma.payment, 'updateMany').mockImplementation(async (args) => {
+    const where = args.where as any;
+    const data = args.data as any;
+    let count = 0;
+    for (const row of payments) {
+      if (!matchesWhere(row as unknown as Record<string, unknown>, where)) continue;
+      applyPatch(row as unknown as Record<string, any>, data);
+      count += 1;
+    }
+    return { count } as never;
+  });
+
+  const presentTicket = (row: MemoryTicket, args?: any) => {
+    const include = args?.include;
+    const result: any = { ...row };
+    if (include?.user) {
+      const user = users.find((entry) => entry.id === row.userId);
+      result.user = user ? { id: user.id, name: user.name, email: user.email } : null;
+    }
+    if (include?.registration) {
+      result.registration = registrations.find((entry) => entry.id === row.registrationId) ?? null;
+    }
+    if (include?.event) {
+      const event = events.find((entry) => entry.id === row.eventId);
+      result.event = event ? { ...event } : null;
+    }
+    return result;
+  };
+
+  vi.spyOn(prisma.ticket, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const match = tickets.find((row) => {
+      if (where.id) return row.id === where.id;
+      if (where.registrationId) return row.registrationId === where.registrationId;
+      if (where.verificationTokenHash)
+        return row.verificationTokenHash === where.verificationTokenHash;
+      return false;
+    });
+    return (match ? presentTicket(match, args) : null) as never;
+  });
+
+  vi.spyOn(prisma.ticket, 'findMany').mockImplementation(async (args) => {
+    let matches = tickets.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    if ((args?.orderBy as any)?.issuedAt === 'desc') {
+      matches = [...matches].sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime());
+    }
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map((row) => presentTicket(row, args)) as never;
+  });
+
+  vi.spyOn(prisma.ticket, 'count').mockImplementation(async (args) => {
+    return tickets.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.ticket, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    if (tickets.some((row) => row.registrationId === data.registrationId)) throw uniqueError();
+    if (tickets.some((row) => row.verificationTokenHash === data.verificationTokenHash)) {
+      throw uniqueError();
+    }
+    const now = new Date();
+    const row: MemoryTicket = {
+      id: data.id ?? crypto.randomUUID(),
+      registrationId: data.registrationId,
+      eventId: data.eventId,
+      userId: data.userId,
+      status: data.status ?? TicketStatus.ISSUED,
+      verificationTokenHash: data.verificationTokenHash,
+      encryptedVerificationToken: data.encryptedVerificationToken,
+      issuedAt: now,
+      checkedInAt: null,
+      checkedInById: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    tickets.push(row);
+    return { ...row } as never;
+  });
+
+  vi.spyOn(prisma.ticket, 'updateMany').mockImplementation(async (args) => {
+    const where = args.where as any;
+    const data = args.data as any;
+    let count = 0;
+    for (const row of tickets) {
+      if (!matchesWhere(row as unknown as Record<string, unknown>, where)) continue;
+      applyPatch(row as unknown as Record<string, any>, data);
+      count += 1;
+    }
+    return { count } as never;
+  });
+
+  vi.spyOn(prisma.checkIn, 'count').mockImplementation(async (args) => {
+    return checkIns.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.checkIn, 'findMany').mockImplementation(async (args) => {
+    let matches = checkIns.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    if ((args?.orderBy as any)?.checkedInAt === 'desc') {
+      matches = [...matches].sort((a, b) => b.checkedInAt.getTime() - a.checkedInAt.getTime());
+    }
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map((row) => {
+      const ticket = tickets.find((entry) => entry.id === row.ticketId);
+      const holder = ticket ? users.find((entry) => entry.id === ticket.userId) : undefined;
+      const registration = ticket
+        ? registrations.find((entry) => entry.id === ticket.registrationId)
+        : undefined;
+      const staff = users.find((entry) => entry.id === row.staffUserId);
+      return {
+        ...row,
+        staff: staff ? { id: staff.id, name: staff.name } : null,
+        ticket: ticket
+          ? {
+              ...ticket,
+              user: holder ? { id: holder.id, name: holder.name, email: holder.email } : null,
+              registration: registration ? { tier: registration.tier } : null,
+            }
+          : null,
+      };
+    }) as never;
+  });
+
+  vi.spyOn(prisma.checkIn, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    if (checkIns.some((row) => row.ticketId === data.ticketId)) throw uniqueError();
+    const row: MemoryCheckIn = {
+      id: data.id ?? crypto.randomUUID(),
+      ticketId: data.ticketId,
+      eventId: data.eventId,
+      staffUserId: data.staffUserId,
+      checkedInAt: data.checkedInAt ? new Date(data.checkedInAt) : new Date(),
+    };
+    checkIns.push(row);
+    return { ...row } as never;
+  });
+
+  vi.spyOn(prisma.paymentWebhookDelivery, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    if (webhookDeliveries.some((row) => row.id === data.id)) throw uniqueError();
+    const row: MemoryWebhookDelivery = {
+      id: data.id,
+      eventType: data.eventType,
+      razorpayOrderId: data.razorpayOrderId ?? null,
+      outcome: data.outcome,
+      createdAt: new Date(),
+    };
+    webhookDeliveries.push(row);
+    return { ...row } as never;
+  });
+
+  vi.spyOn(prisma.paymentWebhookDelivery, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = webhookDeliveries.find((row) => row.id === where.id);
+    if (!match) throw new Error('Webhook delivery not found');
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
     return { ...match } as never;
   });
 }

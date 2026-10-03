@@ -31,6 +31,29 @@ const envSchema = z.object({
     .default(isTest ? 4 : 12),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).max(1000).default(10),
   AUTH_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).max(3_600_000).default(900_000),
+  TICKET_ENCRYPTION_KEY:
+    process.env.NODE_ENV === 'production'
+      ? z.string().min(32, 'TICKET_ENCRYPTION_KEY must be at least 32 characters')
+      : z
+          .string()
+          .min(32)
+          .default(
+            isTest
+              ? 'test-only-ticket-encryption-key-0001'
+              : 'dev-only-ticket-encryption-key-change',
+          ),
+  RAZORPAY_KEY_ID: z
+    .string()
+    .optional()
+    .transform((value) => (value && value.trim().length > 0 ? value.trim() : undefined)),
+  RAZORPAY_KEY_SECRET: z
+    .string()
+    .optional()
+    .transform((value) => (value && value.trim().length > 0 ? value.trim() : undefined)),
+  RAZORPAY_WEBHOOK_SECRET: z
+    .string()
+    .optional()
+    .transform((value) => (value && value.trim().length > 0 ? value.trim() : undefined)),
 });
 
 export type EnvConfig = z.infer<typeof envSchema> & {

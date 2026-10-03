@@ -51,7 +51,9 @@ export function createApp(): Express {
     next();
   });
 
-  // 4. Body Parsers with strict size limits
+  // 4. Body parsers. The Razorpay webhook needs the exact raw bytes for signature
+  // verification, so that one path is parsed before the JSON parser runs.
+  app.use(`${env.API_PREFIX}/payments/webhook`, express.raw({ type: '*/*', limit: '100kb' }));
   app.use(express.json({ limit: '100kb' }));
   app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 

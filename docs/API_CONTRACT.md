@@ -313,3 +313,99 @@ There is no API for changing a role. Privileged roles are assigned directly in t
 - Do not send `role` on registration. Registration cannot create an admin.
 - Use HTTPS in deployed environments. Tokens are bearer credentials, not cookies, so this API does not use CSRF cookies.
 - Password hashes, refresh-token hashes, and token versions are never returned.
+
+## 6. Phase 03 — registrations, payments, tickets, and check-in
+
+All protected routes use `Authorization: Bearer <access token>`. List endpoints accept `page` (default 1) and `limit` (default 20, max 100) and return `pagination: { total, page, limit, totalPages }`.
+
+Monetary amounts on these routes are integer **paise**. Event `memberPrice` and `standardPrice` remain integer **INR rupees**. The server multiplies by 100. Clients must not submit an amount, currency, user id, or payment status.
+
+There is no `registrationDeadline` column. A `PUBLISHED` event accepts registrations until `startsAt`. `totalCapacity: null` means unlimited. An `ACTIVE` membership whose `validUntil` is still in the future receives `memberPrice`; every other user pays `standardPrice`. A zero amount confirms immediately and issues a ticket. A positive amount stays `PENDING_PAYMENT` until a captured Razorpay payment is verified.
+
+A user may have only one `PENDING_PAYMENT` or `CONFIRMED` registration per event. After `CANCELLED` or `EXPIRED`, they may register again. Cancelling a checked-in registration is rejected.
+
+### 6.1 Permission matrix
+
+| Action | Who |
+|---|---|
+| Register, create a payment order, verify a payment | Any active authenticated user, for their own registration only |
+| `GET /api/registrations/me`, `GET /api/tickets/me`, `GET /api/tickets/:id/qr` | `tickets.read_own` (every role) |
+| `GET /api/events/:eventId/registrations` | `events.registrations.read` and the event organizer, or `events.manage_all` (ADMIN) |
+| Cancel another user's registration | `events.registrations.manage` and the same event scope. Owners can cancel their own |
+| `GET /api/payments` | `payments.read` (ADMIN, TREASURER) |
+| Validate a ticket | `tickets.validate` and event organizer, or ADMIN |
+| Check in and read attendance | `attendance.manage` / `attendance.read` and event organizer, or ADMIN |
+| Webhook | No JWT. `X-Razorpay-Signature` over the raw body using `RAZORPAY_WEBHOOK_SECRET` |
+
+EVENT_MANAGER can manage only events they organize. TREASURER cannot list registrations or check people in. A member cannot check themselves in.
+
+### 6.2 Register
+
+- **Method**: `POST`
+- **Path**: `/api/events/:eventId/registrations`
+- **Auth**: bearer token. The user id is taken from the token.
+- **201**: `data.registration`, `data.ticket` (free events, including `qrToken` and `qrDataUrl`), `data.payment` (`null` until an order is created)
+- **401** `UNAUTHORIZED`
+- **404** `NOT_FOUND`: missing event, or a non-published event hidden from the caller
+- **400** `EVENT_NOT_OPEN` or `REGISTRATION_CLOSED`
+- **409** `ALREADY_REGISTERED` or `CAPACITY_REACHED`
+
+### 6.3 Read registrations
+
+- `GET /api/registrations/me` — own rows, with event summary and ticket status. No QR token.
+- `GET /api/registrations/:registrationId` — owner, or staff allowed to manage that event. Anyone else receives **404**, including when the row exists.
+- `GET /api/events/:eventId/registrations` — staff roster. Query `status` optional. Ticket tokens are omitted.
+- `POST /api/registrations/:registrationId/cancel` — owner or managing staff. Open payments are marked `FAILED`. A paid payment stays `PAID` until a refund webhook. The seat is released.
+
+### 6.4 Payment order
+
+- **Method**: `POST`
+- **Path**: `/api/registrations/:registrationId/payment-order`
+- **Auth**: owner of the registration
+- **201**: new order. `data.payment` includes `razorpayOrderId`, `amountPaise`, `currency`, `status: CREATED`, and public `keyId`
+- **200**: an open order already exists (`data.alreadyExisted: true`)
+- **404**: missing registration or another user's registration
+- **409** `ALREADY_CONFIRMED` or `REGISTRATION_NOT_PAYABLE`
+- **503** `SERVICE_UNAVAILABLE`: Razorpay is not configured or the provider request failed
+
+The key secret is never returned.
+
+### 6.5 Verify payment
+
+- **Method**: `POST`
+- **Path**: `/api/payments/verify`
+- **Body**: `{ "razorpay_order_id", "razorpay_payment_id", "razorpay_signature" }`
+- **200**: signature valid, provider payment is `captured`, amount and currency match the stored order. Registration becomes `CONFIRMED` and one ticket is issued. Repeating the same request returns the same ticket.
+- **400** `INVALID_SIGNATURE`: state is not changed
+- **404**: unknown order, or the order belongs to someone else
+- **409** `PAYMENT_MISMATCH`, `PAYMENT_PENDING`, `PAYMENT_FAILED`, `PAYMENT_ALREADY_COMPLETED`
+- **503**: provider fetch failed
+
+A frontend "payment successful" message is not accepted. Pending and failed provider statuses do not issue tickets.
+
+### 6.6 Webhook
+
+- **Method**: `POST`
+- **Path**: `/api/payments/webhook`
+- **Auth**: none. Header `X-Razorpay-Signature` is HMAC-SHA256 of the raw body with `RAZORPAY_WEBHOOK_SECRET` (not the checkout key secret). `X-Razorpay-Event-Id` is the idempotency key.
+- **200**: `{ duplicate, ignored, outcome }` for `payment.captured`, `order.paid`, `payment.failed`, `refund.processed`, and ignored event types
+- **400** `INVALID_SIGNATURE` or a signed payload that cannot be parsed
+- A `payment.failed` delivery does not downgrade `PAID`. A duplicate event id does not issue a second ticket.
+- `refund.processed` marks a full refund `REFUNDED` and cancels an unused ticket. Partial refunds are ignored. A ticket that was already checked in stays `USED`.
+
+### 6.7 Tickets, validation, and check-in
+
+- `GET /api/tickets/me` — own tickets. `qrAvailable` is true for `ISSUED` and `USED`.
+- `GET /api/tickets/:ticketId` — owner, or check-in staff for that event. Otherwise **404**.
+- `GET /api/tickets/:ticketId/qr` — owner only. Returns `qrToken` and `qrDataUrl`. The QR payload is only the opaque `cf_` token.
+- `POST /api/events/:eventId/tickets/validate` body `{ "token" }` — does not change state. `data.result` is `VALID`, `USED`, `CANCELLED`, `UNPAID`, `WRONG_EVENT`, or `INVALID`.
+- `POST /api/events/:eventId/check-in` body `{ "token" }`
+  - **200** `data.result = CHECKED_IN`
+  - **409** `ALREADY_CHECKED_IN`, `TICKET_CANCELLED`, `TICKET_UNPAID`, `TICKET_EVENT_MISMATCH`, `EVENT_NOT_OPEN`
+  - **404** `TICKET_INVALID`
+  - **403** missing `attendance.manage`, or the caller does not organize the event
+  - **422** malformed token
+- `GET /api/events/:eventId/attendance` — paginated check-ins for authorized staff
+- `GET /api/payments` and `GET /api/payments/:paymentId` — finance read. A payment that is not yours is **404** unless the caller has `payments.read`.
+
+Check-in updates the ticket from `ISSUED` to `USED` only when that is still its status, and inserts one `check_ins` row per ticket. The second request cannot succeed.
