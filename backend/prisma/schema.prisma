@@ -1,0 +1,279 @@
+// Prisma Schema for CampusFlow (PostgreSQL hosted on Neon)
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// Baseline system health check model for Phase 00 foundation.
+model SystemHealthCheck {
+  id        String   @id @default(uuid())
+  status    String   @default("OK")
+  createdAt DateTime @default(now())
+
+  @@map("system_health_checks")
+}
+
+/// Canonical four roles for CampusFlow RBAC:
+/// ADMIN (Admin / Organization President)
+/// MEMBER (Club Member / Student)
+/// EVENT_MANAGER (Event Manager / Volunteer)
+/// TREASURER (Treasurer)
+enum UserRole {
+  ADMIN
+  MEMBER
+  EVENT_MANAGER
+  TREASURER
+}
+
+enum AccountStatus {
+  active
+  disabled
+}
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  REJECTED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum RegistrationStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum TicketStatus {
+  ISSUED
+  USED
+  CANCELLED
+}
+
+enum TicketTier {
+  MEMBER
+  STANDARD
+}
+
+/// Application user. Password hashes and token versions are never returned by the API.
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  name            String
+  passwordHash    String
+  role            UserRole       @default(MEMBER)
+  status          AccountStatus  @default(active)
+  tokenVersion    Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  refreshTokens     RefreshToken[]
+  memberships       Membership[]
+  organizedEvents   Event[]
+  registrations     EventRegistration[]
+  tickets           Ticket[]             @relation("TicketHolder")
+  payments          Payment[]
+  checkInsPerformed CheckIn[]            @relation("CheckInStaff")
+  ticketsCheckedIn  Ticket[]             @relation("TicketCheckedInBy")
+
+  @@index([role])
+  @@map("users")
+}
+
+/// Opaque refresh tokens stored only as SHA-256 hashes. Rotation keeps the same familyId.
+model RefreshToken {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String    @unique
+  familyId     String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_tokens")
+}
+
+/// Organization membership pass for club members.
+model Membership {
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberCode   String           @unique
+  planName     String
+  status       MembershipStatus @default(PENDING)
+  startDate    DateTime         @default(now())
+  validUntil   DateTime
+  renewalCount Int              @default(0)
+  perks        String[]         @default([])
+  adminNotes   String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("memberships")
+}
+
+/// Club events, workshops, galas, and mixers.
+model Event {
+  id              String      @id @default(uuid())
+  title           String
+  description     String
+  venue           String
+  category        String?
+  imageUrl        String?
+  startsAt        DateTime
+  endsAt          DateTime
+  status          EventStatus @default(DRAFT)
+  memberPrice     Int         @default(0)
+  standardPrice   Int         @default(0)
+  totalCapacity   Int?
+  registeredCount Int         @default(0)
+  isFeatured      Boolean     @default(false)
+  organizerId     String
+  organizer       User                @relation(fields: [organizerId], references: [id], onDelete: Restrict)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  registrations   EventRegistration[]
+  tickets         Ticket[]
+  payments        Payment[]
+  checkIns        CheckIn[]
+
+  @@index([organizerId])
+  @@index([status])
+  @@index([startsAt])
+  @@map("events")
+}
+
+/// One row per user per event while the registration is pending or confirmed.
+/// Cancelled and expired rows are kept for history. A partial unique index in the
+/// Phase 03 migration enforces a single active row; that predicate cannot be
+/// expressed in the Prisma schema language.
+model EventRegistration {
+  id          String             @id @default(uuid())
+  eventId     String
+  event       Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      RegistrationStatus
+  tier        TicketTier
+  amountPaise Int
+  currency    String             @default("INR")
+  cancelledAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  ticket      Ticket?
+  payments    Payment[]
+
+  @@index([userId])
+  @@index([eventId, status])
+  @@map("event_registrations")
+}
+
+/// Server-created Razorpay order. Card data is never stored.
+/// Partial unique indexes keep a single open attempt and a single settled payment.
+model Payment {
+  id                  String             @id @default(uuid())
+  registrationId      String
+  registration        EventRegistration  @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  eventId             String
+  event               Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  userId              String
+  user                User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  razorpayOrderId     String?            @unique
+  razorpayPaymentId   String?            @unique
+  amountPaise         Int
+  currency            String             @default("INR")
+  status              PaymentStatus      @default(CREATED)
+  signatureVerifiedAt DateTime?
+  failureReason       String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([registrationId])
+  @@index([userId])
+  @@index([eventId])
+  @@index([status])
+  @@map("payments")
+}
+
+/// Opaque QR credential. The raw token is stored only as a hash plus an
+/// AES-GCM ciphertext so it can be shown again to the owner.
+model Ticket {
+  id                           String            @id @default(uuid())
+  registrationId               String            @unique
+  registration                 EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  eventId                      String
+  event                        Event             @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  userId                       String
+  user                         User              @relation("TicketHolder", fields: [userId], references: [id], onDelete: Cascade)
+  status                       TicketStatus      @default(ISSUED)
+  verificationTokenHash        String            @unique
+  encryptedVerificationToken   String
+  issuedAt                     DateTime          @default(now())
+  checkedInAt                  DateTime?
+  checkedInById                String?
+  checkedInBy                  User?             @relation("TicketCheckedInBy", fields: [checkedInById], references: [id], onDelete: SetNull)
+  checkIn                      CheckIn?
+  createdAt                    DateTime          @default(now())
+  updatedAt                    DateTime          @updatedAt
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+  @@map("tickets")
+}
+
+/// Attendance row. ticketId is unique so a ticket can be checked in once.
+model CheckIn {
+  id          String   @id @default(uuid())
+  ticketId    String   @unique
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  staffUserId String
+  staff       User     @relation("CheckInStaff", fields: [staffUserId], references: [id], onDelete: Restrict)
+  checkedInAt DateTime @default(now())
+
+  @@index([eventId])
+  @@index([staffUserId])
+  @@map("check_ins")
+}
+
+/// Idempotency record for Razorpay webhook deliveries. The id is the provider event id.
+model PaymentWebhookDelivery {
+  id              String   @id
+  eventType       String
+  razorpayOrderId String?
+  outcome         String
+  createdAt       DateTime @default(now())
+
+  @@index([razorpayOrderId])
+  @@map("payment_webhook_deliveries")
+}
