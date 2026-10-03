@@ -6,6 +6,8 @@
 
 🚧 **CampusFlow is actively under development.**
 
+Link 🔗 : https://campus-flow-self.vercel.app/
+
 ---
 
 ## 💡 What is CampusFlow?
