@@ -10,6 +10,13 @@ import {
   PaymentStatus,
   TicketStatus,
   TicketTier,
+  OpportunityStatus,
+  VolunteerSignupStatus,
+  FundraiserStatus,
+  ContributionStatus,
+  ExpenseStatus,
+  ExpenseCategory,
+  ReimbursementStatus,
 } from '@prisma/client';
 
 export interface MemoryUser {
@@ -200,11 +207,124 @@ export interface MemoryAnnouncement {
   updatedAt: Date;
 }
 
+export interface MemoryVolunteerOpportunity {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  startsAt: Date;
+  endsAt: Date;
+  applicationDeadline: Date | null;
+  capacity: number;
+  registeredCount: number;
+  status: OpportunityStatus;
+  category: string | null;
+  eligibility: string | null;
+  eventId: string | null;
+  organizerId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryVolunteerRegistration {
+  id: string;
+  opportunityId: string;
+  userId: string;
+  status: VolunteerSignupStatus;
+  notes: string | null;
+  attendanceNotes: string | null;
+  attendedAt: Date | null;
+  attendedById: string | null;
+  cancelledAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryFundraiser {
+  id: string;
+  title: string;
+  description: string;
+  purpose: string | null;
+  goalAmount: number;
+  currency: string;
+  status: FundraiserStatus;
+  startsAt: Date | null;
+  deadline: Date | null;
+  beneficiary: string | null;
+  creatorId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryFundraiserContribution {
+  id: string;
+  fundraiserId: string;
+  donorId: string | null;
+  donorName: string;
+  donorEmail: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  status: ContributionStatus;
+  razorpayOrderId: string | null;
+  razorpayPaymentId: string | null;
+  failureReason: string | null;
+  verifiedAt: Date | null;
+  idempotencyKey: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryExpense {
+  id: string;
+  title: string;
+  description: string;
+  amount: number;
+  currency: string;
+  category: ExpenseCategory;
+  expenseDate: Date;
+  receiptUrl: string | null;
+  status: ExpenseStatus;
+  submitterId: string;
+  reviewerId: string | null;
+  reviewedAt: Date | null;
+  rejectionReason: string | null;
+  eventId: string | null;
+  fundraiserId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryReimbursement {
+  id: string;
+  expenseId: string;
+  claimantId: string;
+  amount: number;
+  currency: string;
+  status: ReimbursementStatus;
+  reviewerId: string | null;
+  reviewedAt: Date | null;
+  rejectionReason: string | null;
+  settledById: string | null;
+  settledAt: Date | null;
+  settlementReference: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const products: MemoryProduct[] = [];
 const variants: MemoryVariant[] = [];
 const merchOrders: MemoryMerchOrder[] = [];
 const merchItems: MemoryMerchItem[] = [];
 const announcements: MemoryAnnouncement[] = [];
+const volunteerOpportunities: MemoryVolunteerOpportunity[] = [];
+const volunteerRegistrations: MemoryVolunteerRegistration[] = [];
+const fundraisers: MemoryFundraiser[] = [];
+const fundraiserContributions: MemoryFundraiserContribution[] = [];
+const expenses: MemoryExpense[] = [];
+const reimbursements: MemoryReimbursement[] = [];
+
 let refreshReadWaiters: Array<() => void> | null = null;
 let refreshReadTarget = 0;
 let transactionQueue: Promise<void> = Promise.resolve();
@@ -224,6 +344,12 @@ export function resetMemoryDb(): void {
   merchOrders.length = 0;
   merchItems.length = 0;
   announcements.length = 0;
+  volunteerOpportunities.length = 0;
+  volunteerRegistrations.length = 0;
+  fundraisers.length = 0;
+  fundraiserContributions.length = 0;
+  expenses.length = 0;
+  reimbursements.length = 0;
   refreshReadWaiters = null;
   refreshReadTarget = 0;
   transactionQueue = Promise.resolve();
@@ -479,6 +605,12 @@ function snapshotState() {
     merchOrders: merchOrders.map((row) => ({ ...row })),
     merchItems: merchItems.map((row) => ({ ...row })),
     announcements: announcements.map((row) => ({ ...row })),
+    volunteerOpportunities: volunteerOpportunities.map((row) => ({ ...row })),
+    volunteerRegistrations: volunteerRegistrations.map((row) => ({ ...row })),
+    fundraisers: fundraisers.map((row) => ({ ...row })),
+    fundraiserContributions: fundraiserContributions.map((row) => ({ ...row })),
+    expenses: expenses.map((row) => ({ ...row })),
+    reimbursements: reimbursements.map((row) => ({ ...row })),
   };
 }
 
@@ -508,6 +640,36 @@ function restoreState(state: ReturnType<typeof snapshotState>): void {
     0,
     announcements.length,
     ...state.announcements.map((row) => ({ ...row })),
+  );
+  volunteerOpportunities.splice(
+    0,
+    volunteerOpportunities.length,
+    ...state.volunteerOpportunities.map((row) => ({ ...row })),
+  );
+  volunteerRegistrations.splice(
+    0,
+    volunteerRegistrations.length,
+    ...state.volunteerRegistrations.map((row) => ({ ...row })),
+  );
+  fundraisers.splice(
+    0,
+    fundraisers.length,
+    ...state.fundraisers.map((row) => ({ ...row })),
+  );
+  fundraiserContributions.splice(
+    0,
+    fundraiserContributions.length,
+    ...state.fundraiserContributions.map((row) => ({ ...row })),
+  );
+  expenses.splice(
+    0,
+    expenses.length,
+    ...state.expenses.map((row) => ({ ...row })),
+  );
+  reimbursements.splice(
+    0,
+    reimbursements.length,
+    ...state.reimbursements.map((row) => ({ ...row })),
   );
 }
 
@@ -1092,6 +1254,20 @@ export function installPrismaMemory(): void {
     return (matches[0] ? { ...matches[0] } : null) as never;
   });
 
+  const presentPayment = (row: MemoryPayment, args?: any) => {
+    const include = args?.include;
+    const result: any = { ...row };
+    if (include?.user) {
+      const user = users.find((entry) => entry.id === row.userId);
+      result.user = user ? { id: user.id, name: user.name, email: user.email } : null;
+    }
+    if (include?.event) {
+      const event = events.find((entry) => entry.id === row.eventId);
+      result.event = event ? { id: event.id, title: event.title } : null;
+    }
+    return result;
+  };
+
   vi.spyOn(prisma.payment, 'findMany').mockImplementation(async (args) => {
     let matches = payments.filter((row) =>
       matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
@@ -1101,13 +1277,25 @@ export function installPrismaMemory(): void {
     }
     const skip = args?.skip ?? 0;
     const take = args?.take ?? matches.length;
-    return matches.slice(skip, skip + take).map((row) => ({ ...row })) as never;
+    return matches.slice(skip, skip + take).map((row) => presentPayment(row, args)) as never;
   });
 
   vi.spyOn(prisma.payment, 'count').mockImplementation(async (args) => {
     return payments.filter((row) =>
       matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
     ).length as never;
+  });
+
+  vi.spyOn(prisma.payment, 'aggregate').mockImplementation(async (args) => {
+    const matches = payments.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const sum = matches.reduce((acc, curr) => acc + (curr.amountPaise ?? 0), 0);
+    const count = matches.length;
+    return {
+      _sum: { amountPaise: sum },
+      _count: { id: count },
+    } as never;
   });
 
   vi.spyOn(prisma.payment, 'create').mockImplementation(async (args) => {
@@ -1537,6 +1725,18 @@ export function installPrismaMemory(): void {
     return { count } as never;
   });
 
+  vi.spyOn(prisma.merchOrder, 'aggregate').mockImplementation(async (args) => {
+    const matches = merchOrders.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const sum = matches.reduce((acc, curr) => acc + (curr.totalAmount ?? 0), 0);
+    const count = matches.length;
+    return {
+      _sum: { totalAmount: sum },
+      _count: { id: count },
+    } as never;
+  });
+
   const withAuthor = (row: MemoryAnnouncement) => {
     const author = users.find((entry) => entry.id === row.authorId);
     return {
@@ -1602,6 +1802,559 @@ export function installPrismaMemory(): void {
     if ((args.data as any).publishedAt) match.publishedAt = new Date((args.data as any).publishedAt);
     return withAuthor(match) as never;
   });
+
+  // VOLUNTEER OPPORTUNITY
+  const withOppRelations = (opp: MemoryVolunteerOpportunity) => {
+    const organizer = users.find((u) => u.id === opp.organizerId);
+    const event = opp.eventId ? events.find((e) => e.id === opp.eventId) : null;
+    return {
+      ...opp,
+      organizer: organizer
+        ? { id: organizer.id, name: organizer.name, email: organizer.email, role: organizer.role }
+        : { id: opp.organizerId, name: 'Organizer', email: 'org@campus.edu', role: 'ADMIN' },
+      event: event
+        ? { id: event.id, title: event.title, startsAt: event.startsAt, venue: event.venue }
+        : null,
+    };
+  };
+
+  vi.spyOn(prisma.volunteerOpportunity, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const now = new Date();
+    const row: MemoryVolunteerOpportunity = {
+      id: crypto.randomUUID(),
+      title: data.title,
+      description: data.description,
+      location: data.location,
+      startsAt: new Date(data.startsAt),
+      endsAt: new Date(data.endsAt),
+      applicationDeadline: data.applicationDeadline ? new Date(data.applicationDeadline) : null,
+      capacity: data.capacity,
+      registeredCount: data.registeredCount ?? 0,
+      status: data.status ?? 'DRAFT',
+      category: data.category ?? null,
+      eligibility: data.eligibility ?? null,
+      eventId: data.eventId ?? null,
+      organizerId: data.organizerId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    volunteerOpportunities.push(row);
+    return withOppRelations(row) as never;
+  });
+
+  vi.spyOn(prisma.volunteerOpportunity, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as { id: string };
+    const match = volunteerOpportunities.find((r) => r.id === where.id);
+    return (match ? withOppRelations(match) : null) as never;
+  });
+
+  vi.spyOn(prisma.volunteerOpportunity, 'findMany').mockImplementation(async (args) => {
+    const matches = volunteerOpportunities.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map(withOppRelations) as never;
+  });
+
+  vi.spyOn(prisma.volunteerOpportunity, 'count').mockImplementation(async (args) => {
+    return volunteerOpportunities.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.volunteerOpportunity, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = volunteerOpportunities.find((r) => r.id === where.id);
+    if (!match) throw new Error('Volunteer opportunity not found');
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
+    return withOppRelations(match) as never;
+  });
+
+  vi.spyOn(prisma.volunteerOpportunity, 'updateMany').mockImplementation(async (args) => {
+    const where = args.where as any;
+    let count = 0;
+    for (const row of volunteerOpportunities) {
+      if (!matchesWhere(row as unknown as Record<string, unknown>, where)) continue;
+      applyPatch(row as unknown as Record<string, any>, args.data as any);
+      count += 1;
+    }
+    return { count } as never;
+  });
+
+  // VOLUNTEER REGISTRATION
+  const withSignupRelations = (signup: MemoryVolunteerRegistration) => {
+    const user = users.find((u) => u.id === signup.userId);
+    const attendedBy = signup.attendedById ? users.find((u) => u.id === signup.attendedById) : null;
+    const opp = volunteerOpportunities.find((o) => o.id === signup.opportunityId);
+    return {
+      ...signup,
+      user: user
+        ? { id: user.id, name: user.name, email: user.email, role: user.role }
+        : { id: signup.userId, name: 'User', email: 'user@campus.edu', role: 'MEMBER' },
+      attendedBy: attendedBy ? { id: attendedBy.id, name: attendedBy.name } : null,
+      opportunity: opp
+        ? {
+            id: opp.id,
+            title: opp.title,
+            description: opp.description,
+            location: opp.location,
+            startsAt: opp.startsAt,
+            endsAt: opp.endsAt,
+            status: opp.status,
+            category: opp.category,
+            capacity: opp.capacity,
+            registeredCount: opp.registeredCount,
+          }
+        : null,
+    };
+  };
+
+  vi.spyOn(prisma.volunteerRegistration, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const now = new Date();
+    const row: MemoryVolunteerRegistration = {
+      id: crypto.randomUUID(),
+      opportunityId: data.opportunityId,
+      userId: data.userId,
+      status: data.status ?? 'REGISTERED',
+      notes: data.notes ?? null,
+      attendanceNotes: null,
+      attendedAt: null,
+      attendedById: null,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    volunteerRegistrations.push(row);
+    return withSignupRelations(row) as never;
+  });
+
+  vi.spyOn(prisma.volunteerRegistration, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const match = volunteerRegistrations.find((r) => {
+      if (where.id) return r.id === where.id;
+      if (where.opportunityId_userId) {
+        return (
+          r.opportunityId === where.opportunityId_userId.opportunityId &&
+          r.userId === where.opportunityId_userId.userId
+        );
+      }
+      return false;
+    });
+    return (match ? withSignupRelations(match) : null) as never;
+  });
+
+  vi.spyOn(prisma.volunteerRegistration, 'findMany').mockImplementation(async (args) => {
+    const matches = volunteerRegistrations.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map(withSignupRelations) as never;
+  });
+
+  vi.spyOn(prisma.volunteerRegistration, 'count').mockImplementation(async (args) => {
+    return volunteerRegistrations.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.volunteerRegistration, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = volunteerRegistrations.find((r) => r.id === where.id);
+    if (!match) throw new Error('Registration not found');
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
+    return withSignupRelations(match) as never;
+  });
+
+  // FUNDRAISER
+  const withFundraiserRelations = (f: MemoryFundraiser) => {
+    const creator = users.find((u) => u.id === f.creatorId);
+    return {
+      ...f,
+      creator: creator
+        ? { id: creator.id, name: creator.name, email: creator.email }
+        : { id: f.creatorId, name: 'Creator', email: 'creator@campus.edu' },
+    };
+  };
+
+  vi.spyOn(prisma.fundraiser, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const now = new Date();
+    const row: MemoryFundraiser = {
+      id: crypto.randomUUID(),
+      title: data.title,
+      description: data.description,
+      purpose: data.purpose ?? null,
+      goalAmount: data.goalAmount,
+      currency: data.currency ?? 'INR',
+      status: data.status ?? 'DRAFT',
+      startsAt: data.startsAt ? new Date(data.startsAt) : null,
+      deadline: data.deadline ? new Date(data.deadline) : null,
+      beneficiary: data.beneficiary ?? null,
+      creatorId: data.creatorId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    fundraisers.push(row);
+    return withFundraiserRelations(row) as never;
+  });
+
+  vi.spyOn(prisma.fundraiser, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as { id: string };
+    const match = fundraisers.find((r) => r.id === where.id);
+    return (match ? withFundraiserRelations(match) : null) as never;
+  });
+
+  vi.spyOn(prisma.fundraiser, 'findMany').mockImplementation(async (args) => {
+    const matches = fundraisers.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map(withFundraiserRelations) as never;
+  });
+
+  vi.spyOn(prisma.fundraiser, 'count').mockImplementation(async (args) => {
+    return fundraisers.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.fundraiser, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = fundraisers.find((r) => r.id === where.id);
+    if (!match) throw new Error('Fundraiser not found');
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
+    return withFundraiserRelations(match) as never;
+  });
+
+  // FUNDRAISER CONTRIBUTION
+  const withContribRelations = (c: MemoryFundraiserContribution) => {
+    const donor = c.donorId ? users.find((u) => u.id === c.donorId) : null;
+    const fundraiser = fundraisers.find((f) => f.id === c.fundraiserId);
+    return {
+      ...c,
+      donor: donor ? { id: donor.id, name: donor.name, email: donor.email } : null,
+      fundraiser: fundraiser
+        ? {
+            id: fundraiser.id,
+            title: fundraiser.title,
+            goalAmount: fundraiser.goalAmount,
+            currency: fundraiser.currency,
+            status: fundraiser.status,
+          }
+        : null,
+    };
+  };
+
+  vi.spyOn(prisma.fundraiserContribution, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const now = new Date();
+    const row: MemoryFundraiserContribution = {
+      id: crypto.randomUUID(),
+      fundraiserId: data.fundraiserId,
+      donorId: data.donorId ?? null,
+      donorName: data.donorName,
+      donorEmail: data.donorEmail,
+      amount: data.amount,
+      currency: data.currency ?? 'INR',
+      paymentMethod: data.paymentMethod ?? 'ONLINE',
+      status: data.status ?? 'PENDING',
+      razorpayOrderId: data.razorpayOrderId ?? null,
+      razorpayPaymentId: data.razorpayPaymentId ?? null,
+      failureReason: null,
+      verifiedAt: data.verifiedAt ? new Date(data.verifiedAt) : null,
+      idempotencyKey: data.idempotencyKey ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    fundraiserContributions.push(row);
+    return withContribRelations(row) as never;
+  });
+
+  vi.spyOn(prisma.fundraiserContribution, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const match = fundraiserContributions.find((r) => {
+      if (where.id) return r.id === where.id;
+      if (where.razorpayOrderId) return r.razorpayOrderId === where.razorpayOrderId;
+      if (where.idempotencyKey) return r.idempotencyKey === where.idempotencyKey;
+      return false;
+    });
+    return (match ? withContribRelations(match) : null) as never;
+  });
+
+  vi.spyOn(prisma.fundraiserContribution, 'findMany').mockImplementation(async (args) => {
+    const matches = fundraiserContributions.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map(withContribRelations) as never;
+  });
+
+  vi.spyOn(prisma.fundraiserContribution, 'count').mockImplementation(async (args) => {
+    return fundraiserContributions.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.fundraiserContribution, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = fundraiserContributions.find((r) => r.id === where.id);
+    if (!match) throw new Error('Contribution not found');
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
+    if ((args.data as any).verifiedAt) match.verifiedAt = new Date((args.data as any).verifiedAt);
+    return withContribRelations(match) as never;
+  });
+
+  vi.spyOn(prisma.fundraiserContribution, 'aggregate').mockImplementation(async (args) => {
+    const matches = fundraiserContributions.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const sum = matches.reduce((acc, curr) => acc + curr.amount, 0);
+    const count = matches.length;
+    const avg = count > 0 ? sum / count : 0;
+    return {
+      _sum: { amount: sum },
+      _count: { id: count },
+      _avg: { amount: avg },
+    } as never;
+  });
+
+  vi.spyOn(prisma.fundraiserContribution, 'groupBy').mockImplementation(async (args) => {
+    const matches = fundraiserContributions.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const groups = new Map<string, { sum: number; count: number }>();
+    for (const m of matches) {
+      const key = m.fundraiserId;
+      const g = groups.get(key) ?? { sum: 0, count: 0 };
+      g.sum += m.amount;
+      g.count += 1;
+      groups.set(key, g);
+    }
+    const result = Array.from(groups.entries()).map(([fundraiserId, val]) => ({
+      fundraiserId,
+      _sum: { amount: val.sum },
+      _count: { id: val.count },
+    }));
+    return result as never;
+  });
+
+  // EXPENSE
+  const withExpenseRelations = (exp: MemoryExpense) => {
+    const submitter = users.find((u) => u.id === exp.submitterId);
+    const reviewer = exp.reviewerId ? users.find((u) => u.id === exp.reviewerId) : null;
+    const event = exp.eventId ? events.find((e) => e.id === exp.eventId) : null;
+    const fundraiser = exp.fundraiserId ? fundraisers.find((f) => f.id === exp.fundraiserId) : null;
+    const reimb = reimbursements.find((r) => r.expenseId === exp.id);
+    return {
+      ...exp,
+      submitter: submitter
+        ? { id: submitter.id, name: submitter.name, email: submitter.email, role: submitter.role }
+        : { id: exp.submitterId, name: 'Submitter', email: 'sub@campus.edu', role: 'MEMBER' },
+      reviewer: reviewer ? { id: reviewer.id, name: reviewer.name, email: reviewer.email } : null,
+      event: event ? { id: event.id, title: event.title } : null,
+      fundraiser: fundraiser ? { id: fundraiser.id, title: fundraiser.title } : null,
+      reimbursement: reimb ? { ...reimb } : null,
+    };
+  };
+
+  vi.spyOn(prisma.expense, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const now = new Date();
+    const row: MemoryExpense = {
+      id: crypto.randomUUID(),
+      title: data.title,
+      description: data.description,
+      amount: data.amount,
+      currency: data.currency ?? 'INR',
+      category: data.category ?? 'OTHER',
+      expenseDate: new Date(data.expenseDate),
+      receiptUrl: data.receiptUrl ?? null,
+      status: data.status ?? 'PENDING',
+      submitterId: data.submitterId,
+      reviewerId: null,
+      reviewedAt: null,
+      rejectionReason: null,
+      eventId: data.eventId ?? null,
+      fundraiserId: data.fundraiserId ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    expenses.push(row);
+    return withExpenseRelations(row) as never;
+  });
+
+  vi.spyOn(prisma.expense, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as { id: string };
+    const match = expenses.find((r) => r.id === where.id);
+    return (match ? withExpenseRelations(match) : null) as never;
+  });
+
+  vi.spyOn(prisma.expense, 'findMany').mockImplementation(async (args) => {
+    const matches = expenses.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map(withExpenseRelations) as never;
+  });
+
+  vi.spyOn(prisma.expense, 'count').mockImplementation(async (args) => {
+    return expenses.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.expense, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = expenses.find((r) => r.id === where.id);
+    if (!match) throw new Error('Expense not found');
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
+    if ((args.data as any).reviewedAt) match.reviewedAt = new Date((args.data as any).reviewedAt);
+    return withExpenseRelations(match) as never;
+  });
+
+  vi.spyOn(prisma.expense, 'delete').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const idx = expenses.findIndex((r) => r.id === where.id);
+    if (idx !== -1) expenses.splice(idx, 1);
+    return { id: where.id } as never;
+  });
+
+  vi.spyOn(prisma.expense, 'aggregate').mockImplementation(async (args) => {
+    const matches = expenses.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const sum = matches.reduce((acc, curr) => acc + curr.amount, 0);
+    const count = matches.length;
+    return {
+      _sum: { amount: sum },
+      _count: { id: count },
+    } as never;
+  });
+
+  vi.spyOn(prisma.expense, 'groupBy').mockImplementation(async (args) => {
+    const matches = expenses.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const groups = new Map<string, { sum: number; count: number }>();
+    for (const m of matches) {
+      const key = m.category;
+      const g = groups.get(key) ?? { sum: 0, count: 0 };
+      g.sum += m.amount;
+      g.count += 1;
+      groups.set(key, g);
+    }
+    const result = Array.from(groups.entries()).map(([category, val]) => ({
+      category,
+      _sum: { amount: val.sum },
+      _count: { id: val.count },
+    }));
+    return result as never;
+  });
+
+  // REIMBURSEMENT
+  const withReimbRelations = (reimb: MemoryReimbursement) => {
+    const claimant = users.find((u) => u.id === reimb.claimantId);
+    const reviewer = reimb.reviewerId ? users.find((u) => u.id === reimb.reviewerId) : null;
+    const settledBy = reimb.settledById ? users.find((u) => u.id === reimb.settledById) : null;
+    const exp = expenses.find((e) => e.id === reimb.expenseId);
+    return {
+      ...reimb,
+      claimant: claimant
+        ? { id: claimant.id, name: claimant.name, email: claimant.email, role: claimant.role }
+        : { id: reimb.claimantId, name: 'Claimant', email: 'claim@campus.edu', role: 'MEMBER' },
+      reviewer: reviewer ? { id: reviewer.id, name: reviewer.name } : null,
+      settledBy: settledBy ? { id: settledBy.id, name: settledBy.name } : null,
+      expense: exp
+        ? {
+            id: exp.id,
+            title: exp.title,
+            description: exp.description,
+            amount: exp.amount,
+            category: exp.category,
+            expenseDate: exp.expenseDate,
+            receiptUrl: exp.receiptUrl,
+          }
+        : null,
+    };
+  };
+
+  vi.spyOn(prisma.reimbursement, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const now = new Date();
+    const row: MemoryReimbursement = {
+      id: crypto.randomUUID(),
+      expenseId: data.expenseId,
+      claimantId: data.claimantId,
+      amount: data.amount,
+      currency: data.currency ?? 'INR',
+      status: data.status ?? 'PENDING',
+      reviewerId: null,
+      reviewedAt: null,
+      rejectionReason: null,
+      settledById: null,
+      settledAt: null,
+      settlementReference: null,
+      notes: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    reimbursements.push(row);
+    return withReimbRelations(row) as never;
+  });
+
+  vi.spyOn(prisma.reimbursement, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const match = reimbursements.find((r) => {
+      if (where.id) return r.id === where.id;
+      if (where.expenseId) return r.expenseId === where.expenseId;
+      return false;
+    });
+    return (match ? withReimbRelations(match) : null) as never;
+  });
+
+  vi.spyOn(prisma.reimbursement, 'findMany').mockImplementation(async (args) => {
+    const matches = reimbursements.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map(withReimbRelations) as never;
+  });
+
+  vi.spyOn(prisma.reimbursement, 'count').mockImplementation(async (args) => {
+    return reimbursements.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.reimbursement, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = reimbursements.find((r) => r.id === where.id);
+    if (!match) throw new Error('Reimbursement not found');
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
+    if ((args.data as any).settledAt) match.settledAt = new Date((args.data as any).settledAt);
+    if ((args.data as any).reviewedAt) match.reviewedAt = new Date((args.data as any).reviewedAt);
+    return withReimbRelations(match) as never;
+  });
+
+  vi.spyOn(prisma.reimbursement, 'aggregate').mockImplementation(async (args) => {
+    const matches = reimbursements.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const sum = matches.reduce((acc, curr) => acc + curr.amount, 0);
+    const count = matches.length;
+    return {
+      _sum: { amount: sum },
+      _count: { id: count },
+    } as never;
+  });
 }
 
 export function memoryVariants(): MemoryVariant[] {
@@ -1615,3 +2368,28 @@ export function memoryMerchOrders(): MemoryMerchOrder[] {
 export function memoryAnnouncements(): MemoryAnnouncement[] {
   return announcements.map((row) => ({ ...row }));
 }
+
+export function memoryOpportunities(): MemoryVolunteerOpportunity[] {
+  return volunteerOpportunities.map((row) => ({ ...row }));
+}
+
+export function memorySignups(): MemoryVolunteerRegistration[] {
+  return volunteerRegistrations.map((row) => ({ ...row }));
+}
+
+export function memoryFundraisers(): MemoryFundraiser[] {
+  return fundraisers.map((row) => ({ ...row }));
+}
+
+export function memoryContributions(): MemoryFundraiserContribution[] {
+  return fundraiserContributions.map((row) => ({ ...row }));
+}
+
+export function memoryExpenses(): MemoryExpense[] {
+  return expenses.map((row) => ({ ...row }));
+}
+
+export function memoryReimbursements(): MemoryReimbursement[] {
+  return reimbursements.map((row) => ({ ...row }));
+}
+

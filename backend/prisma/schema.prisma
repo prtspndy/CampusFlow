@@ -120,6 +120,16 @@ model User {
   ticketsCheckedIn  Ticket[]             @relation("TicketCheckedInBy")
   merchOrders       MerchOrder[]
   announcements     Announcement[]
+  organizedOpportunities VolunteerOpportunity[]   @relation("VolunteerOpportunityOrganizer")
+  volunteerSignups       VolunteerRegistration[] @relation("VolunteerUserSignups")
+  markedAttendances      VolunteerRegistration[] @relation("VolunteerAttendanceMarker")
+  createdFundraisers     Fundraiser[]             @relation("FundraiserCreator")
+  fundraiserDonations    FundraiserContribution[] @relation("FundraiserDonor")
+  submittedExpenses      Expense[]                @relation("ExpenseSubmitter")
+  reviewedExpenses       Expense[]                @relation("ExpenseReviewer")
+  claimedReimbursements  Reimbursement[]          @relation("ReimbursementClaimant")
+  reviewedReimbursements Reimbursement[]          @relation("ReimbursementReviewer")
+  settledReimbursements  Reimbursement[]          @relation("ReimbursementSettler")
 
   @@index([role])
   @@map("users")
@@ -187,6 +197,8 @@ model Event {
   tickets         Ticket[]
   payments        Payment[]
   checkIns        CheckIn[]
+  volunteerOpportunities VolunteerOpportunity[]
+  expenses        Expense[]
 
   @@index([organizerId])
   @@index([status])
@@ -388,3 +400,215 @@ model Announcement {
   @@index([authorId])
   @@map("announcements")
 }
+
+enum OpportunityStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  CANCELLED
+}
+
+enum VolunteerSignupStatus {
+  REGISTERED
+  ATTENDED
+  CANCELLED
+  NO_SHOW
+}
+
+enum FundraiserStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  CANCELLED
+}
+
+enum ContributionStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  REFUNDED
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ExpenseCategory {
+  SUPPLIES
+  TRAVEL
+  VENUE
+  REFRESHMENTS
+  EQUIPMENT
+  MARKETING
+  OTHER
+}
+
+enum ReimbursementStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SETTLED
+}
+
+/// Volunteer opportunities for club events and community initiatives.
+model VolunteerOpportunity {
+  id                  String                 @id @default(uuid())
+  title               String
+  description         String
+  location            String
+  startsAt            DateTime
+  endsAt              DateTime
+  applicationDeadline DateTime?
+  capacity            Int
+  registeredCount     Int                    @default(0)
+  status              OpportunityStatus      @default(DRAFT)
+  category            String?
+  eligibility         String?
+  eventId             String?
+  event               Event?                 @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  organizerId         String
+  organizer           User                   @relation("VolunteerOpportunityOrganizer", fields: [organizerId], references: [id], onDelete: Restrict)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  signups             VolunteerRegistration[]
+
+  @@index([status, startsAt])
+  @@index([organizerId])
+  @@index([eventId])
+  @@map("volunteer_opportunities")
+}
+
+/// Volunteer signups and attendance records.
+model VolunteerRegistration {
+  id              String                @id @default(uuid())
+  opportunityId   String
+  opportunity     VolunteerOpportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User                  @relation("VolunteerUserSignups", fields: [userId], references: [id], onDelete: Cascade)
+  status          VolunteerSignupStatus @default(REGISTERED)
+  notes           String?
+  attendanceNotes String?
+  attendedAt      DateTime?
+  attendedById    String?
+  attendedBy      User?                 @relation("VolunteerAttendanceMarker", fields: [attendedById], references: [id], onDelete: SetNull)
+  cancelledAt     DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@unique([opportunityId, userId])
+  @@index([userId])
+  @@index([opportunityId, status])
+  @@map("volunteer_registrations")
+}
+
+/// Club fundraising initiatives.
+model Fundraiser {
+  id            String                   @id @default(uuid())
+  title         String
+  description   String
+  purpose       String?
+  goalAmount    Int
+  currency      String                   @default("INR")
+  status        FundraiserStatus         @default(DRAFT)
+  startsAt      DateTime?
+  deadline      DateTime?
+  beneficiary   String?
+  creatorId     String
+  creator       User                     @relation("FundraiserCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  contributions FundraiserContribution[]
+  expenses      Expense[]
+
+  @@index([status])
+  @@index([creatorId])
+  @@map("fundraisers")
+}
+
+/// Contribution records for fundraisers.
+model FundraiserContribution {
+  id                String             @id @default(uuid())
+  fundraiserId      String
+  fundraiser        Fundraiser         @relation(fields: [fundraiserId], references: [id], onDelete: Cascade)
+  donorId           String?
+  donor             User?              @relation("FundraiserDonor", fields: [donorId], references: [id], onDelete: SetNull)
+  donorName         String
+  donorEmail        String
+  amount            Int
+  currency          String             @default("INR")
+  paymentMethod     String             @default("ONLINE")
+  status            ContributionStatus @default(PENDING)
+  razorpayOrderId   String?            @unique
+  razorpayPaymentId String?            @unique
+  failureReason     String?
+  verifiedAt        DateTime?
+  idempotencyKey    String?            @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([fundraiserId, status])
+  @@index([donorId])
+  @@map("fundraiser_contributions")
+}
+
+/// Club expenditure submissions.
+model Expense {
+  id              String          @id @default(uuid())
+  title           String
+  description     String
+  amount          Int
+  currency        String          @default("INR")
+  category        ExpenseCategory @default(OTHER)
+  expenseDate     DateTime
+  receiptUrl      String?
+  status          ExpenseStatus   @default(PENDING)
+  submitterId     String
+  submitter       User            @relation("ExpenseSubmitter", fields: [submitterId], references: [id], onDelete: Restrict)
+  reviewerId      String?
+  reviewer        User?           @relation("ExpenseReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  rejectionReason String?
+  eventId         String?
+  event           Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  fundraiserId    String?
+  fundraiser      Fundraiser?     @relation(fields: [fundraiserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  reimbursement   Reimbursement?
+
+  @@index([submitterId])
+  @@index([status])
+  @@index([category])
+  @@index([expenseDate])
+  @@map("expenses")
+}
+
+/// Reimbursement requests linked to approved expenses.
+model Reimbursement {
+  id                  String              @id @default(uuid())
+  expenseId           String              @unique
+  expense             Expense             @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  claimantId          String
+  claimant            User                @relation("ReimbursementClaimant", fields: [claimantId], references: [id], onDelete: Restrict)
+  amount              Int
+  currency            String              @default("INR")
+  status              ReimbursementStatus @default(PENDING)
+  reviewerId          String?
+  reviewer            User?               @relation("ReimbursementReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewedAt          DateTime?
+  rejectionReason     String?
+  settledById         String?
+  settledBy           User?               @relation("ReimbursementSettler", fields: [settledById], references: [id], onDelete: SetNull)
+  settledAt           DateTime?
+  settlementReference String?
+  notes               String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([claimantId])
+  @@index([status])
+  @@map("reimbursements")
+}
+

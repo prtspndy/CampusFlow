@@ -1,5 +1,12 @@
 import crypto from 'node:crypto';
-import { Payment, PaymentStatus, Prisma, RegistrationStatus, TicketStatus } from '@prisma/client';
+import {
+  ContributionStatus,
+  Payment,
+  PaymentStatus,
+  Prisma,
+  RegistrationStatus,
+  TicketStatus,
+} from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { isPrismaCode } from '../lib/prisma-errors.js';
 import { env } from '../config/env.js';
@@ -405,7 +412,42 @@ async function applyWebhook(
     ? await tx.payment.findUnique({ where: { razorpayOrderId: facts.orderId } })
     : await tx.payment.findUnique({ where: { razorpayPaymentId: facts.paymentId ?? undefined } });
 
-  if (!payment || facts.amountPaise === null || !facts.currency) {
+  if (!payment) {
+    if (facts.orderId) {
+      const contribution = await tx.fundraiserContribution.findUnique({
+        where: { razorpayOrderId: facts.orderId },
+      });
+      if (contribution) {
+        if (eventType === 'payment.failed') {
+          if (contribution.status !== ContributionStatus.VERIFIED) {
+            await tx.fundraiserContribution.update({
+              where: { id: contribution.id },
+              data: { status: ContributionStatus.FAILED, failureReason: 'Payment failed' },
+            });
+            return 'PROCESSED';
+          }
+          return 'IGNORED';
+        }
+        if (eventType === 'payment.captured' || eventType === 'order.paid') {
+          if (contribution.status === ContributionStatus.VERIFIED) {
+            return 'IGNORED';
+          }
+          await tx.fundraiserContribution.update({
+            where: { id: contribution.id },
+            data: {
+              status: ContributionStatus.VERIFIED,
+              razorpayPaymentId: facts.paymentId ?? contribution.razorpayPaymentId,
+              verifiedAt: new Date(),
+            },
+          });
+          return 'PROCESSED';
+        }
+      }
+    }
+    return 'IGNORED';
+  }
+
+  if (facts.amountPaise === null || !facts.currency) {
     return 'IGNORED';
   }
   if (payment.amountPaise !== facts.amountPaise || payment.currency !== facts.currency) {

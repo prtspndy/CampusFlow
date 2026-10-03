@@ -35,6 +35,12 @@ export const PublicLayout: React.FC = () => {
             <Link to="/events" className="hover:text-[var(--color-ink)] transition-colors">
               Events
             </Link>
+            <Link to="/volunteers" className="hover:text-[var(--color-ink)] transition-colors">
+              Volunteers
+            </Link>
+            <Link to="/fundraisers" className="hover:text-[var(--color-ink)] transition-colors">
+              Fundraisers
+            </Link>
             <Link to="/shop" className="hover:text-[var(--color-ink)] transition-colors">
               Merchandise
             </Link>

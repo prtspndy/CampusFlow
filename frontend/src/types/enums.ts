@@ -19,6 +19,25 @@ export type TransactionCategory =
   | 'FUNDRAISER'
   | 'EXPENSE'
 
-export type ReimbursementStatus = 'SUBMITTED' | 'APPROVED' | 'PAID' | 'REJECTED'
+export type ReimbursementStatus = 'SUBMITTED' | 'APPROVED' | 'PAID' | 'REJECTED' | 'PENDING' | 'SETTLED'
 
 export type OrderStatus = 'PLACED' | 'PENDING' | 'PAID' | 'FULFILLED' | 'CANCELLED'
+
+export type OpportunityStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'CANCELLED'
+
+export type VolunteerSignupStatus = 'REGISTERED' | 'ATTENDED' | 'NO_SHOW' | 'EXCUSED' | 'CANCELLED'
+
+export type FundraiserStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'CANCELLED'
+
+export type ContributionStatus = 'PENDING' | 'VERIFIED' | 'FAILED' | 'CANCELLED' | 'REFUNDED'
+
+export type ExpenseStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+
+export type ExpenseCategory =
+  | 'TRAVEL'
+  | 'SUPPLIES'
+  | 'FOOD_BEVERAGE'
+  | 'EQUIPMENT'
+  | 'VENUE'
+  | 'MARKETING'
+  | 'OTHER'
