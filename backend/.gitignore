@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Coverage and testing
+coverage/
+
+# Logs
+*.log
+
+# Cache
+*.tsbuildinfo
