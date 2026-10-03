@@ -177,12 +177,13 @@ There is no API for changing a role. Privileged roles are assigned directly in t
 - Access tokens expire after `JWT_ACCESS_TTL_SECONDS` (default 900 seconds).
 - Access token claims are `sub` (user id), `tv` (token version), and `typ: "access"`, plus issuer `campusflow`, audience `campusflow-api`, expiry, and a token id. Email, name, role, and password are not in the token.
 - Refresh tokens expire after `JWT_REFRESH_TTL_DAYS` (default 7).
-- `POST /api/auth/refresh` revokes the presented refresh token and returns a new pair in the same family.
-- Replaying a revoked refresh token revokes every still-active token in that family.
-- `POST /api/auth/logout` requires the access token. It increments the user's token version and revokes all of that user's refresh tokens. This signs out every device.
-- An access token presented after logout fails with `401 TOKEN_REVOKED` even if it has not reached its expiry.
+- `POST /api/auth/refresh` revokes the presented refresh token and stores its replacement in one database transaction. The new pair is returned only after that transaction commits. A failed transaction leaves the presented refresh token usable.
+- Two uses of the same refresh token cannot both succeed. The second is treated as a replay and revokes every still-active token in that family.
+- Replaying an already revoked refresh token also revokes every still-active token in that family.
+- `POST /api/auth/logout` requires the access token. In one transaction it increments the user's token version and revokes all of that user's refresh tokens. This signs out every device. If that transaction fails, the response is not success and existing tokens stay valid.
+- An access token presented after a committed logout fails with `401 TOKEN_REVOKED` even if it has not reached its expiry.
 - Deleting the token from browser memory is not server-side revocation. The client must call logout.
-- Disabled accounts cannot sign in or refresh. A still-valid access token for a disabled account is rejected with `403 ACCOUNT_DISABLED`.
+- Unknown users, wrong passwords, and disabled accounts all receive the same public sign-in error. Refresh uses the same generic invalid-token error for an unknown, expired, replayed, or disabled-account token. A still-valid access token for an account that is disabled later is rejected with `403 ACCOUNT_DISABLED`.
 
 ### 5.3 Register
 
@@ -243,8 +244,7 @@ There is no API for changing a role. Privileged roles are assigned directly in t
 }
 ```
 
-- **401** `INVALID_CREDENTIALS`: unknown email and wrong password return the same message, `Invalid email or password`.
-- **403** `ACCOUNT_DISABLED`: password matched an account with status `disabled`.
+- **401** `INVALID_CREDENTIALS`: unknown email, wrong password, and disabled accounts return the same message, `Invalid email or password`. The response does not say whether the account exists or is disabled.
 - **422** `VALIDATION_ERROR`
 - **429** `RATE_LIMITED`
 
@@ -254,8 +254,8 @@ There is no API for changing a role. Privileged roles are assigned directly in t
 - **Path**: `/api/auth/refresh`
 - **Auth**: none. Send `{ "refreshToken": "<opaque>" }`.
 - **200**: same session shape as login, with a new access token and a new refresh token.
-- **401** `INVALID_REFRESH_TOKEN`: missing, unknown, expired, or replayed token. The message is `Invalid or expired refresh token`.
-- **403** `ACCOUNT_DISABLED`
+- **401** `INVALID_REFRESH_TOKEN`: missing, unknown, expired, replayed, or disabled-account token. The message is `Invalid or expired refresh token`.
+- **500** `INTERNAL_SERVER_ERROR`: the rotation transaction failed. The presented refresh token remains valid.
 - **422** `VALIDATION_ERROR`
 - **429** `RATE_LIMITED`
 
@@ -264,8 +264,9 @@ There is no API for changing a role. Privileged roles are assigned directly in t
 - **Method**: `POST`
 - **Path**: `/api/auth/logout`
 - **Auth**: bearer access token
-- **200**: `data` is `null`. Message: `Signed out successfully`.
+- **200**: `data` is `null`. Message: `Signed out successfully`. Both the token-version update and refresh-token revocation committed.
 - **401**: missing, malformed, invalid, expired, or already revoked access token.
+- **500** `INTERNAL_SERVER_ERROR`: the logout transaction failed. Access and refresh tokens from before the request remain valid.
 
 ### 5.7 Current user
 

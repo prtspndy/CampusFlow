@@ -3,12 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
 import { AuthSession, PublicUser } from '../types/auth.js';
-import {
-  ConflictError,
-  ForbiddenError,
-  NotFoundError,
-  UnauthorizedError,
-} from '../utils/errors.js';
+import { ConflictError, NotFoundError, UnauthorizedError } from '../utils/errors.js';
 import { LoginInput, RegisterInput } from '../validators/auth.validators.js';
 import { dummyPasswordHash, hashPassword, verifyPassword } from './password.service.js';
 import {
@@ -56,12 +51,14 @@ export async function loginUser(input: LoginInput): Promise<AuthSession> {
     user?.passwordHash ?? dummyPasswordHash(),
   );
 
-  if (!user || !passwordMatches) {
+  if (!user || !passwordMatches || user.status !== 'active') {
+    const reason = !user
+      ? 'unknown_user'
+      : !passwordMatches
+        ? 'invalid_password'
+        : 'account_disabled';
+    console.warn('[AUTH] Sign-in rejected', { reason });
     throw new UnauthorizedError(INVALID_CREDENTIALS, 'INVALID_CREDENTIALS');
-  }
-
-  if (user.status !== 'active') {
-    throw new ForbiddenError('This account is disabled', 'ACCOUNT_DISABLED');
   }
 
   const refreshToken = generateRefreshToken();
@@ -83,63 +80,89 @@ export async function loginUser(input: LoginInput): Promise<AuthSession> {
 }
 
 export async function refreshSession(rawRefreshToken: string): Promise<AuthSession> {
-  const stored = await prisma.refreshToken.findUnique({
-    where: { tokenHash: hashRefreshToken(rawRefreshToken) },
-    include: { user: true },
-  });
+  const tokenHash = hashRefreshToken(rawRefreshToken);
+  const outcome = await prisma.$transaction(
+    async (tx) => {
+      const stored = await tx.refreshToken.findUnique({
+        where: { tokenHash },
+        include: { user: true },
+      });
 
-  if (!stored || !stored.user) {
-    throw new UnauthorizedError(INVALID_REFRESH, 'INVALID_REFRESH_TOKEN');
-  }
+      if (
+        !stored ||
+        !stored.user ||
+        stored.expiresAt.getTime() <= Date.now() ||
+        stored.user.status !== 'active'
+      ) {
+        return { status: 'invalid' as const };
+      }
 
-  if (stored.revokedAt) {
-    await prisma.refreshToken.updateMany({
-      where: { familyId: stored.familyId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
-    throw new UnauthorizedError(INVALID_REFRESH, 'INVALID_REFRESH_TOKEN');
-  }
+      if (stored.revokedAt) {
+        await revokeTokenFamily(tx, stored.familyId);
+        return { status: 'replay' as const };
+      }
 
-  if (stored.expiresAt.getTime() <= Date.now()) {
-    throw new UnauthorizedError(INVALID_REFRESH, 'INVALID_REFRESH_TOKEN');
-  }
+      // Read Committed plus this conditional update locks the row. A second
+      // request for the same token waits, then matches zero rows.
+      const consumed = await tx.refreshToken.updateMany({
+        where: { id: stored.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
 
-  if (stored.user.status !== 'active') {
-    throw new ForbiddenError('This account is disabled', 'ACCOUNT_DISABLED');
-  }
+      if (consumed.count !== 1) {
+        await revokeTokenFamily(tx, stored.familyId);
+        return { status: 'replay' as const };
+      }
 
-  const nextToken = generateRefreshToken();
-  const created = await prisma.refreshToken.create({
-    data: {
-      userId: stored.userId,
-      tokenHash: nextToken.hash,
-      familyId: stored.familyId,
-      expiresAt: refreshExpiryDate(),
+      const nextToken = generateRefreshToken();
+      const created = await tx.refreshToken.create({
+        data: {
+          userId: stored.userId,
+          tokenHash: nextToken.hash,
+          familyId: stored.familyId,
+          expiresAt: refreshExpiryDate(),
+        },
+      });
+
+      await tx.refreshToken.update({
+        where: { id: stored.id },
+        data: { replacedById: created.id },
+      });
+
+      return {
+        status: 'ok' as const,
+        session: {
+          token: signAccessToken(stored.user.id, stored.user.tokenVersion),
+          refreshToken: nextToken.raw,
+          expiresIn: env.JWT_ACCESS_TTL_SECONDS,
+          user: toPublicUser(stored.user),
+        },
+      };
     },
-  });
+    { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+  );
 
-  await prisma.refreshToken.update({
-    where: { id: stored.id },
-    data: { revokedAt: new Date(), replacedById: created.id },
-  });
+  if (outcome.status !== 'ok') {
+    throw new UnauthorizedError(INVALID_REFRESH, 'INVALID_REFRESH_TOKEN');
+  }
 
-  return {
-    token: signAccessToken(stored.user.id, stored.user.tokenVersion),
-    refreshToken: nextToken.raw,
-    expiresIn: env.JWT_ACCESS_TTL_SECONDS,
-    user: toPublicUser(stored.user),
-  };
+  return outcome.session;
 }
 
 export async function logoutUser(userId: string): Promise<void> {
-  await prisma.user.update({
-    where: { id: userId },
-    data: { tokenVersion: { increment: 1 } },
-  });
-  await prisma.refreshToken.updateMany({
-    where: { userId, revokedAt: null },
-    data: { revokedAt: new Date() },
-  });
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { tokenVersion: { increment: 1 } },
+      });
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+  );
 }
 
 export async function getUserById(userId: string): Promise<PublicUser> {
@@ -171,6 +194,15 @@ export async function listUsers(): Promise<PublicUser[]> {
     take: 100,
   });
   return users.map((user) => toPublicUser(user));
+}
+
+type RefreshTokenWriter = Pick<typeof prisma, 'refreshToken'>;
+
+async function revokeTokenFamily(tx: RefreshTokenWriter, familyId: string): Promise<void> {
+  await tx.refreshToken.updateMany({
+    where: { familyId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
 }
 
 function isUniqueViolation(error: unknown): boolean {

@@ -134,6 +134,13 @@ npm run db:migrate
 npm run db:studio
 ```
 
+Committed migrations run in this order on a clean database:
+
+1. `20261002120000_phase00_system_health_checks` creates the Phase 00 `system_health_checks` table.
+2. `20261003120000_add_auth_users_and_refresh_tokens` creates `users` and `refresh_tokens`.
+
+These files have not been applied here because no database is configured. If `system_health_checks` was already created outside Prisma Migrate, the baseline `CREATE TABLE` fails and does not drop that table.
+
 ---
 
 ## 🚀 Running the Application

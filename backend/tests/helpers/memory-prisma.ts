@@ -77,7 +77,45 @@ export function setUserStatus(email: string, status: AccountStatus): void {
   user.status = status;
 }
 
+function snapshotState(): { users: MemoryUser[]; refreshTokens: MemoryRefreshToken[] } {
+  return {
+    users: users.map((user) => ({ ...user })),
+    refreshTokens: refreshTokens.map((token) => ({ ...token })),
+  };
+}
+
+function restoreState(state: { users: MemoryUser[]; refreshTokens: MemoryRefreshToken[] }): void {
+  users.splice(0, users.length, ...state.users.map((user) => ({ ...user })));
+  refreshTokens.splice(
+    0,
+    refreshTokens.length,
+    ...state.refreshTokens.map((token) => ({ ...token })),
+  );
+}
+
 export function installPrismaMemory(): void {
+  let transactionQueue: Promise<unknown> = Promise.resolve();
+
+  vi.spyOn(prisma, '$transaction').mockImplementation((callback: unknown) => {
+    const run = transactionQueue.then(async () => {
+      if (typeof callback !== 'function') {
+        throw new Error('Expected an interactive transaction');
+      }
+      const snapshot = snapshotState();
+      try {
+        return await callback(prisma);
+      } catch (error) {
+        restoreState(snapshot);
+        throw error;
+      }
+    });
+    transactionQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run as never;
+  });
+
   vi.spyOn(prisma.user, 'findUnique').mockImplementation(async (args) => {
     const where = args.where as { id?: string; email?: string };
     const user = users.find((entry) =>
@@ -170,15 +208,23 @@ export function installPrismaMemory(): void {
   });
 
   vi.spyOn(prisma.refreshToken, 'updateMany').mockImplementation(async (args) => {
-    const where = args.where as { familyId?: string; userId?: string; revokedAt?: null };
-    const data = args.data as { revokedAt: Date };
+    const where = args.where as {
+      id?: string;
+      familyId?: string;
+      userId?: string;
+      revokedAt?: null;
+    };
+    const data = args.data as { revokedAt?: Date };
     let count = 0;
     for (const token of refreshTokens) {
+      const idMatches = where.id ? token.id === where.id : true;
       const familyMatches = where.familyId ? token.familyId === where.familyId : true;
       const userMatches = where.userId ? token.userId === where.userId : true;
       const activeMatches = where.revokedAt === null ? token.revokedAt === null : true;
-      if (familyMatches && userMatches && activeMatches) {
-        token.revokedAt = data.revokedAt;
+      if (idMatches && familyMatches && userMatches && activeMatches) {
+        if (data.revokedAt) {
+          token.revokedAt = data.revokedAt;
+        }
         count += 1;
       }
     }

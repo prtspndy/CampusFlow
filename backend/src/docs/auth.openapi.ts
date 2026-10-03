@@ -106,7 +106,7 @@ export const authOpenApiPaths = {
       tags: ['Authentication'],
       summary: 'Sign in',
       description:
-        'Returns a 15-minute access token and a rotating refresh token. Unknown emails and wrong passwords share one error. A supplied role is ignored.',
+        'Returns a 15-minute access token and a rotating refresh token. Unknown emails, wrong passwords, and disabled accounts share one error. A supplied role is ignored.',
       requestBody: {
         required: true,
         content: { 'application/json': { schema: { $ref: '#/components/schemas/LoginRequest' } } },
@@ -119,11 +119,7 @@ export const authOpenApiPaths = {
           },
         },
         '401': {
-          description: 'Invalid credentials',
-          content: { 'application/json': { schema: errorSchema } },
-        },
-        '403': {
-          description: 'Account disabled',
+          description: 'Unknown user, wrong password, or disabled account',
           content: { 'application/json': { schema: errorSchema } },
         },
         '422': {
@@ -142,7 +138,7 @@ export const authOpenApiPaths = {
       tags: ['Authentication'],
       summary: 'Rotate a refresh token',
       description:
-        'Issues a new access token and refresh token. The presented refresh token is revoked. Replaying a revoked token revokes the rest of that token family.',
+        'Atomically revokes the presented refresh token and stores its replacement. The new tokens are returned only after commit. Replaying a revoked token revokes the rest of that token family. Disabled accounts receive the same invalid-token error.',
       requestBody: {
         required: true,
         content: {
@@ -157,11 +153,11 @@ export const authOpenApiPaths = {
           },
         },
         '401': {
-          description: 'Invalid, expired, or reused refresh token',
+          description: 'Invalid, expired, reused, or disabled-account refresh token',
           content: { 'application/json': { schema: errorSchema } },
         },
-        '403': {
-          description: 'Account disabled',
+        '500': {
+          description: 'Rotation did not commit. The presented refresh token remains valid.',
           content: { 'application/json': { schema: errorSchema } },
         },
         '422': {
@@ -181,7 +177,7 @@ export const authOpenApiPaths = {
       summary: 'Sign out',
       security: bearer,
       description:
-        'Increments the user token version and revokes every active refresh token for that user. Already issued access tokens fail on the next request. This signs out every device for the account.',
+        'In one transaction, increments the user token version and revokes every active refresh token for that user. Already issued access tokens fail on the next request only after that transaction commits. This signs out every device for the account.',
       responses: {
         '200': {
           description: 'Signed out',
@@ -191,6 +187,10 @@ export const authOpenApiPaths = {
         },
         '401': {
           description: 'Missing, invalid, expired, or revoked access token',
+          content: { 'application/json': { schema: errorSchema } },
+        },
+        '500': {
+          description: 'Logout did not commit. Existing tokens remain valid.',
           content: { 'application/json': { schema: errorSchema } },
         },
       },

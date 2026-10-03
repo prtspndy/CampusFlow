@@ -149,8 +149,15 @@ describe('Authentication and authorization', () => {
       expect(stored?.tokenHash).not.toBe(res.body.data.refreshToken);
     });
 
-    it('returns the same error for an unknown account and a wrong password', async () => {
+    it('returns the same error for an unknown account, a wrong password, and a disabled account', async () => {
       await registerMember('ada@campus.edu');
+      const passwordHash = await bcrypt.hash(password, 4);
+      insertUser({
+        email: 'off@campus.edu',
+        name: 'Off',
+        passwordHash,
+        status: 'disabled',
+      });
 
       const unknown = await request(app).post('/api/auth/login').send({
         email: 'missing@campus.edu',
@@ -160,11 +167,19 @@ describe('Authentication and authorization', () => {
         email: 'ada@campus.edu',
         password: 'Password2',
       });
+      const disabled = await request(app).post('/api/auth/login').send({
+        email: 'off@campus.edu',
+        password,
+      });
 
       expect(unknown.status).toBe(401);
       expect(wrong.status).toBe(401);
-      expect(unknown.body.error).toEqual(wrong.body.error);
+      expect(disabled.status).toBe(401);
+      expect(wrong.body.error).toEqual(unknown.body.error);
+      expect(disabled.body.error).toEqual(unknown.body.error);
       expect(unknown.body.error.code).toBe('INVALID_CREDENTIALS');
+      expect(JSON.stringify(disabled.body)).not.toContain('disabled');
+      expect(disabled.body.data).toBeUndefined();
     });
 
     it('rejects a malformed body', async () => {
@@ -174,7 +189,7 @@ describe('Authentication and authorization', () => {
       expect(res.body.error.code).toBe('VALIDATION_ERROR');
     });
 
-    it('rejects a disabled account after the password matches', async () => {
+    it('rejects a disabled account with the same response as a wrong password', async () => {
       const passwordHash = await bcrypt.hash(password, 4);
       insertUser({
         email: 'ada@campus.edu',
@@ -183,14 +198,18 @@ describe('Authentication and authorization', () => {
         status: 'disabled',
       });
 
-      const res = await request(app).post('/api/auth/login').send({
+      const disabled = await request(app).post('/api/auth/login').send({
         email: 'ada@campus.edu',
         password,
       });
+      const wrong = await request(app).post('/api/auth/login').send({
+        email: 'ada@campus.edu',
+        password: 'Password2',
+      });
 
-      expect(res.status).toBe(403);
-      expect(res.body.error.code).toBe('ACCOUNT_DISABLED');
-      expect(res.body.data).toBeUndefined();
+      expect(disabled.status).toBe(401);
+      expect(disabled.body).toEqual(wrong.body);
+      expect(disabled.body.error.message).toBe('Invalid email or password');
     });
   });
 
@@ -222,6 +241,57 @@ describe('Authentication and authorization', () => {
       expect(rotatedReplay.body.error.code).toBe('INVALID_REFRESH_TOKEN');
     });
 
+    it('keeps the presented refresh token when rotation fails to commit', async () => {
+      const session = await loginAs('ada@campus.edu');
+      const createSpy = vi.mocked(prisma.refreshToken.create);
+      const createToken = createSpy.getMockImplementation();
+      let failedOnce = false;
+      createSpy.mockImplementation(async (args) => {
+        if (!failedOnce) {
+          failedOnce = true;
+          throw new Error('database unavailable');
+        }
+        if (!createToken) {
+          throw new Error('Refresh token create mock is missing');
+        }
+        return createToken(args);
+      });
+
+      const failed = await request(app).post('/api/auth/refresh').send({
+        refreshToken: session.refreshToken,
+      });
+
+      expect(failed.status).toBe(500);
+      expect(failed.body.success).toBe(false);
+      expect(JSON.stringify(failed.body)).not.toContain(session.refreshToken);
+
+      const rotated = await request(app).post('/api/auth/refresh').send({
+        refreshToken: session.refreshToken,
+      });
+      expect(rotated.status).toBe(200);
+      expect(rotated.body.data.refreshToken).not.toBe(session.refreshToken);
+    });
+
+    it('does not issue two live tokens when the same refresh token is used concurrently', async () => {
+      const session = await loginAs('ada@campus.edu');
+      const [first, second] = await Promise.all([
+        request(app).post('/api/auth/refresh').send({ refreshToken: session.refreshToken }),
+        request(app).post('/api/auth/refresh').send({ refreshToken: session.refreshToken }),
+      ]);
+
+      const statuses = [first.status, second.status].sort();
+      expect(statuses).toEqual([200, 401]);
+      const active = memoryRefreshTokens().filter((token) => token.revokedAt === null);
+      expect(active).toHaveLength(0);
+
+      const winner = first.status === 200 ? first : second;
+      const replayWinner = await request(app).post('/api/auth/refresh').send({
+        refreshToken: winner.body.data.refreshToken,
+      });
+      expect(replayWinner.status).toBe(401);
+      expect(replayWinner.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+    });
+
     it('rejects an expired refresh token', async () => {
       const session = await loginAs('ada@campus.edu');
       expireRefreshTokens();
@@ -232,6 +302,29 @@ describe('Authentication and authorization', () => {
 
       expect(res.status).toBe(401);
       expect(res.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+    });
+
+    it('does not sign out when the logout transaction fails', async () => {
+      const session = await loginAs('ada@campus.edu');
+      vi.spyOn(prisma.refreshToken, 'updateMany').mockRejectedValueOnce(
+        new Error('database unavailable'),
+      );
+
+      const logout = await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${session.token}`);
+
+      expect(logout.status).toBe(500);
+      expect(logout.body.success).toBe(false);
+      expect(logout.body.error.code).toBe('INTERNAL_SERVER_ERROR');
+      expect(JSON.stringify(logout.body)).not.toContain(session.token);
+      expect(JSON.stringify(logout.body)).not.toContain(session.refreshToken);
+
+      const me = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${session.token}`);
+      expect(me.status).toBe(200);
+      expect(memoryRefreshTokens().some((token) => token.revokedAt === null)).toBe(true);
     });
 
     it('signs out by revoking refresh tokens and the current access token', async () => {
@@ -373,7 +466,7 @@ describe('Authentication and authorization', () => {
       expect(treasurerRes.status).toBe(403);
     });
 
-    it('rejects refresh for a disabled account', async () => {
+    it('rejects refresh for a disabled account without revealing the account status', async () => {
       const session = await loginAs('ada@campus.edu');
       setUserStatus('ada@campus.edu', 'disabled');
 
@@ -381,8 +474,10 @@ describe('Authentication and authorization', () => {
         refreshToken: session.refreshToken,
       });
 
-      expect(res.status).toBe(403);
-      expect(res.body.error.code).toBe('ACCOUNT_DISABLED');
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+      expect(res.body.error.message).toBe('Invalid or expired refresh token');
+      expect(JSON.stringify(res.body)).not.toContain('disabled');
     });
   });
 });
