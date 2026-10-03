@@ -3,6 +3,8 @@ import { healthRouter } from './health.routes.js';
 import { authRouter } from './auth.routes.js';
 import { usersRouter } from './users.routes.js';
 import { adminRouter } from './admin.routes.js';
+import { membershipRouter } from './membership.routes.js';
+import { eventRouter } from './event.routes.js';
 import { sendSuccess } from '../utils/response.js';
 
 export const rootRouter = Router();
@@ -12,6 +14,8 @@ rootRouter.use('/health', healthRouter);
 rootRouter.use('/auth', authRouter);
 rootRouter.use('/users', usersRouter);
 rootRouter.use('/admin', adminRouter);
+rootRouter.use('/memberships', membershipRouter);
+rootRouter.use('/events', eventRouter);
 
 /**
  * GET /api

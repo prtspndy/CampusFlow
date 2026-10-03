@@ -7,15 +7,64 @@ export const ACCOUNT_STATUSES = ['active', 'disabled'] as const;
 export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 
 /**
- * Phase 01 platform permissions.
- * Club ownership and event permissions are intentionally absent until later phases.
+ * Platform permissions across Phase 01 (Auth) and Phase 02 (Memberships & Events).
  */
 export const ROLE_PERMISSIONS = {
-  member: ['profile:read', 'profile:update'],
-  volunteer: ['profile:read', 'profile:update'],
-  door_staff: ['profile:read', 'profile:update'],
-  treasurer: ['profile:read', 'profile:update'],
-  admin: ['profile:read', 'profile:update', 'users:read:any', 'users:list'],
+  member: [
+    'profile:read',
+    'profile:update',
+    'membership:apply',
+    'membership:read:own',
+    'membership:renew:own',
+    'events:read:published',
+  ],
+  volunteer: [
+    'profile:read',
+    'profile:update',
+    'membership:apply',
+    'membership:read:own',
+    'membership:renew:own',
+    'events:read:published',
+    'events:create',
+  ],
+  door_staff: [
+    'profile:read',
+    'profile:update',
+    'membership:apply',
+    'membership:read:own',
+    'membership:renew:own',
+    'events:read:published',
+    'events:create',
+    'events:read:drafts',
+  ],
+  treasurer: [
+    'profile:read',
+    'profile:update',
+    'membership:apply',
+    'membership:read:own',
+    'membership:renew:own',
+    'membership:read:any',
+    'membership:manage',
+    'events:read:published',
+    'events:create',
+    'events:read:drafts',
+    'events:manage:any',
+  ],
+  admin: [
+    'profile:read',
+    'profile:update',
+    'users:read:any',
+    'users:list',
+    'membership:apply',
+    'membership:read:own',
+    'membership:renew:own',
+    'membership:read:any',
+    'membership:manage',
+    'events:read:published',
+    'events:create',
+    'events:read:drafts',
+    'events:manage:any',
+  ],
 } as const satisfies Record<UserRole, readonly string[]>;
 
 export type Permission = (typeof ROLE_PERMISSIONS)[UserRole][number];
