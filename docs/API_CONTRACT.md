@@ -432,6 +432,6 @@ Prices are whole INR rupees. Orders are pickup reservations: placing an order de
 | `GET /api/announcements/:announcementId` | Public if published. Drafts are **404** unless the author or a publisher | |
 | `PATCH /api/announcements/:announcementId` | Author with `announcements.create`, or `announcements.publish` | |
 | `POST /api/announcements/:announcementId/publish` | `announcements.publish` | Sets `publishedAt` |
-| `POST /api/announcements/:announcementId/unpublish` | `announcements.publish` | Returns the row to `DRAFT` |
+| `POST /api/announcements/:announcementId/unpublish` | `announcements.publish` | Returns the row to `DRAFT` and clears `publishedAt` |
 
 Stock for an order is reduced with `UPDATE ... WHERE stock >= quantity`. If any line fails, the transaction rolls back and no order row remains. Variant stock cannot go below zero.

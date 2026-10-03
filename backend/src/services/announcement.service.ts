@@ -158,19 +158,22 @@ export async function setPublished(user: AuthenticatedUser, id: string, publish:
   if (!hasPermission(user.role, 'announcements.publish')) {
     throw new ForbiddenError('You do not have permission to publish announcements');
   }
-  const row = await loadAnnouncement(id);
-  if (publish && row.status === AnnouncementStatus.PUBLISHED) {
-    throw new ConflictError('Announcement is already published', 'ALREADY_PUBLISHED');
-  }
-  if (!publish && row.status === AnnouncementStatus.DRAFT) {
-    throw new ConflictError('Announcement is already a draft', 'ALREADY_DRAFT');
-  }
-  const updated = await prisma.announcement.update({
-    where: { id },
+  const changed = await prisma.announcement.updateMany({
+    where: {
+      id,
+      status: publish ? AnnouncementStatus.DRAFT : AnnouncementStatus.PUBLISHED,
+    },
     data: publish
       ? { status: AnnouncementStatus.PUBLISHED, publishedAt: new Date() }
-      : { status: AnnouncementStatus.DRAFT },
-    include: { author: { select: authorSelect } },
+      : { status: AnnouncementStatus.DRAFT, publishedAt: null },
   });
-  return present(updated);
+  if (changed.count !== 1) {
+    const row = await prisma.announcement.findUnique({ where: { id } });
+    if (!row) throw new NotFoundError('Announcement not found');
+    throw new ConflictError(
+      publish ? 'Announcement is already published' : 'Announcement is already a draft',
+      publish ? 'ALREADY_PUBLISHED' : 'ALREADY_DRAFT',
+    );
+  }
+  return present(await loadAnnouncement(id));
 }
