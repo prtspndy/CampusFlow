@@ -1,10 +1,12 @@
+import { authOpenApiPaths, authOpenApiSchemas, authOpenApiTags } from './auth.openapi.js';
+
 export const openApiSpec = {
   openapi: '3.0.3',
   info: {
     title: 'CampusFlow API',
     version: '0.1.0',
     description:
-      'Student Organization Management System API — Foundation & Core Infrastructure (Phase 00)',
+      'Student Organization Management System API — Phase 00 foundation and Phase 01 authentication.',
     contact: {
       name: 'CampusFlow Engineering Team',
     },
@@ -20,6 +22,7 @@ export const openApiSpec = {
       name: 'System & Observability',
       description: 'Health, readiness probes and API metadata endpoints',
     },
+    ...authOpenApiTags,
   ],
   paths: {
     '/': {
@@ -92,9 +95,18 @@ export const openApiSpec = {
         },
       },
     },
+    ...authOpenApiPaths,
   },
   components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+    },
     schemas: {
+      ...authOpenApiSchemas,
       ApiInfoResponse: {
         type: 'object',
         properties: {
