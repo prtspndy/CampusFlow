@@ -1,12 +1,18 @@
 import { authOpenApiPaths, authOpenApiSchemas, authOpenApiTags } from './auth.openapi.js';
+import {
+  membershipOpenApiPaths,
+  membershipOpenApiSchemas,
+  membershipOpenApiTags,
+} from './membership.openapi.js';
+import { eventOpenApiPaths, eventOpenApiSchemas, eventOpenApiTags } from './event.openapi.js';
 
 export const openApiSpec = {
   openapi: '3.0.3',
   info: {
     title: 'CampusFlow API',
-    version: '0.1.0',
+    version: '0.2.0',
     description:
-      'Student Organization Management System API — Phase 00 foundation and Phase 01 authentication.',
+      'Student Organization Management System API — Phase 00 foundation, Phase 01 authentication, and Phase 02 membership & events management.',
     contact: {
       name: 'CampusFlow Engineering Team',
     },
@@ -23,6 +29,8 @@ export const openApiSpec = {
       description: 'Health, readiness probes and API metadata endpoints',
     },
     ...authOpenApiTags,
+    ...membershipOpenApiTags,
+    ...eventOpenApiTags,
   ],
   paths: {
     '/': {
@@ -96,6 +104,8 @@ export const openApiSpec = {
       },
     },
     ...authOpenApiPaths,
+    ...membershipOpenApiPaths,
+    ...eventOpenApiPaths,
   },
   components: {
     securitySchemes: {
@@ -107,6 +117,8 @@ export const openApiSpec = {
     },
     schemas: {
       ...authOpenApiSchemas,
+      ...membershipOpenApiSchemas,
+      ...eventOpenApiSchemas,
       ApiInfoResponse: {
         type: 'object',
         properties: {

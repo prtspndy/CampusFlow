@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import crypto from 'node:crypto';
 import { vi } from 'vitest';
 import { prisma } from '../../src/lib/prisma.js';
 import type { AccountStatus, UserRole } from '../../src/types/auth.js';
+import { MembershipStatus, EventStatus } from '@prisma/client';
 
-interface MemoryUser {
+export interface MemoryUser {
   id: string;
   email: string;
   name: string;
@@ -15,7 +17,7 @@ interface MemoryUser {
   updatedAt: Date;
 }
 
-interface MemoryRefreshToken {
+export interface MemoryRefreshToken {
   id: string;
   userId: string;
   tokenHash: string;
@@ -27,14 +29,49 @@ interface MemoryRefreshToken {
   user?: MemoryUser;
 }
 
+export interface MemoryMembership {
+  id: string;
+  userId: string;
+  planName: string;
+  status: MembershipStatus;
+  validUntil: Date | null;
+  renewalCount: number;
+  perks: string[];
+  adminNotes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: MemoryUser;
+}
+
+export interface MemoryEvent {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  venue: string;
+  startsAt: Date;
+  endsAt: Date;
+  capacity: number;
+  price: number;
+  status: EventStatus;
+  organizerId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  organizer?: MemoryUser;
+}
+
 const users: MemoryUser[] = [];
 const refreshTokens: MemoryRefreshToken[] = [];
+const memberships: MemoryMembership[] = [];
+const events: MemoryEvent[] = [];
 let refreshReadWaiters: Array<() => void> | null = null;
 let refreshReadTarget = 0;
 
 export function resetMemoryDb(): void {
   users.length = 0;
   refreshTokens.length = 0;
+  memberships.length = 0;
+  events.length = 0;
   refreshReadWaiters = null;
   refreshReadTarget = 0;
 }
@@ -58,6 +95,14 @@ export function memoryRefreshTokens(): MemoryRefreshToken[] {
   return refreshTokens.map((token) => ({ ...token }));
 }
 
+export function memoryMemberships(): MemoryMembership[] {
+  return memberships.map((membership) => ({ ...membership }));
+}
+
+export function memoryEvents(): MemoryEvent[] {
+  return events.map((event) => ({ ...event }));
+}
+
 export function insertUser(
   partial: Partial<MemoryUser> & Pick<MemoryUser, 'email' | 'name' | 'passwordHash'>,
 ): MemoryUser {
@@ -77,6 +122,60 @@ export function insertUser(
   return { ...user };
 }
 
+export function insertMembership(
+  partial: Partial<MemoryMembership> & Pick<MemoryMembership, 'userId' | 'planName'>,
+): MemoryMembership {
+  const now = new Date();
+  const membership: MemoryMembership = {
+    id: partial.id ?? crypto.randomUUID(),
+    userId: partial.userId,
+    planName: partial.planName,
+    status: partial.status ?? MembershipStatus.PENDING,
+    validUntil: partial.validUntil ?? null,
+    renewalCount: partial.renewalCount ?? 0,
+    perks: partial.perks ?? [],
+    adminNotes: partial.adminNotes ?? null,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+  };
+  memberships.push(membership);
+  return { ...membership };
+}
+
+export function insertEvent(
+  partial: Partial<MemoryEvent> &
+    Pick<
+      MemoryEvent,
+      | 'title'
+      | 'description'
+      | 'category'
+      | 'venue'
+      | 'startsAt'
+      | 'endsAt'
+      | 'capacity'
+      | 'organizerId'
+    >,
+): MemoryEvent {
+  const now = new Date();
+  const event: MemoryEvent = {
+    id: partial.id ?? crypto.randomUUID(),
+    title: partial.title,
+    description: partial.description,
+    category: partial.category,
+    venue: partial.venue,
+    startsAt: partial.startsAt,
+    endsAt: partial.endsAt,
+    capacity: partial.capacity,
+    price: partial.price ?? 0,
+    status: partial.status ?? EventStatus.DRAFT,
+    organizerId: partial.organizerId,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+  };
+  events.push(event);
+  return { ...event };
+}
+
 export function expireRefreshTokens(): void {
   const expiredAt = new Date(Date.now() - 1000);
   for (const token of refreshTokens) {
@@ -92,20 +191,34 @@ export function setUserStatus(email: string, status: AccountStatus): void {
   user.status = status;
 }
 
-function snapshotState(): { users: MemoryUser[]; refreshTokens: MemoryRefreshToken[] } {
+function snapshotState(): {
+  users: MemoryUser[];
+  refreshTokens: MemoryRefreshToken[];
+  memberships: MemoryMembership[];
+  events: MemoryEvent[];
+} {
   return {
     users: users.map((user) => ({ ...user })),
     refreshTokens: refreshTokens.map((token) => ({ ...token })),
+    memberships: memberships.map((m) => ({ ...m })),
+    events: events.map((e) => ({ ...e })),
   };
 }
 
-function restoreState(state: { users: MemoryUser[]; refreshTokens: MemoryRefreshToken[] }): void {
+function restoreState(state: {
+  users: MemoryUser[];
+  refreshTokens: MemoryRefreshToken[];
+  memberships: MemoryMembership[];
+  events: MemoryEvent[];
+}): void {
   users.splice(0, users.length, ...state.users.map((user) => ({ ...user })));
   refreshTokens.splice(
     0,
     refreshTokens.length,
     ...state.refreshTokens.map((token) => ({ ...token })),
   );
+  memberships.splice(0, memberships.length, ...state.memberships.map((m) => ({ ...m })));
+  events.splice(0, events.length, ...state.events.map((e) => ({ ...e })));
 }
 
 export function installPrismaMemory(): void {
@@ -246,5 +359,217 @@ export function installPrismaMemory(): void {
       }
     }
     return { count } as never;
+  });
+
+  // Membership Mocks
+  vi.spyOn(prisma.membership, 'findFirst').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const match = memberships.find((m) => {
+      if (where?.userId && m.userId !== where.userId) return false;
+      if (where?.status) {
+        if (typeof where.status === 'string' && m.status !== where.status) return false;
+        if (where.status?.in && !where.status.in.includes(m.status)) return false;
+      }
+      return true;
+    });
+    return (match ? { ...match } : null) as never;
+  });
+
+  vi.spyOn(prisma.membership, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as { id: string };
+    const match = memberships.find((m) => m.id === where.id);
+    if (!match) return null as never;
+    const user = users.find((u) => u.id === match.userId);
+    return {
+      ...match,
+      ...(args?.include?.user ? { user: user ? { ...user } : undefined } : {}),
+    } as never;
+  });
+
+  vi.spyOn(prisma.membership, 'findMany').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    let matches = memberships.filter((m) => {
+      if (where?.userId && m.userId !== where.userId) return false;
+      if (where?.status && m.status !== where.status) return false;
+      if (where?.planName && m.planName !== where.planName) return false;
+      return true;
+    });
+    if (args?.orderBy?.createdAt === 'desc') {
+      matches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    matches = matches.slice(skip, skip + take);
+    return matches.map((m) => {
+      const user = users.find((u) => u.id === m.userId);
+      return {
+        ...m,
+        ...(args?.include?.user ? { user: user ? { ...user } : undefined } : {}),
+      };
+    }) as never;
+  });
+
+  vi.spyOn(prisma.membership, 'count').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const matches = memberships.filter((m) => {
+      if (where?.userId && m.userId !== where.userId) return false;
+      if (where?.status && m.status !== where.status) return false;
+      if (where?.planName && m.planName !== where.planName) return false;
+      return true;
+    });
+    return matches.length as never;
+  });
+
+  vi.spyOn(prisma.membership, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const now = new Date();
+    const membership: MemoryMembership = {
+      id: data.id ?? crypto.randomUUID(),
+      userId: data.userId,
+      planName: data.planName,
+      status: data.status,
+      validUntil: data.validUntil ? new Date(data.validUntil) : null,
+      renewalCount: data.renewalCount ?? 0,
+      perks: data.perks ?? [],
+      adminNotes: data.adminNotes ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    memberships.push(membership);
+    return { ...membership } as never;
+  });
+
+  vi.spyOn(prisma.membership, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const data = args.data as any;
+    const match = memberships.find((m) => m.id === where.id);
+    if (!match) {
+      const err = new Error('Membership record not found') as Error & { code: string };
+      err.code = 'P2025';
+      throw err;
+    }
+    if (data.status) match.status = data.status;
+    if (data.planName) match.planName = data.planName;
+    if (data.validUntil !== undefined)
+      match.validUntil = data.validUntil ? new Date(data.validUntil) : null;
+    if (data.adminNotes !== undefined) match.adminNotes = data.adminNotes;
+    if (data.perks) match.perks = data.perks;
+    if (data.renewalCount?.increment) match.renewalCount += data.renewalCount.increment;
+    match.updatedAt = new Date();
+    return { ...match } as never;
+  });
+
+  // Event Mocks
+  vi.spyOn(prisma.event, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const now = new Date();
+    const event: MemoryEvent = {
+      id: data.id ?? crypto.randomUUID(),
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      venue: data.venue,
+      startsAt: new Date(data.startsAt),
+      endsAt: new Date(data.endsAt),
+      capacity: data.capacity,
+      price: data.price ?? 0,
+      status: data.status ?? EventStatus.DRAFT,
+      organizerId: data.organizerId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    events.push(event);
+    return { ...event } as never;
+  });
+
+  vi.spyOn(prisma.event, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as { id: string };
+    const match = events.find((e) => e.id === where.id);
+    if (!match) return null as never;
+    const organizer = users.find((u) => u.id === match.organizerId);
+    return {
+      ...match,
+      ...(args?.include?.organizer ? { organizer: organizer ? { ...organizer } : undefined } : {}),
+    } as never;
+  });
+
+  vi.spyOn(prisma.event, 'findMany').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    let matches = events.filter((e) => {
+      if (where?.status && e.status !== where.status) return false;
+      if (where?.category && e.category !== where.category) return false;
+      if (where?.organizerId && e.organizerId !== where.organizerId) return false;
+      if (where?.startsAt?.gte && e.startsAt < new Date(where.startsAt.gte)) return false;
+      if (where?.startsAt?.lte && e.startsAt > new Date(where.startsAt.lte)) return false;
+      if (where?.OR && Array.isArray(where.OR)) {
+        const orMatched = where.OR.some((clause: any) => {
+          if (clause.title?.contains)
+            return e.title.toLowerCase().includes(clause.title.contains.toLowerCase());
+          if (clause.description?.contains)
+            return e.description.toLowerCase().includes(clause.description.contains.toLowerCase());
+          if (clause.venue?.contains)
+            return e.venue.toLowerCase().includes(clause.venue.contains.toLowerCase());
+          return false;
+        });
+        if (!orMatched) return false;
+      }
+      return true;
+    });
+    if (args?.orderBy?.startsAt === 'asc') {
+      matches.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+    }
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    matches = matches.slice(skip, skip + take);
+    return matches.map((e) => {
+      const organizer = users.find((u) => u.id === e.organizerId);
+      return {
+        ...e,
+        ...(args?.include?.organizer
+          ? { organizer: organizer ? { ...organizer } : undefined }
+          : {}),
+      };
+    }) as never;
+  });
+
+  vi.spyOn(prisma.event, 'count').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const matches = events.filter((e) => {
+      if (where?.status && e.status !== where.status) return false;
+      if (where?.category && e.category !== where.category) return false;
+      if (where?.organizerId && e.organizerId !== where.organizerId) return false;
+      if (where?.startsAt?.gte && e.startsAt < new Date(where.startsAt.gte)) return false;
+      if (where?.startsAt?.lte && e.startsAt > new Date(where.startsAt.lte)) return false;
+      if (where?.OR && Array.isArray(where.OR)) {
+        const orMatched = where.OR.some((clause: any) => {
+          if (clause.title?.contains)
+            return e.title.toLowerCase().includes(clause.title.contains.toLowerCase());
+          if (clause.description?.contains)
+            return e.description.toLowerCase().includes(clause.description.contains.toLowerCase());
+          if (clause.venue?.contains)
+            return e.venue.toLowerCase().includes(clause.venue.contains.toLowerCase());
+          return false;
+        });
+        if (!orMatched) return false;
+      }
+      return true;
+    });
+    return matches.length as never;
+  });
+
+  vi.spyOn(prisma.event, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const data = args.data as any;
+    const match = events.find((e) => e.id === where.id);
+    if (!match) {
+      const err = new Error('Event not found') as Error & { code: string };
+      err.code = 'P2025';
+      throw err;
+    }
+    Object.assign(match, data);
+    if (data.startsAt) match.startsAt = new Date(data.startsAt);
+    if (data.endsAt) match.endsAt = new Date(data.endsAt);
+    match.updatedAt = new Date();
+    return { ...match } as never;
   });
 }

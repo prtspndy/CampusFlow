@@ -41,3 +41,34 @@ export const authenticate = asyncHandler(
     next();
   },
 );
+
+export const optionalAuthenticate = asyncHandler(
+  async (req: Request, _res: Response, next: NextFunction) => {
+    const header = req.headers.authorization;
+    if (!header?.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = header.slice('Bearer '.length).trim();
+    if (!token) {
+      return next();
+    }
+
+    const claims = verifyAccessToken(token);
+    const user = await prisma.user.findUnique({ where: { id: claims.sub } });
+
+    if (!user || user.tokenVersion !== claims.tv || user.status !== 'active') {
+      return next();
+    }
+
+    req.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      status: user.status,
+      tokenVersion: user.tokenVersion,
+    };
+    next();
+  },
+);

@@ -24,3 +24,15 @@ export function validateParams<T extends ZodTypeAny>(schema: T) {
     next();
   };
 }
+
+export function validateQuery<T extends ZodTypeAny>(schema: T) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.query);
+    if (!result.success) {
+      next(result.error);
+      return;
+    }
+    req.query = result.data as Request['query'];
+    next();
+  };
+}

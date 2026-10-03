@@ -12,8 +12,6 @@ datasource db {
 }
 
 /// Baseline system health check model for Phase 00 foundation.
-/// Speculative business models (Organizations, Memberships, Events) will be
-/// introduced in later phases after team RFC review.
 model SystemHealthCheck {
   id        String   @id @default(uuid())
   status    String   @default("OK")
@@ -37,18 +35,35 @@ enum AccountStatus {
   disabled
 }
 
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  REJECTED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
 /// Application user. Password hashes and token versions are never returned by the API.
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  name          String
-  passwordHash  String
-  role          UserRole       @default(member)
-  status        AccountStatus  @default(active)
-  tokenVersion  Int            @default(0)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  refreshTokens RefreshToken[]
+  id              String         @id @default(uuid())
+  email           String         @unique
+  name            String
+  passwordHash    String
+  role            UserRole       @default(member)
+  status          AccountStatus  @default(active)
+  tokenVersion    Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  refreshTokens   RefreshToken[]
+  memberships     Membership[]
+  organizedEvents Event[]
 
   @@index([role])
   @@map("users")
@@ -69,4 +84,52 @@ model RefreshToken {
   @@index([userId])
   @@index([familyId])
   @@map("refresh_tokens")
+}
+
+/// Organization membership pass for club members.
+model Membership {
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberCode   String           @unique
+  planName     String
+  status       MembershipStatus @default(PENDING)
+  startDate    DateTime         @default(now())
+  validUntil   DateTime
+  renewalCount Int              @default(0)
+  perks        String[]         @default([])
+  adminNotes   String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("memberships")
+}
+
+/// Club events, workshops, galas, and mixers.
+model Event {
+  id              String      @id @default(uuid())
+  title           String
+  description     String
+  venue           String
+  category        String?
+  imageUrl        String?
+  startsAt        DateTime
+  endsAt          DateTime
+  status          EventStatus @default(DRAFT)
+  memberPrice     Int         @default(0)
+  standardPrice   Int         @default(0)
+  totalCapacity   Int?
+  registeredCount Int         @default(0)
+  isFeatured      Boolean     @default(false)
+  organizerId     String
+  organizer       User        @relation(fields: [organizerId], references: [id], onDelete: Restrict)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([organizerId])
+  @@index([status])
+  @@index([startsAt])
+  @@map("events")
 }
