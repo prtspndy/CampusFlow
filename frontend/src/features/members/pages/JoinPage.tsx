@@ -12,13 +12,21 @@ export const JoinPage: React.FC = () => {
   const navigate = useNavigate()
   const { login } = useAuthStore()
 
-  const [selectedPlan, setSelectedPlan] = useState<'annual' | 'semester' | 'lifetime'>('annual')
+  type PlanId = 'annual' | 'semester' | 'lifetime'
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>('annual')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [studentId, setStudentId] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const plans = [
+  const plans: Array<{
+    id: PlanId
+    name: string
+    price: number
+    duration: string
+    recommended: boolean
+    perks: string[]
+  }> = [
     {
       id: 'annual',
       name: 'Annual Gold Member',
@@ -104,15 +112,22 @@ export const JoinPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Plan Selection Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Plan Selection Cards: real buttons so keyboard and screen-reader users can pick a plan */}
+      <div
+        role="radiogroup"
+        aria-label="Membership plan"
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+      >
         {plans.map((plan) => {
           const isSelected = selectedPlan === plan.id
           return (
-            <div
+            <button
               key={plan.id}
-              onClick={() => setSelectedPlan(plan.id as any)}
-              className={`relative rounded-[14px] p-5 border transition-all cursor-pointer select-none flex flex-col justify-between ${
+              type="button"
+              role="radio"
+              aria-checked={isSelected}
+              onClick={() => setSelectedPlan(plan.id)}
+              className={`relative rounded-[14px] p-5 border text-left transition-all cursor-pointer select-none flex flex-col justify-between ${
                 isSelected
                   ? 'bg-[var(--color-primary-tint)] border-[var(--color-primary)] shadow-sm'
                   : 'bg-[var(--color-canvas)] border-[var(--color-hairline-strong)] hover:border-[var(--color-primary)]'
@@ -159,7 +174,7 @@ export const JoinPage: React.FC = () => {
                   {isSelected ? 'Selected Plan' : 'Select Plan'}
                 </div>
               </div>
-            </div>
+            </button>
           )
         })}
       </div>

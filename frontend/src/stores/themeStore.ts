@@ -17,23 +17,36 @@ function getSystemTheme(): 'light' | 'dark' {
 
 const STORAGE_KEY = 'campusflow_theme'
 
-export const useThemeStore = create<ThemeState>((set) => {
-  const saved = (typeof window !== 'undefined'
-    ? localStorage.getItem(STORAGE_KEY)
-    : null) as ThemePreference | null
+function applyTheme(resolved: 'light' | 'dark'): void {
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  root.setAttribute('data-theme', resolved)
+  root.classList.toggle('dark', resolved === 'dark')
+}
 
-  const initialTheme: ThemePreference = saved || 'system'
-  const initialResolved =
-    initialTheme === 'system' ? getSystemTheme() : initialTheme
+function readSavedTheme(): ThemePreference {
+  if (typeof window === 'undefined') return 'system'
+  const saved = localStorage.getItem(STORAGE_KEY)
+  return saved === 'light' || saved === 'dark' ? saved : 'system'
+}
 
-  // Set html attribute immediately
-  if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('data-theme', initialResolved)
-    if (initialResolved === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+export const useThemeStore = create<ThemeState>((set, get) => {
+  const initialTheme = readSavedTheme()
+  const initialResolved = initialTheme === 'system' ? getSystemTheme() : initialTheme
+
+  // index.html already applied this before paint; keep the DOM and store in sync.
+  applyTheme(initialResolved)
+
+  // Follow the OS while the preference is "system".
+  if (typeof window !== 'undefined') {
+    window
+      .matchMedia('(prefers-color-scheme: dark)')
+      .addEventListener('change', (event) => {
+        if (get().theme !== 'system') return
+        const resolved = event.matches ? 'dark' : 'light'
+        applyTheme(resolved)
+        set({ resolvedTheme: resolved })
+      })
   }
 
   return {
@@ -42,12 +55,7 @@ export const useThemeStore = create<ThemeState>((set) => {
     setTheme: (newTheme) => {
       localStorage.setItem(STORAGE_KEY, newTheme)
       const resolved = newTheme === 'system' ? getSystemTheme() : newTheme
-      document.documentElement.setAttribute('data-theme', resolved)
-      if (resolved === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
+      applyTheme(resolved)
       set({ theme: newTheme, resolvedTheme: resolved })
     },
   }

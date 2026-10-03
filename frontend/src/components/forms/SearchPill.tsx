@@ -18,7 +18,7 @@ export const SearchPill = React.forwardRef<HTMLInputElement, SearchPillProps>(
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className="w-full h-12 pl-11 pr-10 text-body-md rounded-full bg-[var(--color-surface)] text-[var(--color-ink)] border border-[var(--color-hairline)] placeholder:text-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[var(--elevation-focus-ring)] transition-all"
+          className="w-full h-12 pl-11 pr-10 text-body-md rounded-full bg-[var(--color-surface)] text-[var(--color-ink)] border border-[var(--color-hairline)] placeholder:text-[var(--color-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[var(--elevation-focus-ring)] transition-all [&::-webkit-search-cancel-button]:appearance-none"
           {...props}
         />
         {value && onClear && (

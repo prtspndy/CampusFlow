@@ -12,17 +12,47 @@ import { Button } from '../../../components/ui/Button'
 import { SeatMeter } from '../../../components/data-display/SeatMeter'
 import { MemberPriceBadge } from '../../../components/badges/MemberPriceBadge'
 import { TicketStub } from '../../../components/tickets/TicketStub'
+import { EmptyState } from '../../../components/feedback/EmptyState'
 import { formatMoney } from '../../../lib/format'
 import { useAuthStore } from '../../../stores/authStore'
-import type { Ticket } from '../../../types/models'
+import type { ClubEvent, Ticket } from '../../../types/models'
 
 export const EventDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuthStore()
+  const event = MOCK_EVENTS.find((e) => e.id === id)
+
+  if (!event) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <Link
+          to="/events"
+          className="inline-flex items-center gap-1.5 text-body-sm font-medium text-[var(--color-primary)] hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Events</span>
+        </Link>
+        <EmptyState
+          icon={<Calendar className="w-6 h-6" />}
+          title="Event not found"
+          description="This event may have ended or the link is out of date."
+          action={
+            <Link to="/events">
+              <Button variant="primary">See upcoming events</Button>
+            </Link>
+          }
+        />
+      </div>
+    )
+  }
+
+  return <EventDetail event={event} />
+}
+
+const EventDetail: React.FC<{ event: ClubEvent }> = ({ event }) => {
+  const user = useAuthStore((state) => state.user)
   const [purchasedTicket, setPurchasedTicket] = useState<Ticket | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const event = MOCK_EVENTS.find((e) => e.id === id) || MOCK_EVENTS[0]
   const isMember = !!user?.membership && user.membership.status === 'ACTIVE'
   const ticketPrice = isMember ? event.memberPrice : event.standardPrice
   const isSoldOut = event.registeredCount >= event.totalCapacity

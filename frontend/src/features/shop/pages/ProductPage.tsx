@@ -1,26 +1,68 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, ShoppingBag, Check } from 'lucide-react'
 import { MOCK_PRODUCTS } from '../../../lib/mockData'
 import { Button } from '../../../components/ui/Button'
 import { MemberPriceBadge } from '../../../components/badges/MemberPriceBadge'
+import { EmptyState } from '../../../components/feedback/EmptyState'
 import { useAuthStore } from '../../../stores/authStore'
 import { useCartStore } from '../../../stores/cartStore'
 import { formatMoney } from '../../../lib/format'
 import type { ProductSize } from '../../../types/enums'
+import type { Product } from '../../../types/models'
 import { cn } from '../../../lib/cn'
+
+/** Prefer M when it is in stock, otherwise the first size that is. */
+function pickDefaultSize(product: Product): ProductSize {
+  const inStock = product.sizes.filter((s) => s.stock > 0)
+  const medium = inStock.find((s) => s.size === 'M')
+  return (medium ?? inStock[0] ?? product.sizes[0])?.size ?? 'M'
+}
 
 export const ProductPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuthStore()
-  const { addItem, setOpen } = useCartStore()
+  const product = MOCK_PRODUCTS.find((p) => p.id === id)
 
-  const product = MOCK_PRODUCTS.find((p) => p.id === id) || MOCK_PRODUCTS[0]
+  if (!product) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <Link
+          to="/shop"
+          className="inline-flex items-center gap-1.5 text-body-sm font-medium text-[var(--color-primary)] hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Store</span>
+        </Link>
+        <EmptyState
+          icon={<ShoppingBag className="w-6 h-6" />}
+          title="Product not found"
+          description="This item may have sold out or been removed from the store."
+          action={
+            <Link to="/shop">
+              <Button variant="primary">Browse all merch</Button>
+            </Link>
+          }
+        />
+      </div>
+    )
+  }
+
+  return <ProductDetail product={product} />
+}
+
+const ProductDetail: React.FC<{ product: Product }> = ({ product }) => {
+  const user = useAuthStore((state) => state.user)
+  const addItem = useCartStore((state) => state.addItem)
+  const setOpen = useCartStore((state) => state.setOpen)
+
   const isMember = !!user?.membership && user.membership.status === 'ACTIVE'
   const displayPrice = isMember ? product.memberPrice : product.standardPrice
 
-  const [selectedSize, setSelectedSize] = useState<ProductSize>('M')
+  const [selectedSize, setSelectedSize] = useState<ProductSize>(() => pickDefaultSize(product))
   const [addedAnimation, setAddedAnimation] = useState(false)
+  const addedTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(addedTimer.current), [])
 
   const currentSizeObj = product.sizes.find((s) => s.size === selectedSize)
   const isCurrentOutOfStock = currentSizeObj ? currentSizeObj.stock <= 0 : false
@@ -37,7 +79,8 @@ export const ProductPage: React.FC = () => {
     })
 
     setAddedAnimation(true)
-    setTimeout(() => {
+    window.clearTimeout(addedTimer.current)
+    addedTimer.current = window.setTimeout(() => {
       setAddedAnimation(false)
       setOpen(true)
     }, 400)
@@ -105,7 +148,7 @@ export const ProductPage: React.FC = () => {
               <span className="text-caption text-[var(--color-muted)]">Unisex sizing</span>
             </div>
 
-            <div className="flex flex-wrap gap-2.5">
+            <div role="radiogroup" aria-label="Size" className="flex flex-wrap gap-2.5">
               {product.sizes.map((s) => {
                 const isSelected = selectedSize === s.size
                 const isOutOfStock = s.stock <= 0
@@ -115,6 +158,9 @@ export const ProductPage: React.FC = () => {
                   <div key={s.size} className="relative flex flex-col items-center">
                     <button
                       type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      aria-label={`Size ${s.size}${isOutOfStock ? ', sold out' : isLowStock ? `, ${s.stock} left` : ''}`}
                       disabled={isOutOfStock}
                       onClick={() => setSelectedSize(s.size)}
                       className={cn(

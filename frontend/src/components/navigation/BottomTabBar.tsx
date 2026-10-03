@@ -14,9 +14,8 @@ export const BottomTabBar: React.FC = () => {
 
   return (
     <nav
-      role="navigation"
-      aria-label="Bottom Navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-[var(--color-canvas)]/95 backdrop-blur-md border-t border-[var(--color-hairline)] px-2 flex items-center justify-around select-none"
+      aria-label="Member navigation"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-[var(--color-canvas)]/95 backdrop-blur-md border-t border-[var(--color-hairline)] px-2 flex items-center justify-around select-none"
     >
       {tabs.map((tab) => (
         <NavLink

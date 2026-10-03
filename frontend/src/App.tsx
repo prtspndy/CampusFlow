@@ -1,95 +1,77 @@
-import { lazy, Suspense } from 'react'
+import { lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import { PublicLayout } from './components/layout/PublicLayout'
 import { MemberLayout } from './components/layout/MemberLayout'
 import { AdminLayout } from './components/layout/AdminLayout'
 import { CheckinLayout } from './components/layout/CheckinLayout'
+import { RouteEffects } from './components/navigation/RouteEffects'
 import { LandingPage } from './features/public/pages/LandingPage'
+import { NotFoundPage } from './features/public/pages/NotFoundPage'
 
+// Each page is its own chunk. Layouts render a PageBoundary around <Outlet />,
+// so the header and navigation stay on screen while a page downloads.
 const EventListPage = lazy(() =>
-  import('./features/events/pages/EventListPage').then((module) => ({
-    default: module.EventListPage,
-  })),
+  import('./features/events/pages/EventListPage').then((m) => ({ default: m.EventListPage })),
 )
 const EventDetailPage = lazy(() =>
-  import('./features/events/pages/EventDetailPage').then((module) => ({
-    default: module.EventDetailPage,
-  })),
+  import('./features/events/pages/EventDetailPage').then((m) => ({ default: m.EventDetailPage })),
 )
 const ShopPage = lazy(() =>
-  import('./features/shop/pages/ShopPage').then((module) => ({ default: module.ShopPage })),
+  import('./features/shop/pages/ShopPage').then((m) => ({ default: m.ShopPage })),
 )
 const ProductPage = lazy(() =>
-  import('./features/shop/pages/ProductPage').then((module) => ({ default: module.ProductPage })),
+  import('./features/shop/pages/ProductPage').then((m) => ({ default: m.ProductPage })),
 )
 const JoinPage = lazy(() =>
-  import('./features/members/pages/JoinPage').then((module) => ({ default: module.JoinPage })),
+  import('./features/members/pages/JoinPage').then((m) => ({ default: m.JoinPage })),
 )
 const AnnouncementFeed = lazy(() =>
-  import('./features/announcements/pages/AnnouncementFeed').then((module) => ({
-    default: module.AnnouncementFeed,
+  import('./features/announcements/pages/AnnouncementFeed').then((m) => ({
+    default: m.AnnouncementFeed,
   })),
 )
 const MemberHome = lazy(() =>
-  import('./features/dashboard/pages/MemberHome').then((module) => ({ default: module.MemberHome })),
+  import('./features/dashboard/pages/MemberHome').then((m) => ({ default: m.MemberHome })),
 )
 const MemberPassPage = lazy(() =>
-  import('./features/members/pages/MemberPassPage').then((module) => ({
-    default: module.MemberPassPage,
-  })),
+  import('./features/members/pages/MemberPassPage').then((m) => ({ default: m.MemberPassPage })),
 )
 const MyTicketsPage = lazy(() =>
-  import('./features/tickets/pages/MyTicketsPage').then((module) => ({
-    default: module.MyTicketsPage,
-  })),
+  import('./features/tickets/pages/MyTicketsPage').then((m) => ({ default: m.MyTicketsPage })),
 )
 const AdminDashboard = lazy(() =>
-  import('./features/dashboard/pages/AdminDashboard').then((module) => ({
-    default: module.AdminDashboard,
-  })),
+  import('./features/dashboard/pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })),
 )
 const MemberListPage = lazy(() =>
-  import('./features/members/pages/MemberListPage').then((module) => ({
-    default: module.MemberListPage,
-  })),
+  import('./features/members/pages/MemberListPage').then((m) => ({ default: m.MemberListPage })),
 )
 const AdminStockPage = lazy(() =>
-  import('./features/shop/pages/AdminStockPage').then((module) => ({
-    default: module.AdminStockPage,
-  })),
+  import('./features/shop/pages/AdminStockPage').then((m) => ({ default: m.AdminStockPage })),
 )
 const AnnouncementComposer = lazy(() =>
-  import('./features/announcements/pages/AnnouncementComposer').then((module) => ({
-    default: module.AnnouncementComposer,
+  import('./features/announcements/pages/AnnouncementComposer').then((m) => ({
+    default: m.AnnouncementComposer,
   })),
 )
 const FundraiserPage = lazy(() =>
-  import('./features/fundraisers/pages/FundraiserPage').then((module) => ({
-    default: module.FundraiserPage,
+  import('./features/fundraisers/pages/FundraiserPage').then((m) => ({
+    default: m.FundraiserPage,
   })),
 )
 const TreasuryDashboard = lazy(() =>
-  import('./features/treasury/pages/TreasuryDashboard').then((module) => ({
-    default: module.TreasuryDashboard,
+  import('./features/treasury/pages/TreasuryDashboard').then((m) => ({
+    default: m.TreasuryDashboard,
   })),
 )
 const CheckinPage = lazy(() =>
-  import('./features/tickets/pages/CheckinPage').then((module) => ({ default: module.CheckinPage })),
+  import('./features/tickets/pages/CheckinPage').then((m) => ({ default: m.CheckinPage })),
 )
-
-function PageFallback() {
-  return (
-    <div className="min-h-[40vh] flex items-center justify-center text-sm text-[var(--color-muted)]">
-      Loading
-    </div>
-  )
-}
 
 export function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<PageFallback />}>
+      <RouteEffects />
       <Routes>
         {/* 1. Public Surfaces (max 1200px) */}
         <Route path="/" element={<PublicLayout />}>
@@ -100,6 +82,7 @@ export function App() {
           <Route path="shop/:id" element={<ProductPage />} />
           <Route path="join" element={<JoinPage />} />
           <Route path="announcements" element={<AnnouncementFeed />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         {/* 2. Member App (Phone-first, max 640px, bottom tab nav) */}
@@ -107,6 +90,7 @@ export function App() {
           <Route index element={<MemberHome />} />
           <Route path="pass" element={<MemberPassPage />} />
           <Route path="tickets" element={<MyTicketsPage />} />
+          <Route path="*" element={<Navigate to="/member" replace />} />
         </Route>
 
         {/* 3. Admin Console (Sidebar 248px + 1280px fluid container) */}
@@ -118,6 +102,7 @@ export function App() {
           <Route path="shop" element={<AdminStockPage />} />
           <Route path="fundraisers" element={<FundraiserPage />} />
           <Route path="treasury" element={<TreasuryDashboard />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
 
         {/* 4. Door Staff Check-in Scanner (Full screen dark mode) */}
@@ -125,11 +110,7 @@ export function App() {
           <Route path=":eventId" element={<CheckinPage />} />
           <Route index element={<Navigate to="/checkin/event-gala-1" replace />} />
         </Route>
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      </Suspense>
     </BrowserRouter>
   )
 }
