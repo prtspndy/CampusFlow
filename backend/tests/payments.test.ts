@@ -4,6 +4,7 @@ import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import { EventStatus, PaymentStatus } from '@prisma/client';
 import { app } from '../src/app.js';
+import { env } from '../src/config/env.js';
 import {
   createRazorpayOrder,
   fetchRazorpayOrder,
@@ -410,5 +411,131 @@ describe('Razorpay payments', () => {
     expect(refunded.body.data.outcome).toBe('PROCESSED');
     expect(memoryPayments()[0]?.status).toBe(PaymentStatus.REFUNDED);
     expect(memoryTickets()[0]?.status).toBe('CANCELLED');
+  });
+
+  it('rejects verification requests with missing or empty payment fields', async () => {
+    const { member } = await reservedRegistration();
+
+    const missingSig = await request(app)
+      .post('/api/payments/verify')
+      .set('Authorization', `Bearer ${member.token}`)
+      .send({
+        razorpay_order_id: 'order_123',
+        razorpay_payment_id: 'pay_123',
+      });
+    expect(missingSig.status).toBe(422);
+
+    const missingPaymentId = await request(app)
+      .post('/api/payments/verify')
+      .set('Authorization', `Bearer ${member.token}`)
+      .send({
+        razorpay_order_id: 'order_123',
+        razorpay_signature: 'sig_123',
+      });
+    expect(missingPaymentId.status).toBe(422);
+
+    const missingOrderId = await request(app)
+      .post('/api/payments/verify')
+      .set('Authorization', `Bearer ${member.token}`)
+      .send({
+        razorpay_payment_id: 'pay_123',
+        razorpay_signature: 'sig_123',
+      });
+    expect(missingOrderId.status).toBe(422);
+
+    const emptyBody = await request(app)
+      .post('/api/payments/verify')
+      .set('Authorization', `Bearer ${member.token}`)
+      .send({});
+    expect(emptyBody.status).toBe(422);
+  });
+
+  it('rejects unauthorized payment order creation and verification requests', async () => {
+    const { registration } = await reservedRegistration();
+
+    const unauthOrder = await request(app).post(
+      `/api/registrations/${registration.id}/payment-order`,
+    );
+    expect(unauthOrder.status).toBe(401);
+
+    const unauthVerify = await request(app).post('/api/payments/verify').send({
+      razorpay_order_id: 'order_123',
+      razorpay_payment_id: 'pay_123',
+      razorpay_signature: 'sig_123',
+    });
+    expect(unauthVerify.status).toBe(401);
+  });
+
+  it('handles Razorpay API provider errors during payment verification', async () => {
+    const { member, registration } = await reservedRegistration();
+    const order = await createOrder(member.token, registration.id);
+    const orderId = order.body.data.payment.razorpayOrderId as string;
+    const paymentId = 'pay_err_1';
+
+    vi.mocked(fetchRazorpayPayment).mockRejectedValueOnce(new Error('Gateway timeout'));
+
+    const response = await request(app)
+      .post('/api/payments/verify')
+      .set('Authorization', `Bearer ${member.token}`)
+      .send({
+        razorpay_order_id: orderId,
+        razorpay_payment_id: paymentId,
+        razorpay_signature: signPayment(orderId, paymentId),
+      });
+
+    expect(response.status).toBe(503);
+    expect(response.body.error.code).toBe('SERVICE_UNAVAILABLE');
+    expect(memoryPayments()[0]?.status).toBe(PaymentStatus.CREATED);
+    expect(memoryTickets()).toHaveLength(0);
+  });
+
+  it('returns 503 when Razorpay environment configuration is missing', async () => {
+    const { member, registration } = await reservedRegistration();
+    const originalSecret = env.RAZORPAY_KEY_SECRET;
+    (env as unknown as { RAZORPAY_KEY_SECRET: string | undefined }).RAZORPAY_KEY_SECRET = undefined;
+
+    try {
+      const resOrder = await request(app)
+        .post(`/api/registrations/${registration.id}/payment-order`)
+        .set('Authorization', `Bearer ${member.token}`);
+      expect(resOrder.status).toBe(503);
+      expect(resOrder.body.error.message).toContain('Payment provider is not configured');
+
+      const resVerify = await request(app)
+        .post('/api/payments/verify')
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({
+          razorpay_order_id: 'order_any',
+          razorpay_payment_id: 'pay_any',
+          razorpay_signature: 'sig_any',
+        });
+      expect(resVerify.status).toBe(503);
+      expect(resVerify.body.error.message).toContain('Payment provider is not configured');
+    } finally {
+      (env as unknown as { RAZORPAY_KEY_SECRET: string | undefined }).RAZORPAY_KEY_SECRET =
+        originalSecret;
+    }
+  });
+
+  it('prevents creating orders for already confirmed registrations', async () => {
+    const { member, registration } = await reservedRegistration();
+    const order = await createOrder(member.token, registration.id);
+    const orderId = order.body.data.payment.razorpayOrderId as string;
+    const paymentId = 'pay_once_more';
+    mockProvider(orderId, paymentId, 25000, 'captured');
+
+    const verified = await request(app)
+      .post('/api/payments/verify')
+      .set('Authorization', `Bearer ${member.token}`)
+      .send({
+        razorpay_order_id: orderId,
+        razorpay_payment_id: paymentId,
+        razorpay_signature: signPayment(orderId, paymentId),
+      });
+    expect(verified.status).toBe(200);
+
+    const duplicateOrder = await createOrder(member.token, registration.id);
+    expect(duplicateOrder.status).toBe(409);
+    expect(duplicateOrder.body.error.code).toBe('ALREADY_CONFIRMED');
   });
 });

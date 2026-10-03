@@ -45,9 +45,7 @@ describe('Four-Role RBAC Backend Suite', () => {
     it('returns canonical role, roleDisplayName, and permissions array on login and /me', async () => {
       const { token } = await createTestAccount('treasurer@campus.edu', 'TREASURER');
 
-      const meRes = await request(app)
-        .get('/api/auth/me')
-        .set('Authorization', `Bearer ${token}`);
+      const meRes = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
 
       expect(meRes.status).toBe(200);
       expect(meRes.body.data).toMatchObject({
@@ -55,7 +53,9 @@ describe('Four-Role RBAC Backend Suite', () => {
         roleDisplayName: ROLE_DISPLAY_NAMES.TREASURER,
       });
       expect(Array.isArray(meRes.body.data.permissions)).toBe(true);
-      expect(meRes.body.data.permissions).toEqual(expect.arrayContaining(ROLE_PERMISSIONS.TREASURER as unknown as string[]));
+      expect(meRes.body.data.permissions).toEqual(
+        expect.arrayContaining(ROLE_PERMISSIONS.TREASURER as unknown as string[]),
+      );
       expect(meRes.body.data.permissions).not.toContain('users.assign_roles');
     });
   });
@@ -142,7 +142,9 @@ describe('Four-Role RBAC Backend Suite', () => {
         .send({ role: 'MEMBER' });
 
       expect(demoteRes.status).toBe(400);
-      expect(demoteRes.body.error.message).toContain('Cannot demote or change the role of the last active administrator');
+      expect(demoteRes.body.error.message).toContain(
+        'Cannot demote or change the role of the last active administrator',
+      );
 
       // Admin role must remain intact
       const freshUser = memoryUsers().find((u) => u.id === soleAdmin.user.id);

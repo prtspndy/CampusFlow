@@ -8,6 +8,7 @@ import { Banner } from '../../../components/feedback/Banner'
 import { useAuthStore } from '../../../stores/authStore'
 import { isApiError } from '../../../lib/api'
 import { formatMoney } from '../../../lib/format'
+import { membershipApiService } from '../services/membershipService'
 
 type PlanId = 'annual' | 'semester' | 'lifetime'
 
@@ -86,10 +87,30 @@ export const JoinPage: React.FC = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activatingMembership, setActivatingMembership] = useState(false)
+  const [membershipNotice, setMembershipNotice] = useState<string | null>(null)
 
   const activePlan = PLANS.find((p) => p.id === selectedPlan) ?? PLANS[0]
   const liveHint = passwordHint(password)
   const canSubmit = name.trim().length > 0 && email.trim().length > 0 && password.length > 0 && !liveHint
+
+  const handleActivateMembership = async () => {
+    setActivatingMembership(true)
+    setMembershipNotice(null)
+    try {
+      await membershipApiService.applyForMembership(selectedPlan)
+      await useAuthStore.getState().fetchMembership()
+      navigate('/member/pass')
+    } catch (err) {
+      if (isApiError(err)) {
+        setMembershipNotice(err.message)
+      } else {
+        setMembershipNotice('Failed to apply for membership.')
+      }
+    } finally {
+      setActivatingMembership(false)
+    }
+  }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -209,13 +230,32 @@ export const JoinPage: React.FC = () => {
               You're signed in as {user.name}
             </h2>
             <p className="text-body-sm text-[var(--color-muted)] mt-1 max-w-md mx-auto">
-              Membership plans and payments open in the next release. Your account is ready for
-              events, the store, and announcements today.
+              {user.membership
+                ? `You have an active ${user.membership.planName} pass (${user.membership.memberCode}).`
+                : `Apply to activate your ${activePlan.name} and get your digital pass.`}
             </p>
           </div>
-          <Link to="/member">
-            <Button variant="primary">Open the member app</Button>
-          </Link>
+
+          {membershipNotice && <Banner variant="warning" message={membershipNotice} />}
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            {!user.membership ? (
+              <Button
+                variant="primary"
+                isLoading={activatingMembership}
+                onClick={handleActivateMembership}
+              >
+                Activate {activePlan.name}
+              </Button>
+            ) : (
+              <Link to="/member/pass">
+                <Button variant="primary">View My Digital Pass</Button>
+              </Link>
+            )}
+            <Link to="/member">
+              <Button variant="secondary">Go to Member Portal</Button>
+            </Link>
+          </div>
         </div>
       ) : (
         <form

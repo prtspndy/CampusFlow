@@ -45,7 +45,12 @@ export function requireRole(...roles: (UserRole | string)[]) {
     const userRole = normalizeRole(req.user.role);
     const normalizedRoles = roles.map((r) => normalizeRole(r));
     if (!normalizedRoles.includes(userRole)) {
-      next(new ForbiddenError('You do not have the required role to access this resource', 'FORBIDDEN'));
+      next(
+        new ForbiddenError(
+          'You do not have the required role to access this resource',
+          'FORBIDDEN',
+        ),
+      );
       return;
     }
 
@@ -66,7 +71,8 @@ export function requireSelfOrAdmin(paramName = 'userId') {
       return;
     }
 
-    const canReadAnyUser = hasPermission(req.user.role, 'users.read') || hasPermission(req.user.role, 'users:read:any');
+    const canReadAnyUser =
+      hasPermission(req.user.role, 'users.read') || hasPermission(req.user.role, 'users:read:any');
     if (req.user.id !== targetId && !canReadAnyUser) {
       next(new ForbiddenError('You can only access your own profile', 'FORBIDDEN'));
       return;

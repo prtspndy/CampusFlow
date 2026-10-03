@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { Membership, MembershipStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedUser, hasPermission, UserRole } from '../types/auth.js';
-import { BadRequestError, ForbiddenError, NotFoundError } from '../utils/errors.js';
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../utils/errors.js';
 import {
   ApplyMembershipInput,
   ListMembershipsQuery,
@@ -82,14 +82,28 @@ export async function applyForMembership(
   const now = new Date();
   const validUntil = new Date(now.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
 
-  // Generate unique memberCode
+  // Generate unique memberCode with collision retry loop
   let memberCode = generateMemberCode();
   let attempts = 0;
+  let isUnique = false;
+
   while (attempts < 5) {
     const codeExists = await prisma.membership.findUnique({ where: { memberCode } });
-    if (!codeExists) break;
+    if (!codeExists) {
+      isUnique = true;
+      break;
+    }
     memberCode = generateMemberCode();
     attempts++;
+  }
+
+  if (!isUnique) {
+    const finalCheck = await prisma.membership.findUnique({ where: { memberCode } });
+    if (finalCheck) {
+      throw new ConflictError(
+        'Unable to generate a unique membership code after multiple attempts. Please try again.',
+      );
+    }
   }
 
   return prisma.membership.create({
