@@ -2,8 +2,8 @@ import crypto from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
-import { AuthSession, PublicUser } from '../types/auth.js';
-import { ConflictError, NotFoundError, UnauthorizedError } from '../utils/errors.js';
+import { AuthSession, PublicUser, UserRole } from '../types/auth.js';
+import { BadRequestError, ConflictError, NotFoundError, UnauthorizedError } from '../utils/errors.js';
 import { LoginInput, RegisterInput } from '../validators/auth.validators.js';
 import { dummyPasswordHash, hashPassword, verifyPassword } from './password.service.js';
 import {
@@ -31,7 +31,7 @@ export async function registerUser(input: RegisterInput): Promise<PublicUser> {
         email: input.email,
         name: input.name,
         passwordHash,
-        role: 'member',
+        role: 'MEMBER',
         status: 'active',
       },
     });
@@ -196,6 +196,63 @@ export async function listUsers(): Promise<PublicUser[]> {
     select: publicUserSelect,
   });
   return users.map((user) => toPublicUser(user));
+}
+
+export async function updateUserRole(
+  adminUserId: string,
+  targetUserId: string,
+  newRole: UserRole,
+): Promise<PublicUser> {
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+  });
+
+  if (!targetUser) {
+    throw new NotFoundError('User not found');
+  }
+
+  if (targetUser.role === newRole) {
+    return toPublicUser(targetUser);
+  }
+
+  const updatedUser = await prisma.$transaction(
+    async (tx) => {
+      // Prevent demoting the last active administrator
+      if (targetUser.role === 'ADMIN' && newRole !== 'ADMIN') {
+        const activeAdminCount = await tx.user.count({
+          where: { role: 'ADMIN', status: 'active' },
+        });
+
+        if (activeAdminCount <= 1) {
+          throw new BadRequestError('Cannot demote or change the role of the last active administrator');
+        }
+      }
+
+      // Invalidate refresh tokens and increment tokenVersion so active sessions are revoked
+      const user = await tx.user.update({
+        where: { id: targetUserId },
+        data: {
+          role: newRole,
+          tokenVersion: { increment: 1 },
+        },
+        select: publicUserSelect,
+      });
+
+      await tx.refreshToken.updateMany({
+        where: { userId: targetUserId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+
+      return user;
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+  );
+
+  console.info(
+    `[RBAC_AUDIT] Admin ${adminUserId} changed user ${targetUserId} role from ${targetUser.role} to ${newRole}`,
+  );
+
+  return toPublicUser(updatedUser);
 }
 
 type RefreshTokenWriter = Pick<typeof prisma, 'refreshToken'>;

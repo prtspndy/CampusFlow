@@ -10,10 +10,15 @@ import { RequireAuth } from './components/navigation/RequireAuth'
 import { LandingPage } from './features/public/pages/LandingPage'
 import { NotFoundPage } from './features/public/pages/NotFoundPage'
 import { useAuthStore } from './stores/authStore'
-import { ADMIN_CONSOLE_ROLES, CHECKIN_ROLES } from './lib/constants'
+import { ADMIN_CONSOLE_ROLES, CHECKIN_ROLES, ROLES } from './lib/constants'
 
 // Each page is its own chunk. Layouts render a PageBoundary around <Outlet />,
 // so the header and navigation stay on screen while a page downloads.
+const UserManagementPage = lazy(() =>
+  import('./features/admin/pages/UserManagementPage').then((m) => ({
+    default: m.UserManagementPage,
+  })),
+)
 const EventListPage = lazy(() =>
   import('./features/events/pages/EventListPage').then((m) => ({ default: m.EventListPage })),
 )
@@ -111,6 +116,9 @@ export function App() {
         <Route element={<RequireAuth roles={ADMIN_CONSOLE_ROLES} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route element={<RequireAuth roles={[ROLES.ADMIN]} />}>
+              <Route path="users" element={<UserManagementPage />} />
+            </Route>
             <Route path="members" element={<MemberListPage />} />
             <Route path="events" element={<EventListPage />} />
             <Route path="announcements" element={<AnnouncementComposer />} />

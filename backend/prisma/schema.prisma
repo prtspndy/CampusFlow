@@ -20,14 +20,16 @@ model SystemHealthCheck {
   @@map("system_health_checks")
 }
 
-/// Platform roles agreed for Phase 01.
-/// Public registration always persists `member`. Privileged roles are assigned out of band.
+/// Canonical four roles for CampusFlow RBAC:
+/// ADMIN (Admin / Organization President)
+/// MEMBER (Club Member / Student)
+/// EVENT_MANAGER (Event Manager / Volunteer)
+/// TREASURER (Treasurer)
 enum UserRole {
-  member
-  volunteer
-  door_staff
-  treasurer
-  admin
+  ADMIN
+  MEMBER
+  EVENT_MANAGER
+  TREASURER
 }
 
 enum AccountStatus {
@@ -56,7 +58,7 @@ model User {
   email           String         @unique
   name            String
   passwordHash    String
-  role            UserRole       @default(member)
+  role            UserRole       @default(MEMBER)
   status          AccountStatus  @default(active)
   tokenVersion    Int            @default(0)
   createdAt       DateTime       @default(now())

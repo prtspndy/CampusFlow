@@ -2,7 +2,7 @@
 import crypto from 'node:crypto';
 import { vi } from 'vitest';
 import { prisma } from '../../src/lib/prisma.js';
-import type { AccountStatus, UserRole } from '../../src/types/auth.js';
+import { normalizeRole, type AccountStatus, type UserRole } from '../../src/types/auth.js';
 import { MembershipStatus, EventStatus } from '@prisma/client';
 
 export interface MemoryUser {
@@ -107,12 +107,14 @@ export function insertUser(
   partial: Partial<MemoryUser> & Pick<MemoryUser, 'email' | 'name' | 'passwordHash'>,
 ): MemoryUser {
   const now = new Date();
+  const rawRole = partial.role ?? 'MEMBER';
+  const role: UserRole = normalizeRole(rawRole);
   const user: MemoryUser = {
     id: partial.id ?? crypto.randomUUID(),
     email: partial.email,
     name: partial.name,
     passwordHash: partial.passwordHash,
-    role: partial.role ?? 'member',
+    role,
     status: partial.status ?? 'active',
     tokenVersion: partial.tokenVersion ?? 0,
     createdAt: partial.createdAt ?? now,
@@ -257,6 +259,7 @@ export function installPrismaMemory(): void {
     const where = args.where as { id: string };
     const data = args.data as {
       name?: string;
+      role?: UserRole;
       tokenVersion?: { increment?: number };
     };
     const user = users.find((entry) => entry.id === where.id);
@@ -268,11 +271,24 @@ export function installPrismaMemory(): void {
     if (typeof data.name === 'string') {
       user.name = data.name;
     }
+    if (data.role) {
+      user.role = normalizeRole(data.role);
+    }
     if (data.tokenVersion?.increment) {
       user.tokenVersion += data.tokenVersion.increment;
     }
     user.updatedAt = new Date();
     return { ...user } as never;
+  });
+
+  vi.spyOn(prisma.user, 'count').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const matches = users.filter((u) => {
+      if (where?.role && u.role !== normalizeRole(where.role)) return false;
+      if (where?.status && u.status !== where.status) return false;
+      return true;
+    });
+    return matches.length as never;
   });
 
   vi.spyOn(prisma.user, 'findMany').mockImplementation(async () => {

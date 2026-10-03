@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { ForbiddenError, UnauthorizedError } from '../utils/errors.js';
 import { asyncHandler } from '../utils/async-handler.js';
 import { verifyAccessToken } from '../services/token.service.js';
+import { normalizeRole } from '../types/auth.js';
 
 export const authenticate = asyncHandler(
   async (req: Request, _res: Response, next: NextFunction) => {
@@ -44,7 +45,7 @@ export const authenticate = asyncHandler(
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: normalizeRole(user.role),
       status: user.status,
       tokenVersion: user.tokenVersion,
     };
@@ -75,7 +76,7 @@ export const optionalAuthenticate = asyncHandler(
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: normalizeRole(user.role),
       status: user.status,
       tokenVersion: user.tokenVersion,
     };

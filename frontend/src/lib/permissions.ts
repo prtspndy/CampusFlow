@@ -1,22 +1,12 @@
-export const USER_ROLES = ['ADMIN', 'MEMBER', 'EVENT_MANAGER', 'TREASURER'] as const;
-
-export type UserRole = (typeof USER_ROLES)[number];
-
-export const ACCOUNT_STATUSES = ['active', 'disabled'] as const;
-
-export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
-
-export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
-  ADMIN: 'Admin / Organization President',
-  MEMBER: 'Club Member / Student',
-  EVENT_MANAGER: 'Event Manager / Volunteer',
-  TREASURER: 'Treasurer',
-};
+import type { User } from '../types/models'
+import type { UserRole } from './constants'
+import { ROLES } from './constants'
 
 /**
- * Granular permissions matrix for CampusFlow four-role RBAC.
+ * Frontend permissions matrix mirror for client-side evaluation and offline fallback.
+ * The server is always authoritative and issues the live permissions array on the user session.
  */
-export const ROLE_PERMISSIONS = {
+export const ROLE_PERMISSIONS: Record<UserRole, readonly string[]> = {
   MEMBER: [
     'profile.read_own',
     'profile.update_own',
@@ -126,15 +116,12 @@ export const ROLE_PERMISSIONS = {
     'fundraisers.read',
     'fundraisers.manage',
   ],
-} as const satisfies Record<UserRole, readonly string[]>;
-
-export type Permission = (typeof ROLE_PERMISSIONS)[UserRole][number];
+}
 
 /**
- * Mapping legacy colon-separated permission tokens to canonical dot-notation permissions
- * for seamless backwards compatibility.
+ * Backward compatibility aliases between colon-separated Phase 01/02 tokens and canonical dot notation.
  */
-export const PERMISSION_ALIASES: Record<string, Permission> = {
+export const PERMISSION_ALIASES: Record<string, string> = {
   'profile:read': 'profile.read_own',
   'profile:update': 'profile.update_own',
   'users:read:any': 'users.read',
@@ -148,54 +135,33 @@ export const PERMISSION_ALIASES: Record<string, Permission> = {
   'events:create': 'events.create',
   'events:read:drafts': 'events.read_drafts',
   'events:manage:any': 'events.manage_all',
-};
+}
 
-export function normalizeRole(role: UserRole | string | undefined | null): UserRole {
-  if (!role) return 'MEMBER';
-  const upper = String(role).toUpperCase();
-  if (upper === 'ADMIN') return 'ADMIN';
-  if (upper === 'MEMBER') return 'MEMBER';
-  if (upper === 'EVENT_MANAGER' || upper === 'VOLUNTEER' || upper === 'DOOR_STAFF' || upper === 'STAFF') {
-    return 'EVENT_MANAGER';
+export function getUserPermissions(user: User | null | undefined): string[] {
+  if (!user) return []
+  if (Array.isArray(user.permissions) && user.permissions.length > 0) {
+    return user.permissions
   }
-  if (upper === 'TREASURER') return 'TREASURER';
-  return 'MEMBER';
+  const fallback = ROLE_PERMISSIONS[user.role] ?? []
+  return [...fallback]
 }
 
-export function hasPermission(role: UserRole | string | undefined | null, permission: Permission | string): boolean {
-  const normalized = normalizeRole(role);
-  const perms = (ROLE_PERMISSIONS[normalized] ?? []) as readonly string[];
-  if (perms.includes(permission)) {
-    return true;
-  }
-  const canonical = PERMISSION_ALIASES[permission];
-  return canonical ? perms.includes(canonical) : false;
+export function hasPermission(user: User | null | undefined, permission: string): boolean {
+  if (!user) return false
+  const permissions = getUserPermissions(user)
+  if (permissions.includes(permission)) return true
+  const canonical = PERMISSION_ALIASES[permission]
+  return canonical ? permissions.includes(canonical) : false
 }
 
-export interface PublicUser {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  roleDisplayName: string;
-  permissions: string[];
-  status: AccountStatus;
-  createdAt: string;
-  updatedAt: string;
+export function hasAnyPermission(user: User | null | undefined, permissions: string[]): boolean {
+  if (!user) return false
+  return permissions.some((perm) => hasPermission(user, perm))
 }
 
-export interface AuthSession {
-  token: string;
-  refreshToken: string;
-  expiresIn: number;
-  user: PublicUser;
+export function hasAllPermissions(user: User | null | undefined, permissions: string[]): boolean {
+  if (!user) return false
+  return permissions.every((perm) => hasPermission(user, perm))
 }
 
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  status: AccountStatus;
-  tokenVersion: number;
-}
+export const can = hasPermission

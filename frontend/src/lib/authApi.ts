@@ -1,13 +1,24 @@
 import { api } from './api'
 
 /** Shapes returned by the backend. See docs/API_CONTRACT.md §5. */
-export type ApiRole = 'member' | 'volunteer' | 'door_staff' | 'treasurer' | 'admin'
+export type ApiRole =
+  | 'ADMIN'
+  | 'MEMBER'
+  | 'EVENT_MANAGER'
+  | 'TREASURER'
+  | 'member'
+  | 'volunteer'
+  | 'door_staff'
+  | 'treasurer'
+  | 'admin'
 
 export interface ApiUser {
   id: string
   email: string
   name: string
   role: ApiRole
+  roleDisplayName?: string
+  permissions?: string[]
   status: 'active' | 'disabled'
   createdAt: string
   updatedAt: string
@@ -37,4 +48,7 @@ export const authApi = {
   logout: () => api.post<null>('/auth/logout'),
   me: () => api.get<ApiUser>('/auth/me'),
   updateName: (name: string) => api.patch<ApiUser>('/auth/me', { name }),
+  listUsers: () => api.get<{ users: ApiUser[] }>('/admin/users'),
+  updateUserRole: (userId: string, role: string) =>
+    api.patch<{ user: ApiUser }>(`/admin/users/${userId}/role`, { role }),
 }
