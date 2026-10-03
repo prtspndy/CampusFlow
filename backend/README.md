@@ -19,10 +19,17 @@ backend/
 │   │   └── prisma.ts           # Singleton Prisma Client (hot-reload safe)
 │   ├── routes/
 │   │   ├── index.ts            # Centralized API router & API info endpoint
-│   │   └── health.routes.ts    # Liveness & readiness probes
+│   │   ├── health.routes.ts    # Liveness & readiness probes
+│   │   ├── auth.routes.ts      # Register, login, refresh, logout, current user
+│   │   ├── users.routes.ts     # Self-or-admin profile reads
+│   │   └── admin.routes.ts     # Admin user directory
 │   ├── middleware/
 │   │   ├── error.middleware.ts # Standardized error envelope & exception sanitization
-│   │   └── not-found.middleware.ts # 404 handler for unmatched routes
+│   │   ├── not-found.middleware.ts # 404 handler for unmatched routes
+│   │   ├── authenticate.middleware.ts
+│   │   ├── authorize.middleware.ts
+│   │   ├── validate.middleware.ts
+│   │   └── rate-limit.middleware.ts
 │   ├── utils/
 │   │   ├── async-handler.ts    # Express async/await controller wrapper
 │   │   ├── errors.ts           # Structured application error classes
@@ -81,6 +88,14 @@ Open `.env` and fill in your variables:
 | `FRONTEND_URL` | Allowed frontend origins (comma-separated) | `http://localhost:5173` | Yes |
 | `DATABASE_URL` | Neon pooled connection string | — | For DB queries |
 | `DIRECT_URL` | Neon direct connection string (unpooled) | — | For Prisma migrations |
+| `JWT_ACCESS_SECRET` | HMAC secret for access tokens (min 32 chars) | — | Yes, except tests |
+| `JWT_ACCESS_TTL_SECONDS` | Access token lifetime | `900` | No |
+| `JWT_REFRESH_TTL_DAYS` | Refresh token lifetime | `7` | No |
+| `JWT_ISSUER` | Expected JWT issuer | `campusflow` | No |
+| `JWT_AUDIENCE` | Expected JWT audience | `campusflow-api` | No |
+| `BCRYPT_ROUNDS` | Password hash cost | `12` | No |
+| `AUTH_RATE_LIMIT_MAX` | Auth attempts per window per IP | `10` | No |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | Auth rate-limit window | `900000` | No |
 
 ---
 
@@ -119,6 +134,13 @@ npm run db:migrate
 npm run db:studio
 ```
 
+Committed migrations run in this order on a clean database:
+
+1. `20261002120000_phase00_system_health_checks` creates the Phase 00 `system_health_checks` table.
+2. `20261003120000_add_auth_users_and_refresh_tokens` creates `users` and `refresh_tokens`.
+
+These files have not been applied here because no database is configured. If `system_health_checks` was already created outside Prisma Migrate, the baseline `CREATE TABLE` fails and does not drop that table.
+
 ---
 
 ## 🚀 Running the Application
@@ -139,6 +161,24 @@ Once running:
 - **Interactive Swagger Docs**: `http://localhost:5000/api/docs`
 - **Liveness Probe**: `http://localhost:5000/api/health`
 - **Readiness Probe**: `http://localhost:5000/api/health/ready`
+
+### Authentication
+
+Phase 01 uses signed JWT access tokens and hashed rotating refresh tokens. See [docs/API_CONTRACT.md](../docs/API_CONTRACT.md).
+
+- `POST /api/auth/register` creates a `member`. It does not accept a role.
+- `POST /api/auth/login` returns `token`, `refreshToken`, `expiresIn`, and the public user.
+- `POST /api/auth/refresh` rotates the refresh token.
+- `POST /api/auth/logout` revokes that user's refresh tokens and invalidates outstanding access tokens.
+- `GET /api/auth/me` and `PATCH /api/auth/me` are the current-user profile. Profile updates accept `name` only.
+- `GET /api/users/:userId` is limited to the caller or an admin.
+- `GET /api/admin/users` requires the `admin` role.
+
+Roles are `member`, `volunteer`, `door_staff`, `treasurer`, and `admin`. Promote an account in the database; there is no public promotion endpoint:
+
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'lead@example.com';
+```
 
 ---
 

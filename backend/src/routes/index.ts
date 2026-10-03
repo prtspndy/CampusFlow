@@ -1,11 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { healthRouter } from './health.routes.js';
+import { authRouter } from './auth.routes.js';
+import { usersRouter } from './users.routes.js';
+import { adminRouter } from './admin.routes.js';
 import { sendSuccess } from '../utils/response.js';
 
 export const rootRouter = Router();
 
 // Mount Health and Readiness probes under /health
 rootRouter.use('/health', healthRouter);
+rootRouter.use('/auth', authRouter);
+rootRouter.use('/users', usersRouter);
+rootRouter.use('/admin', adminRouter);
 
 /**
  * GET /api
