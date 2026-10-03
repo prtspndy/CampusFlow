@@ -31,7 +31,7 @@ import { TreasuryDashboard } from './features/treasury/pages/TreasuryDashboard'
 // Door Check-in
 import { CheckinPage } from './features/tickets/pages/CheckinPage'
 
-export default function App() {
+export function App() {
   return (
     <BrowserRouter>
       <Routes>
@@ -76,3 +76,5 @@ export default function App() {
     </BrowserRouter>
   )
 }
+
+export default App

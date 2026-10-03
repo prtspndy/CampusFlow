@@ -74,6 +74,10 @@
   --radius-full: 9999px;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -91,7 +95,7 @@ body {
   flex-direction: column;
 }
 
-/* Custom scrollbars and accessible focus ring */
+/* Accessible focus ring per DESIGN.md */
 :focus-visible {
   outline: none;
   box-shadow: var(--elevation-focus-ring);
