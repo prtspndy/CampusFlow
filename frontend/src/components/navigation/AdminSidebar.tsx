@@ -10,6 +10,7 @@ import {
   Landmark,
   QrCode,
   ShieldCheck,
+  HeartHandshake,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import type { UserRole } from '../../lib/constants'
@@ -57,6 +58,14 @@ const NAV_ITEMS: NavItem[] = [
     shortLabel: 'Events',
     icon: Calendar,
     tintColor: 'var(--color-tint-peach-deep)',
+    roles: [ROLES.ADMIN, ROLES.EVENT_MANAGER],
+  },
+  {
+    to: '/admin/volunteers',
+    label: 'Volunteers & Roster',
+    shortLabel: 'Volunteers',
+    icon: HeartHandshake,
+    tintColor: 'var(--color-primary)',
     roles: [ROLES.ADMIN, ROLES.EVENT_MANAGER],
   },
   {

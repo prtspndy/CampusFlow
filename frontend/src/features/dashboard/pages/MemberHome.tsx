@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CreditCard, Calendar, Megaphone, ArrowRight } from 'lucide-react'
+import { CreditCard, Calendar, Megaphone, ArrowRight, HeartHandshake, Receipt } from 'lucide-react'
 import { useAuthStore } from '../../../stores/authStore'
 import { EventCard } from '../../../components/cards/EventCard'
 import { StatusBadge } from '../../../components/badges/StatusBadge'
@@ -125,6 +125,35 @@ export const MemberHome: React.FC = () => {
           </div>
         </Link>
       )}
+
+      {/* Member Quick Services */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link
+          to="/member/volunteering"
+          className="p-4 rounded-[14px] bg-[var(--color-surface)] border border-[var(--color-hairline)] hover:border-[var(--color-primary)] transition-colors flex items-center gap-3"
+        >
+          <div className="w-9 h-9 rounded-[10px] bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center flex-shrink-0">
+            <HeartHandshake className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-body-sm font-bold text-[var(--color-ink)]">Volunteering</h3>
+            <p className="text-[11px] text-[var(--color-muted)]">My shifts & hours</p>
+          </div>
+        </Link>
+
+        <Link
+          to="/member/expenses"
+          className="p-4 rounded-[14px] bg-[var(--color-surface)] border border-[var(--color-hairline)] hover:border-[var(--color-primary)] transition-colors flex items-center gap-3"
+        >
+          <div className="w-9 h-9 rounded-[10px] bg-emerald-500/10 text-emerald-600 flex items-center justify-center flex-shrink-0">
+            <Receipt className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-body-sm font-bold text-[var(--color-ink)]">Claim Expense</h3>
+            <p className="text-[11px] text-[var(--color-muted)]">Reimbursements</p>
+          </div>
+        </Link>
+      </div>
 
       {/* Featured Upcoming Event */}
       <div className="space-y-3">

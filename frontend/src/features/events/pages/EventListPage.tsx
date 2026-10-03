@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react'
 import { EventCard } from '../../../components/cards/EventCard'
 import { FilterChips } from '../../../components/forms/FilterChips'
 import { SearchPill } from '../../../components/forms/SearchPill'
@@ -67,7 +68,7 @@ export const EventListPage: React.FC = () => {
     { value: 'Social', label: 'Social & Mixers' },
   ]
 
-  const filteredEvents = events.filter((event) => {
+  const filteredEvents = events.filter((event: ClubEvent) => {
     const matchesCategory =
       selectedFilter === 'ALL' || event.category === selectedFilter
     const matchesSearch =
@@ -116,7 +117,7 @@ export const EventListPage: React.FC = () => {
         </div>
       ) : filteredEvents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-          {filteredEvents.map((event) => (
+          {filteredEvents.map((event: ClubEvent) => (
             <EventCard key={event.id} event={event} />
           ))}
         </div>

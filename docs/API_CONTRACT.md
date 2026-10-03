@@ -435,3 +435,73 @@ Prices are whole INR rupees. Orders are pickup reservations: placing an order de
 | `POST /api/announcements/:announcementId/unpublish` | `announcements.publish` | Returns the row to `DRAFT` and clears `publishedAt` |
 
 Stock for an order is reduced with `UPDATE ... WHERE stock >= quantity`. If any line fails, the transaction rolls back and no order row remains. Variant stock cannot go below zero.
+
+---
+
+## 8. Phase 05 — Volunteers, Fundraisers, Expenses, Reimbursements & Finance Reports
+
+### 8.1 Volunteer Management (`/api/volunteers`)
+
+All currency in INR. Volunteer opportunities support capacity controls, deadline enforcement, participant rosters, and coordinator attendance verification.
+
+| Method and path | Auth / Permission | Description |
+|---|---|---|
+| `GET /api/volunteers/opportunities` | Public / Any | List volunteer opportunities with filters (`status`, `category`, `eventId`, `page`, `limit`). Non-staff users only see `PUBLISHED` unless filtering. |
+| `POST /api/volunteers/opportunities` | `volunteers.manage` (`ADMIN`, `EVENT_MANAGER`) | Create a new opportunity (`title`, `description`, `location`, `startsAt`, `endsAt`, `applicationDeadline`, `capacity`, `category`, `eligibility`, `eventId`). |
+| `GET /api/volunteers/opportunities/:id` | Public / Any | Fetch opportunity details with current remaining capacity and registration counts. |
+| `PATCH /api/volunteers/opportunities/:id` | `volunteers.manage` (`ADMIN`, `EVENT_MANAGER`) | Update opportunity attributes. Validates timing and capacity. |
+| `POST /api/volunteers/opportunities/:id/publish` | `volunteers.manage` (`ADMIN`, `EVENT_MANAGER`) | Transitions opportunity state from `DRAFT` to `PUBLISHED`. |
+| `POST /api/volunteers/opportunities/:id/close` | `volunteers.manage` (`ADMIN`, `EVENT_MANAGER`) | Transitions opportunity state to `CLOSED`. |
+| `POST /api/volunteers/opportunities/:id/cancel` | `volunteers.manage` (`ADMIN`, `EVENT_MANAGER`) | Transitions opportunity state to `CANCELLED`. |
+| `POST /api/volunteers/opportunities/:id/signups` | Authenticated Member (`volunteers.signup`) | Register for a volunteer shift. Enforces positive capacity (`409 CAPACITY_REACHED`), prevents duplicate registrations (`409 ALREADY_SIGNED_UP`), and checks application deadlines (`422 DEADLINE_PASSED`). Atomically increments `registeredCount`. |
+| `GET /api/volunteers/signups/me` | Authenticated Member (`volunteers.signup`) | List the current authenticated user's volunteer registrations and attendance history. |
+| `POST /api/volunteers/signups/:signupId/cancel` | Owner or `volunteers.manage` | Cancel an active volunteer sign-up. Decrements `registeredCount` and frees the capacity slot. |
+| `GET /api/volunteers/opportunities/:id/participants` | `volunteers.manage` (`ADMIN`, `EVENT_MANAGER`) | Coordinator access to registered participants roster with status filter and pagination. Ordinary members receive **403 Forbidden**. |
+| `PATCH /api/volunteers/signups/:signupId/attendance` | `volunteers.manage` (`ADMIN`, `EVENT_MANAGER`) | Record or update volunteer attendance (`status`: `ATTENDED`, `NO_SHOW`, `EXCUSED`, `REGISTERED`; `attendanceNotes`). Records who updated attendance. Ordinary members receive **403 Forbidden**. |
+
+### 8.2 Fundraiser Management (`/api/fundraisers`)
+
+Fundraising totals are strictly derived from verified contributions (`status: VERIFIED`). Frontend reports of success are never trusted without backend signature verification.
+
+| Method and path | Auth / Permission | Description |
+|---|---|---|
+| `GET /api/fundraisers` | Public / Any | List fundraisers with accurate DB-backed totals (`collectedAmount`, `donorCount`, `percentRaised`). |
+| `POST /api/fundraisers` | `fundraisers.manage` (`ADMIN`, `TREASURER`, `EVENT_MANAGER`) | Create a new campaign (`title`, `description`, `purpose`, `goalAmount`, `startsAt`, `endsAt`, `status`). |
+| `GET /api/fundraisers/:id` | Public / Any | Read fundraiser campaign details and verified funding statistics. |
+| `PATCH /api/fundraisers/:id` | `fundraisers.manage` (`ADMIN`, `TREASURER`) | Edit fundraiser settings and targets. Ordinary members receive **403 Forbidden**. |
+| `POST /api/fundraisers/:id/publish` | `fundraisers.manage` (`ADMIN`, `TREASURER`) | Publish fundraiser to `ACTIVE` state. |
+| `POST /api/fundraisers/:id/close` | `fundraisers.manage` (`ADMIN`, `TREASURER`) | Close fundraiser (`CLOSED`). |
+| `POST /api/fundraisers/:id/contributions` | Public / Donors | Record a contribution (`amount`, `donorName`, `donorEmail`, `paymentMethod: 'ONLINE' \| 'CASH'`). Supports idempotency (`idempotencyKey`). For online contributions, generates Razorpay order with status `PENDING`. |
+| `POST /api/fundraisers/verify` | Public / Donors | Verify Razorpay payment signature using backend HMAC SHA256 (`RAZORPAY_KEY_SECRET`). Only verified contributions increment `collectedAmount` and `donorCount`. |
+| `GET /api/fundraisers/:id/contributions` | `fundraisers.manage` (`ADMIN`, `TREASURER`) | Paginated verified donor records and ledger audit. |
+
+### 8.3 Expenses & Reimbursements (`/api/expenses`, `/api/reimbursements`)
+
+Strict separation between expense approval and payout settlement. Approving an expense moves it to `APPROVED` and automatically inserts a `PENDING` reimbursement claim. Marking a reimbursement `SETTLED` requires audit reference metadata.
+
+| Method and path | Auth / Permission | Description |
+|---|---|---|
+| `POST /api/expenses` | `finance.expenses.create` (Any authenticated user) | Submit an expense claim (`title`, `description`, `amount`, `category`, `expenseDate`, `receiptUrl`, `eventId`, `fundraiserId`). Starts in `PENDING` status. |
+| `GET /api/expenses/me` | `finance.expenses.read_own` | Retrieve submitted expenses for the authenticated caller. |
+| `GET /api/expenses` | `finance.expenses.manage` or `finance.read` (`ADMIN`, `TREASURER`) | List all submitted expenses with filtering (`submitterId`, `status`, `category`, `eventId`, `fundraiserId`, `startDate`, `endDate`). Ordinary members receive **403 Forbidden**. |
+| `GET /api/expenses/:id` | Submitter or `finance.read` / `finance.expenses.manage` | Read full expense record and attached reimbursement status. Unrelated members receive **403 Forbidden**. |
+| `PATCH /api/expenses/:id` | Submitter only | Update pending expense details. Non-pending expenses reject mutation with **400 INVALID_STATUS_TRANSITION**. |
+| `DELETE /api/expenses/:id` | Submitter only | Withdraw/delete pending expense claim. |
+| `POST /api/expenses/:id/approve` | `finance.expenses.manage` (`ADMIN`, `TREASURER`) | Approve submitted expense. Enforces separation of duties: submitter cannot approve their own claim (**403 SELF_APPROVAL_FORBIDDEN**). Atomically transitions expense to `APPROVED` and creates linked `Reimbursement` in `PENDING` status. |
+| `POST /api/expenses/:id/reject` | `finance.expenses.manage` (`ADMIN`, `TREASURER`) | Reject expense claim. Requires `{ "reason": string }` (**422** if omitted). Transitions to `REJECTED`. |
+| `GET /api/reimbursements/me` | `reimbursements.read_own` | Retrieve reimbursement claims belonging to the authenticated caller. |
+| `GET /api/reimbursements` | `reimbursements.read` or `finance.read` (`ADMIN`, `TREASURER`) | List reimbursement claims filtered by `status` (`PENDING`, `SETTLED`, `REJECTED`) and `claimantId`. |
+| `GET /api/reimbursements/:id` | Claimant or `reimbursements.read` / `finance.read` | Read reimbursement claim details and payout status. |
+| `POST /api/reimbursements/:id/settle` | `reimbursements.settle` (`ADMIN`, `TREASURER`) | Record payout settlement (`settlementReference`, `notes`). Enforces separation of duties: claimant cannot settle their own reimbursement (**403 SELF_SETTLEMENT_FORBIDDEN**). Sets `settledAt` and audit metadata. |
+| `POST /api/reimbursements/:id/reject` | `reimbursements.review` (`ADMIN`, `TREASURER`) | Reject reimbursement claim (`reason`). Enforces separation of duties: claimant cannot review their own claim (**403 SELF_REVIEW_FORBIDDEN**). |
+
+### 8.4 Treasury Dashboard & Financial Reports (`/api/finance`)
+
+Unified double-entry financial ledger and multi-stream analytics.
+
+| Method and path | Auth / Permission | Description |
+|---|---|---|
+| `GET /api/finance/summary` | `finance.read` (`ADMIN`, `TREASURER`) | Aggregate financial metrics calculated from persisted records: `totalApprovedExpenses`, `totalPendingExpenses`, `totalRejectedExpenses`, `totalSettledReimbursements`, `outstandingReimbursementObligations`, `totalVerifiedFundraiserContributions`, `totalInflows` (tickets + merch + verified fundraisers), `totalOutflows` (settled reimbursements), and `netTreasuryBalance`. |
+| `GET /api/finance/ledger` | `finance.read` (`ADMIN`, `TREASURER`) | Paginated chronological ledger transactions with `date`, `description`, `category` (`TICKETS`, `MERCH`, `FUNDRAISER`, `EXPENSE`), `amount`, `status`, and `source`. Supports `category`, `startDate`, and `endDate` query filters. |
+| `GET /api/finance/export` | `reports.finance.export` (`ADMIN`, `TREASURER`) | Stream/download reconciled ledger in RFC 4180 CSV format (`Date,Description,Category,Amount,Status,Source`). Protects against CSV formula injection (OWASP) by prefixing cells starting with `=`, `+`, `-`, `@`, `\t`, `\r` with `'`. |
+

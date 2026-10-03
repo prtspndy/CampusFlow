@@ -10,6 +10,12 @@ import type {
   TaskStatus,
   TicketStatus,
   TransactionCategory,
+  OpportunityStatus,
+  VolunteerSignupStatus,
+  FundraiserStatus,
+  ContributionStatus,
+  ExpenseStatus,
+  ExpenseCategory,
 } from './enums'
 
 export type {
@@ -24,6 +30,12 @@ export type {
   TaskStatus,
   TicketStatus,
   TransactionCategory,
+  OpportunityStatus,
+  VolunteerSignupStatus,
+  FundraiserStatus,
+  ContributionStatus,
+  ExpenseStatus,
+  ExpenseCategory,
 }
 
 export interface User {
@@ -138,22 +150,81 @@ export interface VolunteerOpportunity {
   id: string
   title: string
   description: string
-  eventId?: string
-  date: string
   location: string
-  spotsNeeded: number
-  spotsFilled: number
-  contactPerson: string
+  startsAt: string
+  endsAt: string
+  applicationDeadline?: string | null
+  capacity: number
+  registeredCount: number
+  status: OpportunityStatus
+  category?: string | null
+  eligibility?: string | null
+  eventId?: string | null
+  organizerId: string
+  createdAt?: string
+  updatedAt?: string
+  event?: { id: string; title: string } | null
+  organizer?: { id: string; name: string; email: string } | null
+  // Legacy backward-compatibility aliases
+  date?: string
+  spotsNeeded?: number
+  spotsFilled?: number
+  contactPerson?: string
+}
+
+export interface VolunteerRegistration {
+  id: string
+  opportunityId: string
+  userId: string
+  status: VolunteerSignupStatus
+  notes?: string | null
+  attendanceNotes?: string | null
+  attendedAt?: string | null
+  attendedById?: string | null
+  cancelledAt?: string | null
+  createdAt: string
+  updatedAt?: string
+  opportunity?: VolunteerOpportunity
+  user?: { id: string; name: string; email: string; role?: string }
 }
 
 export interface Fundraiser {
   id: string
   title: string
-  goalAmount: number
-  currentAmount: number
-  deadline: string
   description: string
+  purpose?: string | null
+  goalAmount: number
+  collectedAmount?: number
+  currency?: string
+  status?: FundraiserStatus
   donorCount: number
+  percentRaised?: number
+  startsAt?: string | null
+  endsAt?: string | null
+  creatorId?: string
+  createdAt?: string
+  updatedAt?: string
+  creator?: { id: string; name: string; email: string }
+  // Legacy aliases
+  currentAmount?: number
+  deadline?: string
+}
+
+export interface FundraiserContribution {
+  id: string
+  fundraiserId: string
+  userId?: string | null
+  donorName: string
+  donorEmail: string
+  amount: number
+  currency: string
+  status: ContributionStatus
+  paymentMethod: string
+  razorpayOrderId?: string | null
+  razorpayPaymentId?: string | null
+  createdAt: string
+  verifiedAt?: string | null
+  fundraiser?: { id: string; title: string }
 }
 
 export interface Task {
@@ -166,6 +237,53 @@ export interface Task {
   status: TaskStatus
   dueDate: string
   isOverdue?: boolean
+}
+
+export interface Expense {
+  id: string
+  title: string
+  description: string
+  amount: number
+  currency: string
+  category: ExpenseCategory
+  expenseDate: string
+  receiptUrl?: string | null
+  status: ExpenseStatus
+  submitterId: string
+  reviewerId?: string | null
+  reviewedAt?: string | null
+  rejectionReason?: string | null
+  eventId?: string | null
+  fundraiserId?: string | null
+  createdAt: string
+  updatedAt: string
+  submitter?: { id: string; name: string; email: string; role?: string }
+  reviewer?: { id: string; name: string; email?: string } | null
+  event?: { id: string; title: string } | null
+  fundraiser?: { id: string; title: string } | null
+  reimbursement?: Reimbursement | null
+}
+
+export interface Reimbursement {
+  id: string
+  expenseId: string
+  claimantId: string
+  amount: number
+  currency: string
+  status: ReimbursementStatus
+  reviewerId?: string | null
+  reviewedAt?: string | null
+  rejectionReason?: string | null
+  settledById?: string | null
+  settledAt?: string | null
+  settlementReference?: string | null
+  notes?: string | null
+  createdAt: string
+  updatedAt: string
+  claimant?: { id: string; name: string; email: string; role?: string }
+  reviewer?: { id: string; name: string } | null
+  settledBy?: { id: string; name: string } | null
+  expense?: Partial<Expense> | null
 }
 
 export interface LedgerTransaction {
@@ -191,4 +309,25 @@ export interface ReimbursementRequest {
   submittedAt: string
   reviewedAt?: string
   reviewerNotes?: string
+}
+
+export interface FinanceSummaryData {
+  totals: {
+    totalInflow: number
+    totalOutflow: number
+    netBalance: number
+    pendingExpensesAmount: number
+    pendingReimbursementsAmount: number
+  }
+  breakdown: {
+    tickets: { total: number; count: number }
+    merchandise: { total: number; count: number }
+    fundraisers: { total: number; count: number }
+    approvedExpenses: { total: number; count: number }
+    pendingExpenses: { total: number; count: number }
+    settledReimbursements: { total: number; count: number }
+    pendingReimbursements: { total: number; count: number }
+  }
+  expensesByCategory: Array<{ category: string; total: number; count: number }>
+  fundraisers: Array<{ fundraiserId: string; title: string; total: number; count: number }>
 }

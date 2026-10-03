@@ -9,6 +9,9 @@ import { eventRegistrationRouter, registrationRouter } from './registration.rout
 import { eventTicketRouter, ticketRouter } from './ticket.routes.js';
 import { paymentRouter, registrationPaymentRouter } from './payment.routes.js';
 import { announcementRouter, orderRouter, productRouter } from './phase4.routes.js';
+import { volunteerRouter } from './volunteer.routes.js';
+import { fundraiserRouter } from './fundraiser.routes.js';
+import { expenseRouter, financeReportRouter, reimbursementRouter } from './finance.routes.js';
 import { sendSuccess } from '../utils/response.js';
 
 export const rootRouter = Router();
@@ -29,6 +32,11 @@ rootRouter.use('/tickets', ticketRouter);
 rootRouter.use('/products', productRouter);
 rootRouter.use('/orders', orderRouter);
 rootRouter.use('/announcements', announcementRouter);
+rootRouter.use('/volunteers', volunteerRouter);
+rootRouter.use('/fundraisers', fundraiserRouter);
+rootRouter.use('/expenses', expenseRouter);
+rootRouter.use('/reimbursements', reimbursementRouter);
+rootRouter.use('/finance', financeReportRouter);
 
 /**
  * GET /api

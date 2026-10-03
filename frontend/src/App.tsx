@@ -86,6 +86,31 @@ const TreasuryDashboard = lazy(() =>
 const CheckinPage = lazy(() =>
   import('./features/tickets/pages/CheckinPage').then((m) => ({ default: m.CheckinPage })),
 )
+const VolunteerListPage = lazy(() =>
+  import('./features/volunteers/pages/VolunteerListPage').then((m) => ({
+    default: m.VolunteerListPage,
+  })),
+)
+const VolunteerDetailPage = lazy(() =>
+  import('./features/volunteers/pages/VolunteerDetailPage').then((m) => ({
+    default: m.VolunteerDetailPage,
+  })),
+)
+const MyVolunteeringPage = lazy(() =>
+  import('./features/volunteers/pages/MyVolunteeringPage').then((m) => ({
+    default: m.MyVolunteeringPage,
+  })),
+)
+const AdminVolunteerPage = lazy(() =>
+  import('./features/volunteers/pages/AdminVolunteerPage').then((m) => ({
+    default: m.AdminVolunteerPage,
+  })),
+)
+const SubmitExpensePage = lazy(() =>
+  import('./features/treasury/pages/SubmitExpensePage').then((m) => ({
+    default: m.SubmitExpensePage,
+  })),
+)
 
 export function App() {
   // Confirm any stored session with /auth/me once on startup.
@@ -102,6 +127,9 @@ export function App() {
           <Route index element={<LandingPage />} />
           <Route path="events" element={<EventListPage />} />
           <Route path="events/:id" element={<EventDetailPage />} />
+          <Route path="volunteers" element={<VolunteerListPage />} />
+          <Route path="volunteers/:id" element={<VolunteerDetailPage />} />
+          <Route path="fundraisers" element={<FundraiserPage />} />
           <Route path="shop" element={<ShopPage />} />
           <Route path="shop/:id" element={<ProductPage />} />
           <Route path="join" element={<JoinPage />} />
@@ -118,6 +146,8 @@ export function App() {
             <Route path="pass" element={<MemberPassPage />} />
             <Route path="tickets" element={<MyTicketsPage />} />
             <Route path="orders" element={<MyOrdersPage />} />
+            <Route path="volunteering" element={<MyVolunteeringPage />} />
+            <Route path="expenses" element={<SubmitExpensePage />} />
             <Route path="*" element={<Navigate to="/member" replace />} />
           </Route>
         </Route>
@@ -131,6 +161,7 @@ export function App() {
             </Route>
             <Route path="members" element={<MemberListPage />} />
             <Route path="events" element={<EventListPage />} />
+            <Route path="volunteers" element={<AdminVolunteerPage />} />
             <Route path="announcements" element={<AnnouncementComposer />} />
             <Route path="shop" element={<AdminStockPage />} />
             <Route path="fundraisers" element={<FundraiserPage />} />
