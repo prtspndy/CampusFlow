@@ -1,16 +1,79 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CreditCard, Calendar, Megaphone, ArrowRight } from 'lucide-react'
 import { useAuthStore } from '../../../stores/authStore'
-import { MOCK_EVENTS, MOCK_ANNOUNCEMENTS } from '../../../lib/mockData'
 import { EventCard } from '../../../components/cards/EventCard'
 import { StatusBadge } from '../../../components/badges/StatusBadge'
+import { eventApiService, type BackendEvent } from '../../events/services/eventService'
+import { api } from '../../../lib/api'
+import type { ClubEvent } from '../../../types/models'
+import type { EventStatus } from '../../../types/enums'
+
+interface AnnouncementItem {
+  id: string
+  title: string
+  body: string
+  authorName: string
+  authorRole: string
+  publishedAt: string | null
+}
+
+function toClubEvent(b: BackendEvent): ClubEvent {
+  return {
+    id: b.id,
+    title: b.title,
+    description: b.description,
+    venue: b.venue,
+    startsAt: b.startsAt,
+    endsAt: b.endsAt,
+    memberPrice: b.memberPrice,
+    standardPrice: b.standardPrice,
+    totalCapacity: b.totalCapacity,
+    registeredCount: b.registeredCount,
+    status: b.status as EventStatus,
+    category: b.category || undefined,
+    imageUrl: b.imageUrl || undefined,
+    isFeatured: b.isFeatured,
+  }
+}
 
 export const MemberHome: React.FC = () => {
   const { user } = useAuthStore()
   const membership = user?.membership
-  const upcomingEvent = MOCK_EVENTS[0]
-  const latestAnnouncement = MOCK_ANNOUNCEMENTS[0]
+  const [upcomingEvent, setUpcomingEvent] = useState<ClubEvent | null>(null)
+  const [latestAnnouncement, setLatestAnnouncement] = useState<AnnouncementItem | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let isCancelled = false
+    setLoading(true)
+
+    Promise.allSettled([
+      eventApiService.listEvents({ limit: 1 }),
+      api.get<{ announcements: AnnouncementItem[] }>('/announcements?limit=1', { auth: false }),
+    ]).then(([eventsResult, announcementsResult]) => {
+      if (isCancelled) return
+      if (eventsResult.status === 'fulfilled' && eventsResult.value.events?.length > 0) {
+        setUpcomingEvent(toClubEvent(eventsResult.value.events[0]))
+      } else {
+        setUpcomingEvent(null)
+      }
+
+      if (
+        announcementsResult.status === 'fulfilled' &&
+        announcementsResult.value.announcements?.length > 0
+      ) {
+        setLatestAnnouncement(announcementsResult.value.announcements[0])
+      } else {
+        setLatestAnnouncement(null)
+      }
+      setLoading(false)
+    })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -80,27 +143,37 @@ export const MemberHome: React.FC = () => {
           </Link>
         </div>
 
-        <EventCard event={upcomingEvent} />
+        {upcomingEvent ? (
+          <EventCard event={upcomingEvent} />
+        ) : loading ? (
+          <div className="rounded-[14px] bg-[var(--color-surface)] p-6 text-center text-body-sm text-[var(--color-muted)] border border-[var(--color-hairline)]">
+            Loading next event…
+          </div>
+        ) : (
+          <div className="rounded-[14px] bg-[var(--color-surface)] p-6 text-center text-body-sm text-[var(--color-muted)] border border-[var(--color-hairline)]">
+            No upcoming events scheduled right now.
+          </div>
+        )}
       </div>
 
       {/* Latest Announcement Preview */}
-      {latestAnnouncement && (
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Megaphone className="w-4 h-4 text-[var(--color-tint-lavender-deep)]" />
-              <h2 className="text-heading-3 font-display font-bold text-[var(--color-ink)]">
-                Latest Update
-              </h2>
-            </div>
-            <Link
-              to="/announcements"
-              className="text-caption font-semibold text-[var(--color-primary)] hover:underline"
-            >
-              Feed
-            </Link>
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Megaphone className="w-4 h-4 text-[var(--color-tint-lavender-deep)]" />
+            <h2 className="text-heading-3 font-display font-bold text-[var(--color-ink)]">
+              Latest Update
+            </h2>
           </div>
+          <Link
+            to="/announcements"
+            className="text-caption font-semibold text-[var(--color-primary)] hover:underline"
+          >
+            Feed
+          </Link>
+        </div>
 
+        {latestAnnouncement ? (
           <div className="rounded-[14px] bg-[var(--color-tint-lavender)] text-[var(--color-tint-lavender-deep)] p-5 border border-purple-200/40 dark:border-purple-800/30">
             <span className="text-caption font-semibold opacity-85 block mb-1">
               From {latestAnnouncement.authorName} ({latestAnnouncement.authorRole})
@@ -112,8 +185,16 @@ export const MemberHome: React.FC = () => {
               {latestAnnouncement.body}
             </p>
           </div>
-        </div>
-      )}
+        ) : loading ? (
+          <div className="rounded-[14px] bg-[var(--color-surface)] p-6 text-center text-body-sm text-[var(--color-muted)] border border-[var(--color-hairline)]">
+            Loading announcements…
+          </div>
+        ) : (
+          <div className="rounded-[14px] bg-[var(--color-surface)] p-6 text-center text-body-sm text-[var(--color-muted)] border border-[var(--color-hairline)]">
+            No announcements published yet.
+          </div>
+        )}
+      </div>
     </div>
   )
 }

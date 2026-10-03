@@ -1,5 +1,3 @@
-import React, { useState, useEffect } from 'react'
-import { MOCK_EVENTS } from '../../../lib/mockData'
 import { EventCard } from '../../../components/cards/EventCard'
 import { FilterChips } from '../../../components/forms/FilterChips'
 import { SearchPill } from '../../../components/forms/SearchPill'
@@ -31,8 +29,8 @@ function toClubEvent(b: BackendEvent): ClubEvent {
 export const EventListPage: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
-  const [events, setEvents] = useState<ClubEvent[]>(MOCK_EVENTS)
-  const [loading, setLoading] = useState(false)
+  const [events, setEvents] = useState<ClubEvent[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let isCancelled = false
@@ -44,16 +42,12 @@ export const EventListPage: React.FC = () => {
           search: searchQuery.trim() || undefined,
           category: selectedFilter !== 'ALL' ? selectedFilter : undefined,
         })
-        if (!isCancelled && res.events && res.events.length > 0) {
+        if (!isCancelled && res.events) {
           setEvents(res.events.map(toClubEvent))
-        } else if (!isCancelled && res.events && res.events.length === 0) {
-          // If the server answered but returned 0 results for a specific filter
-          setEvents([])
         }
       } catch {
-        // Fallback to MOCK_EVENTS if server is unreachable
         if (!isCancelled) {
-          setEvents(MOCK_EVENTS)
+          setEvents([])
         }
       } finally {
         if (!isCancelled) setLoading(false)

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ShoppingBag,
@@ -7,12 +7,60 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { Button } from '../../../components/ui/Button'
-import { MOCK_EVENTS, MOCK_PRODUCTS } from '../../../lib/mockData'
 import { EventCard } from '../../../components/cards/EventCard'
 import { formatMoney } from '../../../lib/format'
 import { ORG_NAME } from '../../../lib/constants'
+import { eventApiService, type BackendEvent } from '../../events/services/eventService'
+import { api } from '../../../lib/api'
+import type { ClubEvent, Product } from '../../../types/models'
+import type { EventStatus } from '../../../types/enums'
+
+function toClubEvent(b: BackendEvent): ClubEvent {
+  return {
+    id: b.id,
+    title: b.title,
+    description: b.description,
+    venue: b.venue,
+    startsAt: b.startsAt,
+    endsAt: b.endsAt,
+    memberPrice: b.memberPrice,
+    standardPrice: b.standardPrice,
+    totalCapacity: b.totalCapacity,
+    registeredCount: b.registeredCount,
+    status: b.status as EventStatus,
+    category: b.category || undefined,
+    imageUrl: b.imageUrl || undefined,
+    isFeatured: b.isFeatured,
+  }
+}
 
 export const LandingPage: React.FC = () => {
+  const [events, setEvents] = useState<ClubEvent[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let isCancelled = false
+    setLoading(true)
+
+    Promise.allSettled([
+      eventApiService.listEvents({ limit: 3 }),
+      api.get<{ products: Product[] }>('/products?limit=4', { auth: false }),
+    ]).then(([eventsRes, productsRes]) => {
+      if (isCancelled) return
+      if (eventsRes.status === 'fulfilled' && eventsRes.value.events) {
+        setEvents(eventsRes.value.events.map(toClubEvent))
+      }
+      if (productsRes.status === 'fulfilled' && productsRes.value.products) {
+        setProducts(productsRes.value.products.filter((p) => p.isAvailable !== false))
+      }
+      setLoading(false)
+    })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   return (
     <div className="space-y-16 py-4">
@@ -66,11 +114,21 @@ export const LandingPage: React.FC = () => {
           </Link>
         </div>
 
-        <div className="max-w-md mx-auto sm:max-w-none sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MOCK_EVENTS.slice(0, 3).map((event) => (
-            <EventCard key={event.id} event={event} />
-          ))}
-        </div>
+        {events.length > 0 ? (
+          <div className="max-w-md mx-auto sm:max-w-none sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {events.slice(0, 3).map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : loading ? (
+          <div className="text-center py-8 text-body-sm text-[var(--color-muted)]">
+            Loading upcoming events…
+          </div>
+        ) : (
+          <div className="text-center py-8 text-body-sm text-[var(--color-muted)]">
+            No upcoming events published right now. Check back soon!
+          </div>
+        )}
       </section>
 
       {/* 3. Deep Brand Navy Hero Band: The Member Pass Physical Metaphor */}
@@ -163,30 +221,40 @@ export const LandingPage: React.FC = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          {MOCK_PRODUCTS.slice(0, 4).map((p) => (
-            <Link
-              key={p.id}
-              to={`/shop/${p.id}`}
-              className="rounded-[14px] bg-[var(--color-canvas)] border border-[var(--color-hairline)] p-4 flex flex-col justify-between hover:shadow-[var(--elevation-2)] transition-shadow group"
-            >
-              <div className="aspect-square bg-[var(--color-surface)] rounded-[10px] flex items-center justify-center mb-3">
-                <ShoppingBag className="w-12 h-12 text-[var(--color-muted)]/50 group-hover:scale-105 transition-transform" />
-              </div>
-              <h4 className="text-body-sm font-bold text-[var(--color-ink)] line-clamp-1">
-                {p.name}
-              </h4>
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-hairline)] text-caption">
-                <span className="font-bold text-money-md text-[var(--color-ink)]">
-                  {formatMoney(p.memberPrice)}
-                </span>
-                <span className="text-[var(--color-muted)] line-through">
-                  {formatMoney(p.standardPrice)}
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {products.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {products.slice(0, 4).map((p) => (
+              <Link
+                key={p.id}
+                to={`/shop/${p.id}`}
+                className="rounded-[14px] bg-[var(--color-canvas)] border border-[var(--color-hairline)] p-4 flex flex-col justify-between hover:shadow-[var(--elevation-2)] transition-shadow group"
+              >
+                <div className="aspect-square bg-[var(--color-surface)] rounded-[10px] flex items-center justify-center mb-3">
+                  <ShoppingBag className="w-12 h-12 text-[var(--color-muted)]/50 group-hover:scale-105 transition-transform" />
+                </div>
+                <h4 className="text-body-sm font-bold text-[var(--color-ink)] line-clamp-1">
+                  {p.name}
+                </h4>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-hairline)] text-caption">
+                  <span className="font-bold text-money-md text-[var(--color-ink)]">
+                    {formatMoney(p.memberPrice)}
+                  </span>
+                  <span className="text-[var(--color-muted)] line-through">
+                    {formatMoney(p.standardPrice)}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : loading ? (
+          <div className="text-center py-8 text-body-sm text-[var(--color-muted)]">
+            Loading merchandise store…
+          </div>
+        ) : (
+          <div className="text-center py-8 text-body-sm text-[var(--color-muted)]">
+            No merchandise listed in the store yet.
+          </div>
+        )}
       </section>
     </div>
   )

@@ -243,4 +243,143 @@ describe('Event registration', () => {
     expect(memoryRegistrations()).toHaveLength(1);
     expect(memoryTickets()).toHaveLength(1);
   });
+
+  describe('GET /api/registrations/me (Own Registrations)', () => {
+    it('requires authentication for GET /api/registrations/me', async () => {
+      const res = await request(app).get('/api/registrations/me');
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('returns empty registrations list with pagination when user has no registrations', async () => {
+      const member = await login('ada-empty@campus.edu');
+
+      const res = await request(app)
+        .get('/api/registrations/me')
+        .set('Authorization', `Bearer ${member.token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.registrations).toEqual([]);
+      expect(res.body.data.pagination).toEqual({
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      });
+    });
+
+    it('returns only the authenticated user registrations with event and ticket details', async () => {
+      const organizer = await login('organizer-me@campus.edu', 'EVENT_MANAGER');
+      const ada = await login('ada-me@campus.edu');
+      const grace = await login('grace-me@campus.edu');
+
+      const galaEvent = publishedEvent(organizer.user.id, { title: 'Spring Gala' });
+      const techEvent = publishedEvent(organizer.user.id, { title: 'Hackathon Workshop' });
+
+      // Ada registers for Gala
+      const adaRegRes = await request(app)
+        .post(`/api/events/${galaEvent.id}/registrations`)
+        .set('Authorization', `Bearer ${ada.token}`);
+      expect(adaRegRes.status).toBe(201);
+      const adaRegId = adaRegRes.body.data.registration.id;
+
+      // Grace registers for Hackathon
+      const graceRegRes = await request(app)
+        .post(`/api/events/${techEvent.id}/registrations`)
+        .set('Authorization', `Bearer ${grace.token}`);
+      expect(graceRegRes.status).toBe(201);
+
+      // Ada lists own registrations
+      const adaListRes = await request(app)
+        .get('/api/registrations/me')
+        .set('Authorization', `Bearer ${ada.token}`);
+
+      expect(adaListRes.status).toBe(200);
+      expect(adaListRes.body.data.registrations).toHaveLength(1);
+      const item = adaListRes.body.data.registrations[0];
+      expect(item.id).toBe(adaRegId);
+      expect(item.userId).toBe(ada.user.id);
+      expect(item.status).toBe('CONFIRMED');
+      expect(item.event).toMatchObject({
+        id: galaEvent.id,
+        title: 'Spring Gala',
+      });
+      expect(item.ticket).toBeDefined();
+      expect(item.ticket.status).toBe('ISSUED');
+
+      // Grace lists own registrations
+      const graceListRes = await request(app)
+        .get('/api/registrations/me')
+        .set('Authorization', `Bearer ${grace.token}`);
+
+      expect(graceListRes.status).toBe(200);
+      expect(graceListRes.body.data.registrations).toHaveLength(1);
+      expect(graceListRes.body.data.registrations[0].userId).toBe(grace.user.id);
+      expect(graceListRes.body.data.registrations[0].event.title).toBe('Hackathon Workshop');
+    });
+
+    it('paginates registrations according to query parameters', async () => {
+      const organizer = await login('organizer-page@campus.edu', 'EVENT_MANAGER');
+      const ada = await login('ada-page@campus.edu');
+
+      const event1 = publishedEvent(organizer.user.id, { title: 'Event One' });
+      const event2 = publishedEvent(organizer.user.id, { title: 'Event Two' });
+
+      await request(app)
+        .post(`/api/events/${event1.id}/registrations`)
+        .set('Authorization', `Bearer ${ada.token}`);
+      await request(app)
+        .post(`/api/events/${event2.id}/registrations`)
+        .set('Authorization', `Bearer ${ada.token}`);
+
+      const page1Res = await request(app)
+        .get('/api/registrations/me?page=1&limit=1')
+        .set('Authorization', `Bearer ${ada.token}`);
+
+      expect(page1Res.status).toBe(200);
+      expect(page1Res.body.data.registrations).toHaveLength(1);
+      expect(page1Res.body.data.pagination).toEqual({
+        total: 2,
+        page: 1,
+        limit: 1,
+        totalPages: 2,
+      });
+
+      const page2Res = await request(app)
+        .get('/api/registrations/me?page=2&limit=1')
+        .set('Authorization', `Bearer ${ada.token}`);
+
+      expect(page2Res.status).toBe(200);
+      expect(page2Res.body.data.registrations).toHaveLength(1);
+      expect(page2Res.body.data.pagination).toEqual({
+        total: 2,
+        page: 2,
+        limit: 1,
+        totalPages: 2,
+      });
+      expect(page2Res.body.data.registrations[0].id).not.toBe(
+        page1Res.body.data.registrations[0].id,
+      );
+    });
+
+    it('rejects invalid pagination parameters with 422', async () => {
+      const ada = await login('ada-invalid@campus.edu');
+
+      const resZeroPage = await request(app)
+        .get('/api/registrations/me?page=0')
+        .set('Authorization', `Bearer ${ada.token}`);
+      expect(resZeroPage.status).toBe(422);
+      expect(resZeroPage.body.error.code).toBe('VALIDATION_ERROR');
+
+      const resOverLimit = await request(app)
+        .get('/api/registrations/me?limit=200')
+        .set('Authorization', `Bearer ${ada.token}`);
+      expect(resOverLimit.status).toBe(422);
+      expect(resOverLimit.body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
 });
+

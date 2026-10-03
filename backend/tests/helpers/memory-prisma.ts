@@ -323,6 +323,30 @@ export function insertTicket(
   return { ...row };
 }
 
+export function insertPayment(
+  partial: Partial<MemoryPayment> &
+    Pick<MemoryPayment, 'registrationId' | 'eventId' | 'userId' | 'amountPaise'>,
+): MemoryPayment {
+  const now = new Date();
+  const row: MemoryPayment = {
+    id: partial.id ?? crypto.randomUUID(),
+    registrationId: partial.registrationId,
+    eventId: partial.eventId,
+    userId: partial.userId,
+    razorpayOrderId: partial.razorpayOrderId ?? null,
+    razorpayPaymentId: partial.razorpayPaymentId ?? null,
+    amountPaise: partial.amountPaise,
+    currency: partial.currency ?? 'INR',
+    status: partial.status ?? PaymentStatus.CREATED,
+    signatureVerifiedAt: partial.signatureVerifiedAt ?? null,
+    failureReason: partial.failureReason ?? null,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+  };
+  payments.push(row);
+  return { ...row };
+}
+
 export function insertUser(
   partial: Partial<MemoryUser> & Pick<MemoryUser, 'email' | 'name' | 'passwordHash'>,
 ): MemoryUser {
@@ -403,6 +427,25 @@ export function insertEvent(
   };
   events.push(event);
   return { ...event };
+}
+
+export function insertAnnouncement(
+  partial: Partial<MemoryAnnouncement> & Pick<MemoryAnnouncement, 'title' | 'body' | 'authorId'>,
+): MemoryAnnouncement {
+  const now = new Date();
+  const row: MemoryAnnouncement = {
+    id: partial.id ?? crypto.randomUUID(),
+    title: partial.title,
+    body: partial.body,
+    authorId: partial.authorId,
+    status: partial.status ?? 'DRAFT',
+    audience: partial.audience ?? 'ALL_MEMBERS',
+    publishedAt: partial.publishedAt ?? null,
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+  };
+  announcements.push(row);
+  return { ...row };
 }
 
 export function expireRefreshTokens(): void {

@@ -480,4 +480,328 @@ describe('Phase 4 merchandise, orders, and announcements', () => {
     expect(memoryVariants().find((row) => row.size === 'M')?.stock).toBe(4);
     expect(memoryMerchOrders()).toHaveLength(1);
   });
+
+  describe('GET /api/orders (List All Orders - Admin & Treasurer)', () => {
+    it('requires authentication for GET /api/orders', async () => {
+      const res = await request(app).get('/api/orders');
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('forbids members and event managers without orders.read_all permission', async () => {
+      const member = await login('member-no-orders@campus.edu', 'MEMBER');
+      const manager = await login('manager-no-orders@campus.edu', 'EVENT_MANAGER');
+
+      const memberRes = await request(app)
+        .get('/api/orders')
+        .set('Authorization', `Bearer ${member.token}`);
+      expect(memberRes.status).toBe(403);
+      expect(memberRes.body.error.code).toBe('FORBIDDEN');
+
+      const managerRes = await request(app)
+        .get('/api/orders')
+        .set('Authorization', `Bearer ${manager.token}`);
+      expect(managerRes.status).toBe(403);
+      expect(managerRes.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('allows treasurer and admin to retrieve orders with empty list envelope', async () => {
+      const treasurer = await login('treasurer-empty-orders@campus.edu', 'TREASURER');
+      const admin = await login('admin-empty-orders@campus.edu', 'ADMIN');
+
+      const treasurerRes = await request(app)
+        .get('/api/orders')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(treasurerRes.status).toBe(200);
+      expect(treasurerRes.body.success).toBe(true);
+      expect(treasurerRes.body.data.orders).toEqual([]);
+      expect(treasurerRes.body.data.pagination).toEqual({
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      });
+
+      const adminRes = await request(app)
+        .get('/api/orders')
+        .set('Authorization', `Bearer ${admin.token}`);
+      expect(adminRes.status).toBe(200);
+      expect(adminRes.body.data.orders).toEqual([]);
+    });
+
+    it('lists all placed orders with items, pricing snapshots, and buyer details', async () => {
+      const admin = await login('admin-order-list@campus.edu', 'ADMIN');
+      const treasurer = await login('treasurer-order-list@campus.edu', 'TREASURER');
+      const ada = await login('ada-buyer@campus.edu', 'MEMBER');
+      const grace = await login('grace-buyer@campus.edu', 'MEMBER');
+
+      const created = await createHoodie(admin.token);
+      const productId = created.body.data.id as string;
+
+      const order1Res = await request(app)
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${ada.token}`)
+        .send({
+          items: [{ productId, size: 'M', quantity: 2 }],
+        });
+      expect(order1Res.status).toBe(201);
+
+      const order2Res = await request(app)
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${grace.token}`)
+        .send({
+          items: [{ productId, size: 'L', quantity: 1 }],
+        });
+      expect(order2Res.status).toBe(201);
+
+      const res = await request(app)
+        .get('/api/orders')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.orders).toHaveLength(2);
+      expect(res.body.data.pagination.total).toBe(2);
+
+      const orderItem = res.body.data.orders.find(
+        (o: { id: string }) => o.id === order1Res.body.data.order.id,
+      );
+      expect(orderItem).toBeDefined();
+      expect(orderItem.userId).toBe(ada.user.id);
+      expect(orderItem.items[0]).toMatchObject({
+        productName: 'Club Hoodie',
+        size: 'M',
+        quantity: 2,
+        unitPrice: 1000,
+        lineTotal: 2000,
+      });
+      expect(orderItem.user).toMatchObject({
+        id: ada.user.id,
+        email: ada.user.email,
+      });
+    });
+
+    it('supports pagination and validates query parameters on /api/orders', async () => {
+      const admin = await login('admin-order-page@campus.edu', 'ADMIN');
+      const treasurer = await login('treasurer-order-page@campus.edu', 'TREASURER');
+      const member = await login('member-order-page@campus.edu', 'MEMBER');
+
+      const created = await createHoodie(admin.token, {
+        variants: [
+          { size: 'M', stock: 20 },
+          { size: 'L', stock: 20 },
+        ],
+      });
+      const productId = created.body.data.id as string;
+
+      await request(app)
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ items: [{ productId, size: 'M', quantity: 1 }] });
+      await request(app)
+        .post('/api/orders')
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ items: [{ productId, size: 'L', quantity: 1 }] });
+
+      const page1Res = await request(app)
+        .get('/api/orders?page=1&limit=1')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+
+      expect(page1Res.status).toBe(200);
+      expect(page1Res.body.data.orders).toHaveLength(1);
+      expect(page1Res.body.data.pagination).toEqual({
+        total: 2,
+        page: 1,
+        limit: 1,
+        totalPages: 2,
+      });
+
+      const zeroPage = await request(app)
+        .get('/api/orders?page=0')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(zeroPage.status).toBe(422);
+      expect(zeroPage.body.error.code).toBe('VALIDATION_ERROR');
+
+      const overLimit = await request(app)
+        .get('/api/orders?limit=101')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(overLimit.status).toBe(422);
+      expect(overLimit.body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('GET /api/announcements/manage (Manage Announcements)', () => {
+    it('requires authentication for GET /api/announcements/manage', async () => {
+      const res = await request(app).get('/api/announcements/manage');
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('forbids regular members without announcement management permissions', async () => {
+      const member = await login('member-no-manage@campus.edu', 'MEMBER');
+
+      const res = await request(app)
+        .get('/api/announcements/manage')
+        .set('Authorization', `Bearer ${member.token}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('returns empty list envelope when no announcements exist', async () => {
+      const admin = await login('admin-empty-ann@campus.edu', 'ADMIN');
+
+      const res = await request(app)
+        .get('/api/announcements/manage')
+        .set('Authorization', `Bearer ${admin.token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.announcements).toEqual([]);
+      expect(res.body.data.pagination).toEqual({
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      });
+    });
+
+    it('restricts event managers to viewing only their own announcements', async () => {
+      const manager1 = await login('manager1@campus.edu', 'EVENT_MANAGER');
+      const manager2 = await login('manager2@campus.edu', 'EVENT_MANAGER');
+      const admin = await login('admin-ann-manage@campus.edu', 'ADMIN');
+
+      // Manager 1 drafts an announcement
+      const m1Ann = await request(app)
+        .post('/api/announcements')
+        .set('Authorization', `Bearer ${manager1.token}`)
+        .send({
+          title: 'Manager 1 Workshop Notice',
+          body: 'Detailed instructions for upcoming workshop attendees.',
+        });
+      expect(m1Ann.status).toBe(201);
+
+      // Manager 2 drafts an announcement
+      const m2Ann = await request(app)
+        .post('/api/announcements')
+        .set('Authorization', `Bearer ${manager2.token}`)
+        .send({
+          title: 'Manager 2 Volunteer Call',
+          body: 'Volunteers needed for next week campus orientation.',
+        });
+      expect(m2Ann.status).toBe(201);
+
+      // Admin drafts an announcement
+      await request(app)
+        .post('/api/announcements')
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          title: 'Admin General Notice',
+          body: 'CampusFlow general guidelines for registered members.',
+        });
+
+      // Manager 1 requests manage list
+      const m1List = await request(app)
+        .get('/api/announcements/manage')
+        .set('Authorization', `Bearer ${manager1.token}`);
+
+      expect(m1List.status).toBe(200);
+      expect(m1List.body.data.announcements).toHaveLength(1);
+      expect(m1List.body.data.announcements[0].id).toBe(m1Ann.body.data.id);
+      expect(m1List.body.data.announcements[0].authorId).toBe(manager1.user.id);
+      expect(m1List.body.data.announcements[0].authorName).toBe(manager1.user.name);
+
+      // Manager 2 requests manage list
+      const m2List = await request(app)
+        .get('/api/announcements/manage')
+        .set('Authorization', `Bearer ${manager2.token}`);
+
+      expect(m2List.status).toBe(200);
+      expect(m2List.body.data.announcements).toHaveLength(1);
+      expect(m2List.body.data.announcements[0].id).toBe(m2Ann.body.data.id);
+      expect(m2List.body.data.announcements[0].authorId).toBe(manager2.user.id);
+      expect(m2List.body.data.announcements[0].authorName).toBe(manager2.user.name);
+    });
+
+    it('allows admins to view all announcements across all authors', async () => {
+      const admin = await login('admin-view-all@campus.edu', 'ADMIN');
+      const manager = await login('manager-view-all@campus.edu', 'EVENT_MANAGER');
+
+      await request(app)
+        .post('/api/announcements')
+        .set('Authorization', `Bearer ${manager.token}`)
+        .send({
+          title: 'Manager Draft Post',
+          body: 'Draft body written by event manager.',
+        });
+
+      await request(app)
+        .post('/api/announcements')
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          title: 'Admin Draft Post',
+          body: 'Draft body written by organization admin.',
+        });
+
+      const adminList = await request(app)
+        .get('/api/announcements/manage')
+        .set('Authorization', `Bearer ${admin.token}`);
+
+      expect(adminList.status).toBe(200);
+      expect(adminList.body.data.announcements).toHaveLength(2);
+      expect(adminList.body.data.pagination.total).toBe(2);
+    });
+
+    it('supports search query filtering by title or body on /api/announcements/manage', async () => {
+      const admin = await login('admin-search@campus.edu', 'ADMIN');
+
+      await request(app)
+        .post('/api/announcements')
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          title: 'Annual Hackathon Registration',
+          body: 'Registration is now open for our annual overnight hackathon.',
+        });
+
+      await request(app)
+        .post('/api/announcements')
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({
+          title: 'Lost Property Notice',
+          body: 'Items left behind in the auditorium have been collected.',
+        });
+
+      const hackathonSearch = await request(app)
+        .get('/api/announcements/manage?search=hackathon')
+        .set('Authorization', `Bearer ${admin.token}`);
+
+      expect(hackathonSearch.status).toBe(200);
+      expect(hackathonSearch.body.data.announcements).toHaveLength(1);
+      expect(hackathonSearch.body.data.announcements[0].title).toBe('Annual Hackathon Registration');
+
+      const bodySearch = await request(app)
+        .get('/api/announcements/manage?search=auditorium')
+        .set('Authorization', `Bearer ${admin.token}`);
+
+      expect(bodySearch.status).toBe(200);
+      expect(bodySearch.body.data.announcements).toHaveLength(1);
+      expect(bodySearch.body.data.announcements[0].title).toBe('Lost Property Notice');
+    });
+
+    it('validates query parameters with 422 on /api/announcements/manage', async () => {
+      const admin = await login('admin-val@campus.edu', 'ADMIN');
+
+      const invalidPage = await request(app)
+        .get('/api/announcements/manage?page=0')
+        .set('Authorization', `Bearer ${admin.token}`);
+
+      expect(invalidPage.status).toBe(422);
+      expect(invalidPage.body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
 });
+

@@ -8,7 +8,6 @@ import {
   CheckCircle,
   Loader2,
 } from 'lucide-react'
-import { MOCK_EVENTS } from '../../../lib/mockData'
 import { Button } from '../../../components/ui/Button'
 import { SeatMeter } from '../../../components/data-display/SeatMeter'
 import { MemberPriceBadge } from '../../../components/badges/MemberPriceBadge'
@@ -62,12 +61,9 @@ export const EventDetailPage: React.FC = () => {
           setEvent(toClubEvent(liveEvent))
         }
       } catch (err) {
-        // Fallback to mock data if backend event is not found or server is unreachable
-        const fallback = MOCK_EVENTS.find((e) => e.id === id)
         if (!isCancelled) {
-          if (fallback) {
-            setEvent(fallback)
-          } else if (isApiError(err) && err.status === 404) {
+          setEvent(null)
+          if (isApiError(err) && err.status === 404) {
             setFetchError('Event not found')
           } else {
             setFetchError(isApiError(err) ? err.message : 'Failed to load event details.')

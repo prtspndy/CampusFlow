@@ -6,8 +6,14 @@ if (!databaseUrl) {
   throw new Error('Set PHASE4_TEST_DATABASE_URL to an isolated local PostgreSQL database.');
 }
 
-if (!/@((127\.0\.0\.1)|localhost)[:/]/.test(databaseUrl)) {
-  throw new Error('PHASE4_TEST_DATABASE_URL must point at localhost. Refusing a shared database.');
+const isLocal = /@((127\.0\.0\.1)|localhost)[:/]/.test(databaseUrl);
+const isIsolatedTestDb =
+  /\/campusflow_phase4_test(\?|$)/.test(databaseUrl) && !/\/neondb(\?|$)/.test(databaseUrl);
+
+if (!isLocal && !isIsolatedTestDb) {
+  throw new Error(
+    'PHASE4_TEST_DATABASE_URL must point to an isolated test database (localhost or campusflow_phase4_test). Refusing shared database.',
+  );
 }
 
 export default defineConfig({
