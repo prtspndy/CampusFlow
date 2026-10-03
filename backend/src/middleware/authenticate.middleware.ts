@@ -17,7 +17,17 @@ export const authenticate = asyncHandler(
     }
 
     const claims = verifyAccessToken(token);
-    const user = await prisma.user.findUnique({ where: { id: claims.sub } });
+    const user = await prisma.user.findUnique({
+      where: { id: claims.sub },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true,
+        tokenVersion: true,
+      },
+    });
 
     if (!user || user.tokenVersion !== claims.tv) {
       throw new UnauthorizedError(

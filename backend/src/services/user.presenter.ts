@@ -1,5 +1,15 @@
 import { AccountStatus, PublicUser, UserRole } from '../types/auth.js';
 
+export const publicUserSelect = {
+  id: true,
+  email: true,
+  name: true,
+  role: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 interface UserRecord {
   id: string;
   email: string;

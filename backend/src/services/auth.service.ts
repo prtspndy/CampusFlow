@@ -12,7 +12,7 @@ import {
   refreshExpiryDate,
   signAccessToken,
 } from './token.service.js';
-import { toPublicUser } from './user.presenter.js';
+import { publicUserSelect, toPublicUser } from './user.presenter.js';
 
 const INVALID_CREDENTIALS = 'Invalid email or password';
 const INVALID_REFRESH = 'Invalid or expired refresh token';
@@ -166,7 +166,7 @@ export async function logoutUser(userId: string): Promise<void> {
 }
 
 export async function getUserById(userId: string): Promise<PublicUser> {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: publicUserSelect });
   if (!user) {
     throw new NotFoundError('User not found');
   }
@@ -178,6 +178,7 @@ export async function updateOwnProfile(userId: string, name: string): Promise<Pu
     const user = await prisma.user.update({
       where: { id: userId },
       data: { name },
+      select: publicUserSelect,
     });
     return toPublicUser(user);
   } catch (error) {
@@ -192,6 +193,7 @@ export async function listUsers(): Promise<PublicUser[]> {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
     take: 100,
+    select: publicUserSelect,
   });
   return users.map((user) => toPublicUser(user));
 }

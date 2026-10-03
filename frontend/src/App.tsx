@@ -1,39 +1,95 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-// Layouts
 import { PublicLayout } from './components/layout/PublicLayout'
 import { MemberLayout } from './components/layout/MemberLayout'
 import { AdminLayout } from './components/layout/AdminLayout'
 import { CheckinLayout } from './components/layout/CheckinLayout'
-
-// Public Pages
 import { LandingPage } from './features/public/pages/LandingPage'
-import { EventListPage } from './features/events/pages/EventListPage'
-import { EventDetailPage } from './features/events/pages/EventDetailPage'
-import { ShopPage } from './features/shop/pages/ShopPage'
-import { ProductPage } from './features/shop/pages/ProductPage'
-import { JoinPage } from './features/members/pages/JoinPage'
-import { AnnouncementFeed } from './features/announcements/pages/AnnouncementFeed'
 
-// Member Pages
-import { MemberHome } from './features/dashboard/pages/MemberHome'
-import { MemberPassPage } from './features/members/pages/MemberPassPage'
-import { MyTicketsPage } from './features/tickets/pages/MyTicketsPage'
+const EventListPage = lazy(() =>
+  import('./features/events/pages/EventListPage').then((module) => ({
+    default: module.EventListPage,
+  })),
+)
+const EventDetailPage = lazy(() =>
+  import('./features/events/pages/EventDetailPage').then((module) => ({
+    default: module.EventDetailPage,
+  })),
+)
+const ShopPage = lazy(() =>
+  import('./features/shop/pages/ShopPage').then((module) => ({ default: module.ShopPage })),
+)
+const ProductPage = lazy(() =>
+  import('./features/shop/pages/ProductPage').then((module) => ({ default: module.ProductPage })),
+)
+const JoinPage = lazy(() =>
+  import('./features/members/pages/JoinPage').then((module) => ({ default: module.JoinPage })),
+)
+const AnnouncementFeed = lazy(() =>
+  import('./features/announcements/pages/AnnouncementFeed').then((module) => ({
+    default: module.AnnouncementFeed,
+  })),
+)
+const MemberHome = lazy(() =>
+  import('./features/dashboard/pages/MemberHome').then((module) => ({ default: module.MemberHome })),
+)
+const MemberPassPage = lazy(() =>
+  import('./features/members/pages/MemberPassPage').then((module) => ({
+    default: module.MemberPassPage,
+  })),
+)
+const MyTicketsPage = lazy(() =>
+  import('./features/tickets/pages/MyTicketsPage').then((module) => ({
+    default: module.MyTicketsPage,
+  })),
+)
+const AdminDashboard = lazy(() =>
+  import('./features/dashboard/pages/AdminDashboard').then((module) => ({
+    default: module.AdminDashboard,
+  })),
+)
+const MemberListPage = lazy(() =>
+  import('./features/members/pages/MemberListPage').then((module) => ({
+    default: module.MemberListPage,
+  })),
+)
+const AdminStockPage = lazy(() =>
+  import('./features/shop/pages/AdminStockPage').then((module) => ({
+    default: module.AdminStockPage,
+  })),
+)
+const AnnouncementComposer = lazy(() =>
+  import('./features/announcements/pages/AnnouncementComposer').then((module) => ({
+    default: module.AnnouncementComposer,
+  })),
+)
+const FundraiserPage = lazy(() =>
+  import('./features/fundraisers/pages/FundraiserPage').then((module) => ({
+    default: module.FundraiserPage,
+  })),
+)
+const TreasuryDashboard = lazy(() =>
+  import('./features/treasury/pages/TreasuryDashboard').then((module) => ({
+    default: module.TreasuryDashboard,
+  })),
+)
+const CheckinPage = lazy(() =>
+  import('./features/tickets/pages/CheckinPage').then((module) => ({ default: module.CheckinPage })),
+)
 
-// Admin Pages
-import { AdminDashboard } from './features/dashboard/pages/AdminDashboard'
-import { MemberListPage } from './features/members/pages/MemberListPage'
-import { AdminStockPage } from './features/shop/pages/AdminStockPage'
-import { AnnouncementComposer } from './features/announcements/pages/AnnouncementComposer'
-import { FundraiserPage } from './features/fundraisers/pages/FundraiserPage'
-import { TreasuryDashboard } from './features/treasury/pages/TreasuryDashboard'
-
-// Door Check-in
-import { CheckinPage } from './features/tickets/pages/CheckinPage'
+function PageFallback() {
+  return (
+    <div className="min-h-[40vh] flex items-center justify-center text-sm text-[var(--color-muted)]">
+      Loading
+    </div>
+  )
+}
 
 export function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<PageFallback />}>
       <Routes>
         {/* 1. Public Surfaces (max 1200px) */}
         <Route path="/" element={<PublicLayout />}>
@@ -73,6 +129,7 @@ export function App() {
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
