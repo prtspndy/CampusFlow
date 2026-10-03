@@ -11,7 +11,7 @@ describe.skipIf(!enabled)('Phase 4 PostgreSQL inventory', () => {
     const url = process.env.DATABASE_URL ?? '';
     const isLocal = /@((127\.0\.0\.1)|localhost)[:/]/.test(url);
     const isIsolatedTestDb = /\/campusflow_phase4_test(\?|$)/.test(url) && !/\/neondb(\?|$)/.test(url);
-    if (!isLocal && !isIsolatedTestDb) {
+    if (!isLocal || !isIsolatedTestDb) {
       throw new Error('Refusing to run against non-isolated database');
     }
     await prisma.$queryRaw`SELECT 1`;
