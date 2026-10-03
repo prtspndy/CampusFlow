@@ -1,122 +1,78 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-function App() {
-  const [count, setCount] = useState(0)
+// Layouts
+import { PublicLayout } from './components/layout/PublicLayout'
+import { MemberLayout } from './components/layout/MemberLayout'
+import { AdminLayout } from './components/layout/AdminLayout'
+import { CheckinLayout } from './components/layout/CheckinLayout'
 
+// Public Pages
+import { LandingPage } from './features/public/pages/LandingPage'
+import { EventListPage } from './features/events/pages/EventListPage'
+import { EventDetailPage } from './features/events/pages/EventDetailPage'
+import { ShopPage } from './features/shop/pages/ShopPage'
+import { ProductPage } from './features/shop/pages/ProductPage'
+import { JoinPage } from './features/members/pages/JoinPage'
+import { AnnouncementFeed } from './features/announcements/pages/AnnouncementFeed'
+
+// Member Pages
+import { MemberHome } from './features/dashboard/pages/MemberHome'
+import { MemberPassPage } from './features/members/pages/MemberPassPage'
+import { MyTicketsPage } from './features/tickets/pages/MyTicketsPage'
+
+// Admin Pages
+import { AdminDashboard } from './features/dashboard/pages/AdminDashboard'
+import { MemberListPage } from './features/members/pages/MemberListPage'
+import { AdminStockPage } from './features/shop/pages/AdminStockPage'
+import { AnnouncementComposer } from './features/announcements/pages/AnnouncementComposer'
+import { FundraiserPage } from './features/fundraisers/pages/FundraiserPage'
+import { TreasuryDashboard } from './features/treasury/pages/TreasuryDashboard'
+
+// Door Check-in
+import { CheckinPage } from './features/tickets/pages/CheckinPage'
+
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <BrowserRouter>
+      <Routes>
+        {/* 1. Public Surfaces (max 1200px) */}
+        <Route path="/" element={<PublicLayout />}>
+          <Route index element={<LandingPage />} />
+          <Route path="events" element={<EventListPage />} />
+          <Route path="events/:id" element={<EventDetailPage />} />
+          <Route path="shop" element={<ShopPage />} />
+          <Route path="shop/:id" element={<ProductPage />} />
+          <Route path="join" element={<JoinPage />} />
+          <Route path="announcements" element={<AnnouncementFeed />} />
+        </Route>
 
-      <div className="ticks"></div>
+        {/* 2. Member App (Phone-first, max 640px, bottom tab nav) */}
+        <Route path="/member" element={<MemberLayout />}>
+          <Route index element={<MemberHome />} />
+          <Route path="pass" element={<MemberPassPage />} />
+          <Route path="tickets" element={<MyTicketsPage />} />
+        </Route>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* 3. Admin Console (Sidebar 248px + 1280px fluid container) */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="members" element={<MemberListPage />} />
+          <Route path="events" element={<EventListPage />} />
+          <Route path="announcements" element={<AnnouncementComposer />} />
+          <Route path="shop" element={<AdminStockPage />} />
+          <Route path="fundraisers" element={<FundraiserPage />} />
+          <Route path="treasury" element={<TreasuryDashboard />} />
+        </Route>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {/* 4. Door Staff Check-in Scanner (Full screen dark mode) */}
+        <Route path="/checkin" element={<CheckinLayout />}>
+          <Route path=":eventId" element={<CheckinPage />} />
+          <Route index element={<Navigate to="/checkin/event-gala-1" replace />} />
+        </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
-
-export default App
