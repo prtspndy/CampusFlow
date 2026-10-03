@@ -103,6 +103,8 @@ Open `.env` and fill in your variables:
 
 Phase 03 routes, payment flow, and migration steps are documented in [docs/PHASE03_TICKETS_PAYMENTS.md](../docs/PHASE03_TICKETS_PAYMENTS.md) and [docs/API_CONTRACT.md](../docs/API_CONTRACT.md).
 
+Phase 04 merchandise, pickup orders, stock rules, and announcements are documented in [docs/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md](../docs/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md). Merchandise orders do not use Razorpay. Apply `20261003220000_phase04_merchandise_and_announcements` with `npx prisma migrate deploy` from this directory. Do not run `prisma migrate reset` against the shared Neon database. Isolated PostgreSQL checks use `npm run test:postgres` and require `PHASE4_TEST_DATABASE_URL` on localhost.
+
 ---
 
 ## 🐘 Neon PostgreSQL Configuration
