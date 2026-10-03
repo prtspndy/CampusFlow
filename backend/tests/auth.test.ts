@@ -10,6 +10,7 @@ import {
   insertUser,
   expireRefreshTokens,
   installPrismaMemory,
+  overlapNextRefreshTokenReads,
   memoryRefreshTokens,
   memoryUsers,
   resetMemoryDb,
@@ -272,8 +273,9 @@ describe('Authentication and authorization', () => {
       expect(rotated.body.data.refreshToken).not.toBe(session.refreshToken);
     });
 
-    it('does not issue two live tokens when the same refresh token is used concurrently', async () => {
+    it('lets only one overlapping refresh consume the same token', async () => {
       const session = await loginAs('ada@campus.edu');
+      overlapNextRefreshTokenReads(2);
       const [first, second] = await Promise.all([
         request(app).post('/api/auth/refresh').send({ refreshToken: session.refreshToken }),
         request(app).post('/api/auth/refresh').send({ refreshToken: session.refreshToken }),
@@ -282,14 +284,20 @@ describe('Authentication and authorization', () => {
       const statuses = [first.status, second.status].sort();
       expect(statuses).toEqual([200, 401]);
       const active = memoryRefreshTokens().filter((token) => token.revokedAt === null);
-      expect(active).toHaveLength(0);
+      expect(active).toHaveLength(1);
 
       const winner = first.status === 200 ? first : second;
-      const replayWinner = await request(app).post('/api/auth/refresh').send({
+      const winnerAgain = await request(app).post('/api/auth/refresh').send({
         refreshToken: winner.body.data.refreshToken,
       });
-      expect(replayWinner.status).toBe(401);
-      expect(replayWinner.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+      expect(winnerAgain.status).toBe(200);
+
+      const replay = await request(app).post('/api/auth/refresh').send({
+        refreshToken: session.refreshToken,
+      });
+      expect(replay.status).toBe(401);
+      expect(replay.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+      expect(memoryRefreshTokens().filter((token) => token.revokedAt === null)).toHaveLength(0);
     });
 
     it('rejects an expired refresh token', async () => {
@@ -324,6 +332,7 @@ describe('Authentication and authorization', () => {
         .get('/api/auth/me')
         .set('Authorization', `Bearer ${session.token}`);
       expect(me.status).toBe(200);
+      expect(memoryUsers().find((user) => user.email === 'ada@campus.edu')?.tokenVersion).toBe(0);
       expect(memoryRefreshTokens().some((token) => token.revokedAt === null)).toBe(true);
     });
 

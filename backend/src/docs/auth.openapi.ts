@@ -138,7 +138,7 @@ export const authOpenApiPaths = {
       tags: ['Authentication'],
       summary: 'Rotate a refresh token',
       description:
-        'Atomically revokes the presented refresh token and stores its replacement. The new tokens are returned only after commit. Replaying a revoked token revokes the rest of that token family. Disabled accounts receive the same invalid-token error.',
+        'Atomically consumes the presented refresh token only when it is unrevoked, then stores its replacement. The new tokens are returned only after commit. A concurrent loser does not revoke that replacement. Presenting an already consumed token revokes the rest of that token family. Disabled accounts receive the same invalid-token error.',
       requestBody: {
         required: true,
         content: {

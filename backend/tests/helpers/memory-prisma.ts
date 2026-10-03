@@ -29,10 +29,25 @@ interface MemoryRefreshToken {
 
 const users: MemoryUser[] = [];
 const refreshTokens: MemoryRefreshToken[] = [];
+let refreshReadWaiters: Array<() => void> | null = null;
+let refreshReadTarget = 0;
 
 export function resetMemoryDb(): void {
   users.length = 0;
   refreshTokens.length = 0;
+  refreshReadWaiters = null;
+  refreshReadTarget = 0;
+}
+
+/**
+ * Test-only gate for the in-memory fake. The next `count` refresh-token reads
+ * wait until all of them have observed the row, then continue. This lets two
+ * rotations pass the initial read before either conditional update runs.
+ * It does not exercise PostgreSQL locking.
+ */
+export function overlapNextRefreshTokenReads(count: number): void {
+  refreshReadWaiters = [];
+  refreshReadTarget = count;
 }
 
 export function memoryUsers(): MemoryUser[] {
@@ -94,26 +109,17 @@ function restoreState(state: { users: MemoryUser[]; refreshTokens: MemoryRefresh
 }
 
 export function installPrismaMemory(): void {
-  let transactionQueue: Promise<unknown> = Promise.resolve();
-
   vi.spyOn(prisma, '$transaction').mockImplementation((callback: unknown) => {
-    const run = transactionQueue.then(async () => {
-      if (typeof callback !== 'function') {
-        throw new Error('Expected an interactive transaction');
-      }
-      const snapshot = snapshotState();
-      try {
-        return await callback(prisma);
-      } catch (error) {
+    if (typeof callback !== 'function') {
+      return Promise.reject(new Error('Expected an interactive transaction')) as never;
+    }
+    const snapshot = snapshotState();
+    return Promise.resolve()
+      .then(() => callback(prisma))
+      .catch((error: unknown) => {
         restoreState(snapshot);
         throw error;
-      }
-    });
-    transactionQueue = run.then(
-      () => undefined,
-      () => undefined,
-    );
-    return run as never;
+      }) as never;
   });
 
   vi.spyOn(prisma.user, 'findUnique').mockImplementation(async (args) => {
@@ -184,6 +190,17 @@ export function installPrismaMemory(): void {
   vi.spyOn(prisma.refreshToken, 'findUnique').mockImplementation(async (args) => {
     const where = args.where as { tokenHash: string };
     const token = refreshTokens.find((entry) => entry.tokenHash === where.tokenHash);
+    if (refreshReadWaiters && refreshReadTarget > 0) {
+      await new Promise<void>((resolve) => {
+        refreshReadWaiters?.push(resolve);
+        if (refreshReadWaiters && refreshReadWaiters.length >= refreshReadTarget) {
+          const pending = refreshReadWaiters;
+          refreshReadWaiters = null;
+          refreshReadTarget = 0;
+          pending.forEach((release) => release());
+        }
+      });
+    }
     if (!token) {
       return null;
     }

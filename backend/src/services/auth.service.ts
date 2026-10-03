@@ -102,16 +102,16 @@ export async function refreshSession(rawRefreshToken: string): Promise<AuthSessi
         return { status: 'replay' as const };
       }
 
-      // Read Committed plus this conditional update locks the row. A second
-      // request for the same token waits, then matches zero rows.
+      // The conditional UPDATE is the concurrency guard. PostgreSQL locks the
+      // row and rechecks `revokedAt IS NULL`, so only one transaction can
+      // consume this token. A lost race must not revoke the winner's family.
       const consumed = await tx.refreshToken.updateMany({
         where: { id: stored.id, revokedAt: null },
         data: { revokedAt: new Date() },
       });
 
       if (consumed.count !== 1) {
-        await revokeTokenFamily(tx, stored.familyId);
-        return { status: 'replay' as const };
+        return { status: 'invalid' as const };
       }
 
       const nextToken = generateRefreshToken();

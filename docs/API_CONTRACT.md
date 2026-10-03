@@ -178,8 +178,8 @@ There is no API for changing a role. Privileged roles are assigned directly in t
 - Access token claims are `sub` (user id), `tv` (token version), and `typ: "access"`, plus issuer `campusflow`, audience `campusflow-api`, expiry, and a token id. Email, name, role, and password are not in the token.
 - Refresh tokens expire after `JWT_REFRESH_TTL_DAYS` (default 7).
 - `POST /api/auth/refresh` revokes the presented refresh token and stores its replacement in one database transaction. The new pair is returned only after that transaction commits. A failed transaction leaves the presented refresh token usable.
-- Two uses of the same refresh token cannot both succeed. The second is treated as a replay and revokes every still-active token in that family.
-- Replaying an already revoked refresh token also revokes every still-active token in that family.
+- Two overlapping uses of the same refresh token cannot both rotate it. The conditional update allows one replacement. The loser receives `401` and leaves that replacement in place.
+- Presenting a refresh token that was already consumed revokes every still-active token in that family.
 - `POST /api/auth/logout` requires the access token. In one transaction it increments the user's token version and revokes all of that user's refresh tokens. This signs out every device. If that transaction fails, the response is not success and existing tokens stay valid.
 - An access token presented after a committed logout fails with `401 TOKEN_REVOKED` even if it has not reached its expiry.
 - Deleting the token from browser memory is not server-side revocation. The client must call logout.
