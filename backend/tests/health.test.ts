@@ -121,4 +121,42 @@ describe('Health and System Observability Suite', () => {
       expect(res.headers['x-content-type-options']).toBe('nosniff');
     });
   });
+
+  describe('GET /api/docs and GET /api/docs.json (API Documentation)', () => {
+    it('serves Swagger UI documentation assets at /api/docs/', async () => {
+      const res = await request(app).get('/api/docs/');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/html/);
+      expect(res.text).toContain('swagger-ui');
+    });
+
+    it('handles /api/docs request with 200 or 301 redirect to trailing slash', async () => {
+      const res = await request(app).get('/api/docs');
+
+      expect([200, 301]).toContain(res.status);
+      if (res.status === 301) {
+        expect(res.headers.location).toMatch(/\/api\/docs\/?/);
+      } else {
+        expect(res.text).toContain('swagger-ui');
+      }
+    });
+
+    it('returns valid OpenAPI 3.0.3 specification JSON at /api/docs.json', async () => {
+      const res = await request(app).get('/api/docs.json');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/application\/json/);
+      expect(res.body.openapi).toBe('3.0.3');
+      expect(res.body.info).toMatchObject({
+        title: 'CampusFlow API',
+        version: '0.2.0',
+      });
+      expect(res.body.paths).toBeDefined();
+      expect(typeof res.body.paths).toBe('object');
+      expect(res.body.paths['/health']).toBeDefined();
+      expect(res.body.paths['/auth/login']).toBeDefined();
+    });
+  });
 });
+

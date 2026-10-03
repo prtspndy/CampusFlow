@@ -12,6 +12,7 @@ import {
 } from '../src/lib/razorpay.js';
 import {
   insertEvent,
+  insertPayment,
   insertUser,
   installPrismaMemory,
   memoryPayments,
@@ -538,4 +539,246 @@ describe('Razorpay payments', () => {
     expect(duplicateOrder.status).toBe(409);
     expect(duplicateOrder.body.error.code).toBe('ALREADY_CONFIRMED');
   });
+
+  describe('GET /api/payments (List Payments - Finance & Admin)', () => {
+    it('requires authentication for GET /api/payments', async () => {
+      const res = await request(app).get('/api/payments');
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('forbids members and event managers without payments.read permission', async () => {
+      const member = await login('member-pay-list@campus.edu', 'MEMBER');
+      const manager = await login('manager-pay-list@campus.edu', 'EVENT_MANAGER');
+
+      const memberRes = await request(app)
+        .get('/api/payments')
+        .set('Authorization', `Bearer ${member.token}`);
+      expect(memberRes.status).toBe(403);
+      expect(memberRes.body.error.code).toBe('FORBIDDEN');
+
+      const managerRes = await request(app)
+        .get('/api/payments')
+        .set('Authorization', `Bearer ${manager.token}`);
+      expect(managerRes.status).toBe(403);
+      expect(managerRes.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('allows treasurer and admin to retrieve payments with empty list envelope', async () => {
+      const treasurer = await login('treasurer-empty@campus.edu', 'TREASURER');
+      const admin = await login('admin-empty@campus.edu', 'ADMIN');
+
+      const treasurerRes = await request(app)
+        .get('/api/payments')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(treasurerRes.status).toBe(200);
+      expect(treasurerRes.body.success).toBe(true);
+      expect(treasurerRes.body.data.payments).toEqual([]);
+      expect(treasurerRes.body.data.pagination).toEqual({
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      });
+
+      const adminRes = await request(app)
+        .get('/api/payments')
+        .set('Authorization', `Bearer ${admin.token}`);
+      expect(adminRes.status).toBe(200);
+      expect(adminRes.body.data.payments).toEqual([]);
+    });
+
+    it('lists recorded payments and supports filtering by eventId with pagination', async () => {
+      const treasurer = await login('treasurer-list@campus.edu', 'TREASURER');
+      const member1 = await login('user1-pay@campus.edu', 'MEMBER');
+      const member2 = await login('user2-pay@campus.edu', 'MEMBER');
+
+      const event1 = insertEvent({
+        title: 'Tech Talk',
+        description: 'Tech talk on backend systems',
+        category: 'Tech',
+        venue: 'Hall A',
+        startsAt: new Date(Date.now() + 86400000),
+        endsAt: new Date(Date.now() + 90000000),
+        capacity: 100,
+        price: 150,
+        status: EventStatus.PUBLISHED,
+        organizerId: treasurer.user.id,
+      });
+      const event2 = insertEvent({
+        title: 'Design Workshop',
+        description: 'Design workshop for creators',
+        category: 'Design',
+        venue: 'Hall B',
+        startsAt: new Date(Date.now() + 86400000),
+        endsAt: new Date(Date.now() + 90000000),
+        capacity: 50,
+        price: 200,
+        status: EventStatus.PUBLISHED,
+        organizerId: treasurer.user.id,
+      });
+
+      const p1 = insertPayment({
+        registrationId: crypto.randomUUID(),
+        eventId: event1.id,
+        userId: member1.user.id,
+        amountPaise: 15000,
+        status: PaymentStatus.PAID,
+        razorpayOrderId: 'order_pay_1',
+        razorpayPaymentId: 'pay_rcvd_1',
+      });
+      insertPayment({
+        registrationId: crypto.randomUUID(),
+        eventId: event2.id,
+        userId: member2.user.id,
+        amountPaise: 20000,
+        status: PaymentStatus.CREATED,
+        razorpayOrderId: 'order_pay_2',
+      });
+
+      // All payments
+      const allRes = await request(app)
+        .get('/api/payments')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(allRes.status).toBe(200);
+      expect(allRes.body.data.payments).toHaveLength(2);
+      expect(allRes.body.data.pagination.total).toBe(2);
+
+      // Filter by event1
+      const event1Res = await request(app)
+        .get(`/api/payments?eventId=${event1.id}`)
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(event1Res.status).toBe(200);
+      expect(event1Res.body.data.payments).toHaveLength(1);
+      expect(event1Res.body.data.payments[0].id).toBe(p1.id);
+      expect(event1Res.body.data.payments[0].amountPaise).toBe(15000);
+
+      // Pagination
+      const page1Res = await request(app)
+        .get('/api/payments?page=1&limit=1')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(page1Res.status).toBe(200);
+      expect(page1Res.body.data.payments).toHaveLength(1);
+      expect(page1Res.body.data.pagination).toEqual({
+        total: 2,
+        page: 1,
+        limit: 1,
+        totalPages: 2,
+      });
+    });
+
+    it('rejects invalid query parameters with 422', async () => {
+      const treasurer = await login('treasurer-val@campus.edu', 'TREASURER');
+
+      const invalidPage = await request(app)
+        .get('/api/payments?page=0')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(invalidPage.status).toBe(422);
+      expect(invalidPage.body.error.code).toBe('VALIDATION_ERROR');
+
+      const invalidEventId = await request(app)
+        .get('/api/payments?eventId=not-a-uuid')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(invalidEventId.status).toBe(422);
+      expect(invalidEventId.body.error.code).toBe('VALIDATION_ERROR');
+    });
+  });
+
+  describe('GET /api/payments/:paymentId (Get Payment Details)', () => {
+    it('requires authentication for GET /api/payments/:paymentId', async () => {
+      const res = await request(app).get(`/api/payments/${crypto.randomUUID()}`);
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('rejects invalid UUID parameter with 422', async () => {
+      const member = await login('member-uuid@campus.edu', 'MEMBER');
+
+      const res = await request(app)
+        .get('/api/payments/invalid-uuid-format')
+        .set('Authorization', `Bearer ${member.token}`);
+
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('returns 404 for non-existent payment ID', async () => {
+      const member = await login('member-notfound@campus.edu', 'MEMBER');
+
+      const res = await request(app)
+        .get(`/api/payments/${crypto.randomUUID()}`)
+        .set('Authorization', `Bearer ${member.token}`);
+
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('allows the payment owner to view payment details including public keyId for open payments', async () => {
+      const { member, registration } = await reservedRegistration();
+      const order = await createOrder(member.token, registration.id);
+      const paymentId = order.body.data.payment.id as string;
+
+      const res = await request(app)
+        .get(`/api/payments/${paymentId}`)
+        .set('Authorization', `Bearer ${member.token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toMatchObject({
+        id: paymentId,
+        registrationId: registration.id,
+        userId: member.user.id,
+        status: PaymentStatus.CREATED,
+        amountPaise: 25000,
+        currency: 'INR',
+        keyId: 'rzp_test_campusflow',
+      });
+      expect(JSON.stringify(res.body)).not.toContain(keySecret);
+    });
+
+    it('forbids other members from viewing payment details with 404 anti-enumeration', async () => {
+      const { member, registration } = await reservedRegistration();
+      const other = await login('other-member-peek@campus.edu', 'MEMBER');
+      const order = await createOrder(member.token, registration.id);
+      const paymentId = order.body.data.payment.id as string;
+
+      const res = await request(app)
+        .get(`/api/payments/${paymentId}`)
+        .set('Authorization', `Bearer ${other.token}`);
+
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('allows admin and treasurer to inspect any payment record', async () => {
+      const { member, registration } = await reservedRegistration();
+      const admin = await login('admin-inspect@campus.edu', 'ADMIN');
+      const treasurer = await login('treasurer-inspect@campus.edu', 'TREASURER');
+      const order = await createOrder(member.token, registration.id);
+      const paymentId = order.body.data.payment.id as string;
+
+      const adminRes = await request(app)
+        .get(`/api/payments/${paymentId}`)
+        .set('Authorization', `Bearer ${admin.token}`);
+
+      expect(adminRes.status).toBe(200);
+      expect(adminRes.body.data.id).toBe(paymentId);
+      expect(adminRes.body.data.userId).toBe(member.user.id);
+      // Non-owner does not receive owner-facing client keyId
+      expect(adminRes.body.data.keyId).toBeUndefined();
+
+      const treasurerRes = await request(app)
+        .get(`/api/payments/${paymentId}`)
+        .set('Authorization', `Bearer ${treasurer.token}`);
+
+      expect(treasurerRes.status).toBe(200);
+      expect(treasurerRes.body.data.id).toBe(paymentId);
+      expect(treasurerRes.body.data.keyId).toBeUndefined();
+    });
+  });
 });
+

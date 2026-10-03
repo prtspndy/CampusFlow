@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Ticket as TicketIcon, ArrowLeft, Loader2 } from 'lucide-react'
-import { MOCK_TICKETS } from '../../../lib/mockData'
 import { TicketStub } from '../../../components/tickets/TicketStub'
 import { EmptyState } from '../../../components/feedback/EmptyState'
 import { ticketApiService, type BackendTicketWithEvent } from '../services/ticketService'
@@ -43,7 +42,7 @@ function toClientTicket(
 export const MyTicketsPage: React.FC = () => {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
-  const [tickets, setTickets] = useState<Ticket[]>(MOCK_TICKETS)
+  const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -74,9 +73,8 @@ export const MyTicketsPage: React.FC = () => {
           }
         }
       } catch {
-        // Fallback to MOCK_TICKETS if server is offline
         if (!isCancelled) {
-          setTickets(MOCK_TICKETS)
+          setTickets([])
         }
       } finally {
         if (!isCancelled) setLoading(false)

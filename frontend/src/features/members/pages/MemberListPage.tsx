@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { UserPlus, Loader2 } from 'lucide-react'
-import { MOCK_MEMBERS } from '../../../lib/mockData'
 import { FilterChips } from '../../../components/forms/FilterChips'
 import { SearchPill } from '../../../components/forms/SearchPill'
 import { StatusBadge } from '../../../components/badges/StatusBadge'
@@ -12,8 +11,8 @@ import type { MembershipStatus } from '../../../types/enums'
 export const MemberListPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL')
   const [search, setSearch] = useState('')
-  const [members, setMembers] = useState<User[]>(MOCK_MEMBERS)
-  const [loading, setLoading] = useState(false)
+  const [members, setMembers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let isCancelled = false
@@ -44,9 +43,8 @@ export const MemberListPage: React.FC = () => {
           setMembers(mapped)
         }
       } catch {
-        // Fallback to MOCK_MEMBERS if offline or permission denied
         if (!isCancelled) {
-          setMembers(MOCK_MEMBERS)
+          setMembers([])
         }
       } finally {
         if (!isCancelled) setLoading(false)
