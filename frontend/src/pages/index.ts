@@ -1,6 +1,0 @@
-export * from './dashboard/DashboardPage'
-export * from './clubs/ClubsPage'
-export * from './events/EventsPage'
-export * from './budget/BudgetPage'
-export * from './auth/LoginPage'
-export * from './not-found/NotFoundPage'
