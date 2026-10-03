@@ -673,7 +673,6 @@ describe('Phase 5 — Volunteers, Fundraisers, Expenses, Reimbursements & Financ
       // 1. Submit and approve an expense (3000), then settle it
       const exp1 = await request(app)
         .post('/api/expenses')
-        .set('Authorization', `Bearer={member.token}`)
         .set('Authorization', `Bearer ${member.token}`)
         .send({
           title: 'Venue Projector Rental',
