@@ -96,6 +96,12 @@ Open `.env` and fill in your variables:
 | `BCRYPT_ROUNDS` | Password hash cost | `12` | No |
 | `AUTH_RATE_LIMIT_MAX` | Auth attempts per window per IP | `10` | No |
 | `AUTH_RATE_LIMIT_WINDOW_MS` | Auth rate-limit window | `900000` | No |
+| `TICKET_ENCRYPTION_KEY` | AES key for ticket QR tokens (min 32 chars) | insecure dev default | Yes in production |
+| `RAZORPAY_KEY_ID` | Razorpay test key id (`rzp_test_...`) | unset | For paid checkout |
+| `RAZORPAY_KEY_SECRET` | Razorpay test key secret. Checkout signatures only | unset | For paid checkout |
+| `RAZORPAY_WEBHOOK_SECRET` | Razorpay webhook secret. Separate from the key secret | unset | For webhooks |
+
+Phase 03 routes, payment flow, and migration steps are documented in [docs/PHASE03_TICKETS_PAYMENTS.md](../docs/PHASE03_TICKETS_PAYMENTS.md) and [docs/API_CONTRACT.md](../docs/API_CONTRACT.md).
 
 ---
 
