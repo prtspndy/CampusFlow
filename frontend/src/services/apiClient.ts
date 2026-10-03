@@ -1,58 +1,28 @@
-import { ENV } from '@/config/env'
-import { STORAGE_KEYS } from '@/config/constants'
-import type { ApiResponse } from '@/types'
+import { api, ApiError, STORAGE_KEYS } from '@/lib/api'
+import type { ApiSuccessResponse } from '@/types/api'
 
-class ApiClient {
-  private baseUrl: string
-
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl
+class LegacyApiClient {
+  async get<T>(endpoint: string, params?: Record<string, string>): Promise<ApiSuccessResponse<T>> {
+    const data = await api.get<T>(endpoint, params)
+    return { success: true, data }
   }
 
-  private getAuthHeader(): Record<string, string> {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
-    return token ? { Authorization: `Bearer ${token}` } : {}
+  async post<T>(endpoint: string, body?: unknown): Promise<ApiSuccessResponse<T>> {
+    const data = await api.post<T>(endpoint, body)
+    return { success: true, data }
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...this.getAuthHeader(),
-      ...(options.headers as Record<string, string>),
-    }
-
-    const response = await fetch(url, { ...options, headers })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `Request failed with status ${response.status}`)
-    }
-
-    return response.json()
+  async put<T>(endpoint: string, body?: unknown): Promise<ApiSuccessResponse<T>> {
+    const data = await api.put<T>(endpoint, body)
+    return { success: true, data }
   }
 
-  get<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<ApiResponse<T>>(endpoint, { method: 'GET' })
-  }
-
-  post<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
-    return this.request<ApiResponse<T>>(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    })
-  }
-
-  put<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
-    return this.request<ApiResponse<T>>(endpoint, {
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    })
-  }
-
-  delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<ApiResponse<T>>(endpoint, { method: 'DELETE' })
+  async delete<T>(endpoint: string): Promise<ApiSuccessResponse<T>> {
+    const data = await api.delete<T>(endpoint)
+    return { success: true, data }
   }
 }
 
-export const apiClient = new ApiClient(ENV.API_BASE_URL)
+export const apiClient = new LegacyApiClient()
+export { api, ApiError, STORAGE_KEYS }
+export default apiClient

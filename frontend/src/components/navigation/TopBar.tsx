@@ -1,52 +1,60 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../../stores/authStore'
+import { useCartStore } from '../../stores/cartStore'
+import { useThemeStore, type ThemePreference } from '../../stores/themeStore'
+import { ROLES } from '../../lib/constants'
 import {
   Sun,
   Moon,
   Laptop,
-  ChevronDown,
   ShoppingBag,
+  ChevronDown,
+  LogOut,
+  User as UserIcon,
+  Shield,
+  LogIn,
+  UserPlus,
 } from 'lucide-react'
-import { useAuthStore } from '../../stores/authStore'
-import { useThemeStore, type ThemePreference } from '../../stores/themeStore'
-import { useCartStore } from '../../stores/cartStore'
-import { ROLES, APP_NAME } from '../../lib/constants'
+import { ProfileModal } from '../../features/auth/components/ProfileModal'
 
 export const TopBar: React.FC = () => {
-  const { user, switchRole } = useAuthStore()
+  const { user, isAuthenticated, isDemoMode, logout, switchRole } = useAuthStore()
   const { theme, setTheme } = useThemeStore()
-  const { totalItems, toggleOpen } = useCartStore()
-  const [showRoleMenu, setShowRoleMenu] = useState(false)
-  const [showThemeMenu, setShowThemeMenu] = useState(false)
+  const { setOpen, items } = useCartStore()
   const navigate = useNavigate()
 
-  const cartCount = totalItems()
+  const [showRoleMenu, setShowRoleMenu] = useState(false)
+  const [showThemeMenu, setShowThemeMenu] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+
+  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0)
+
+  const handleLogout = async () => {
+    setShowUserMenu(false)
+    await logout()
+    navigate('/login')
+  }
 
   return (
-    <header className="sticky top-0 z-40 w-full h-16 bg-[var(--color-canvas)]/95 backdrop-blur-md border-b border-[var(--color-hairline)] px-4 md:px-8 flex items-center justify-between">
-      {/* Brand logo & title */}
-      <div className="flex items-center gap-3">
-        <Link to="/" className="flex items-center gap-2.5 select-none group">
-          <div className="w-8 h-8 rounded-[10px] bg-[var(--color-primary)] flex items-center justify-center text-white font-display font-extrabold text-lg shadow-sm">
-            CF
-          </div>
-          <div>
-            <span className="font-display font-extrabold text-heading-3 text-[var(--color-ink)] tracking-tight block leading-none">
-              {APP_NAME}
-            </span>
-            <span className="text-[11px] text-[var(--color-muted)] font-medium hidden sm:block">
-              Skyline Student Association
-            </span>
-          </div>
-        </Link>
-      </div>
+    <header className="h-[64px] border-b border-[var(--color-hairline)] bg-[var(--color-canvas)]/90 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between">
+      {/* Brand logo & name */}
+      <Link to="/" className="flex items-center gap-2 group">
+        <div className="w-8 h-8 rounded-[8px] bg-[var(--color-brand-navy)] flex items-center justify-center text-[var(--color-on-primary)] font-heading font-black text-caption tracking-tight group-hover:scale-105 transition-transform">
+          CF
+        </div>
+        <span className="font-heading font-bold text-title-sm text-[var(--color-ink)] tracking-tight">
+          Campus<span className="text-[var(--color-sunset)]">Flow</span>
+        </span>
+      </Link>
 
-      {/* Right controls: Role switcher, Cart, Theme Toggle, Profile */}
-      <div className="flex items-center gap-2 md:gap-3">
-        {/* Merchandise Cart Trigger */}
+      {/* Actions */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Merchandise Cart button */}
         <button
           type="button"
-          onClick={toggleOpen}
+          onClick={() => setOpen(true)}
           className="relative p-2 rounded-[10px] text-[var(--color-ink)] hover:bg-[var(--color-surface)] transition-colors cursor-pointer"
           aria-label="View Cart"
         >
@@ -67,6 +75,11 @@ export const TopBar: React.FC = () => {
           >
             <span className="text-[var(--color-muted)] font-normal hidden sm:inline">Role:</span>
             <span className="capitalize">{user?.role.toLowerCase().replace('_', ' ') || 'Guest'}</span>
+            {isDemoMode && (
+              <span className="hidden md:inline px-1.5 py-0.2 rounded text-[10px] font-mono uppercase bg-amber-100 text-amber-800">
+                demo
+              </span>
+            )}
             <ChevronDown className="w-3.5 h-3.5 text-[var(--color-muted)]" />
           </button>
 
@@ -148,20 +161,131 @@ export const TopBar: React.FC = () => {
           )}
         </div>
 
-        {/* User initials / Avatar */}
-        <div className="flex items-center gap-2 pl-1 border-l border-[var(--color-hairline)]">
-          <div className="w-8 h-8 rounded-full bg-[var(--color-tint-sky)] text-[var(--color-tint-sky-deep)] flex items-center justify-center font-bold text-caption">
-            {user?.name
-              ? user.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .toUpperCase()
-                  .slice(0, 2)
-              : 'G'}
+        {/* User Account Menu / Auth status */}
+        {isAuthenticated && user ? (
+          <div className="relative pl-1 border-l border-[var(--color-hairline)]">
+            <button
+              type="button"
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 p-1 rounded-full hover:ring-2 hover:ring-[var(--color-primary)] transition-all cursor-pointer"
+              aria-label="User account"
+            >
+              <div className="w-8 h-8 rounded-full bg-[var(--color-brand-navy)] text-white flex items-center justify-center font-bold text-caption shadow-[var(--elevation-1)]">
+                {user.name
+                  ? user.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2)
+                  : 'U'}
+              </div>
+            </button>
+
+            {showUserMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowUserMenu(false)}
+                />
+                <div className="absolute right-0 mt-2 w-56 rounded-[14px] bg-[var(--color-canvas)] border border-[var(--color-hairline)] shadow-[var(--elevation-3)] p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-2 border-b border-[var(--color-hairline)]">
+                    <p className="text-body-sm font-bold text-[var(--color-ink)] truncate">
+                      {user.name}
+                    </p>
+                    <p className="text-[12px] text-[var(--color-muted)] truncate">
+                      {user.email}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[var(--color-primary-tint)] text-[var(--color-primary-deep)]">
+                        {user.role.toLowerCase()}
+                      </span>
+                      {isDemoMode && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                          Demo session
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="py-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false)
+                        setShowProfileModal(true)
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-body-sm rounded-[8px] hover:bg-[var(--color-surface)] text-[var(--color-ink)] transition-colors cursor-pointer"
+                    >
+                      <UserIcon className="w-4 h-4 text-[var(--color-muted)]" />
+                      <span>Profile & Account</span>
+                    </button>
+
+                    {(user.role === ROLES.ADMIN || user.role === ROLES.TREASURER) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowUserMenu(false)
+                          navigate('/admin')
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-body-sm rounded-[8px] hover:bg-[var(--color-surface)] text-[var(--color-ink)] transition-colors cursor-pointer"
+                      >
+                        <Shield className="w-4 h-4 text-[var(--color-muted)]" />
+                        <span>Admin Console</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false)
+                        navigate('/member')
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-body-sm rounded-[8px] hover:bg-[var(--color-surface)] text-[var(--color-ink)] transition-colors cursor-pointer"
+                    >
+                      <span>Member Portal</span>
+                    </button>
+                  </div>
+
+                  <div className="pt-1 border-t border-[var(--color-hairline)]">
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-body-sm text-rose-600 rounded-[8px] hover:bg-rose-50 transition-colors cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2 pl-1 border-l border-[var(--color-hairline)]">
+            <Link
+              to="/login"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-caption font-semibold text-[var(--color-ink)] hover:bg-[var(--color-surface)] transition-colors"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign In</span>
+            </Link>
+            <Link
+              to="/register"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-caption font-semibold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-pressed)] transition-colors"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Register</span>
+            </Link>
+          </div>
+        )}
       </div>
+
+      {/* Profile inspection & edit modal */}
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </header>
   )
 }

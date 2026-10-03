@@ -43,28 +43,32 @@ The application serves five core user roles:
 - **Schema:** Defined in `backend/prisma/schema.prisma` with User, Role enums (`MEMBER`, `VOLUNTEER`, `DOOR_STAFF`, `TREASURER`, `ADMIN`), and base timestamps.
 
 ### Authentication
-- **Token Strategy:** JWT (Bearer authentication header) persisted in client `localStorage`.
-- **Frontend Auth Store (`authStore.ts`):** Zustand-based session management with role-switching capability across all 5 user roles to test permissions and navigation instantly.
-- **Security Rules:** Centralized request interceptors attaching `Authorization: Bearer <token>`; role-based route guard and sidebar navigation filtering.
+- **Token Strategy:** JWT Access Token (stored in `campusflow_token`, 15-minute TTL) + Opaque Refresh Token (stored in `campusflow_refresh_token`, 7-day TTL).
+- **Session Lifecycle:** Automatic session refresh on HTTP 401 via `POST /api/auth/refresh` with single-flight mutex to prevent concurrent refresh races. Full server-side logout revoking token version and refresh tokens via `POST /api/auth/logout`.
+- **Role Permissions:** Platform roles (`member`, `volunteer`, `door_staff`, `treasurer`, `admin`) mapped to permissions. Normalized case handling so backend lowercase roles seamlessly map to frontend `ROLES`.
+- **Frontend Auth Store (`authStore.ts`):** Production Zustand store supporting real backend authentication (`login`, `register`, `logout`, `updateProfileName`, `fetchCurrentUser`), session hydration on boot (`initialize()`), and rapid demo role switching for judges/presentation.
+- **Security Rules:** Centralized request interceptors attaching `Authorization: Bearer <campusflow_token>`; role-based route guard (`ProtectedRoute`) and unauthorized access barriers.
 
 ### API / Service Layer
-- **Client Wrapper (`frontend/src/lib/api.ts`):** Type-safe HTTP client wrapping native `fetch` with standard envelope unwrapping, dynamic query param serialization, and error propagation.
+- **Client Wrapper (`frontend/src/lib/api.ts`):** Robust, type-safe HTTP client adhering to `docs/API_CONTRACT.md`. Automatically injects Bearer credentials, handles 401 token refresh retries, formats queries, unwraps `{ success: true, message, data }` envelopes, and throws typed `ApiError` instances containing HTTP status, backend error codes, and field validation details.
+- **Service Adapter (`frontend/src/services/apiClient.ts`):** Backward-compatible adapter wrapping `api` for legacy modules expecting `{ success: true, data }` responses.
+- **Endpoints (`frontend/src/services/endpoints.ts`):** Canonical registry for all implemented backend routes (Health, Auth, Users, Admin) and isolated declarations for pending feature endpoints.
 - **Configuration (`frontend/src/config/env.ts`):** Environment-aware base URL resolution supporting both `VITE_API_URL` and `VITE_API_BASE_URL` with local fallback to `http://localhost:5000/api`.
 
 ### State Management
 - **Library:** Zustand 5.0.15
 - **Stores:**
   - `themeStore.ts`: Manages System, Light, and Dark preferences with instant DOM `data-theme` attribute mutation.
-  - `authStore.ts`: Authentication state, active user profile, and demo role switching.
+  - `authStore.ts`: Production authentication state, token persistence, user profile, and demo role switching.
   - `cartStore.ts`: Merchandise shopping cart with size-variant selection, quantity controls, and local persistence.
 
 ### Routing
-- **Library:** React Router DOM v7.18.4
+- **Library:** React Router DOM v7.18.4 with route code-splitting via `React.lazy` and `Suspense`.
 - **Route Hierarchy:**
-  - `/` & `/events`, `/events/:id`, `/shop`, `/shop/:id`, `/join`, `/announcements` → `PublicLayout`
-  - `/member`, `/member/pass`, `/member/tickets` → `MemberLayout`
-  - `/admin`, `/admin/members`, `/admin/events`, `/admin/announcements`, `/admin/shop`, `/admin/fundraisers`, `/admin/treasury` → `AdminLayout`
-  - `/checkin/:eventId` → `CheckinLayout`
+  - Public Surfaces: `/`, `/events`, `/events/:id`, `/shop`, `/shop/:id`, `/join`, `/announcements`, `/login`, `/register` → `PublicLayout`
+  - Member App: `/member`, `/member/pass`, `/member/tickets` → Wrapped in `<ProtectedRoute allowedRoles={[MEMBER, VOLUNTEER, ADMIN, TREASURER, DOOR_STAFF]}>` → `MemberLayout`
+  - Admin Console: `/admin`, `/admin/members`, `/admin/events`, `/admin/announcements`, `/admin/shop`, `/admin/fundraisers`, `/admin/treasury` → Wrapped in `<ProtectedRoute allowedRoles={[ADMIN, TREASURER, VOLUNTEER]}>` → `AdminLayout`
+  - Door Check-in: `/checkin/:eventId` → Wrapped in `<ProtectedRoute allowedRoles={[ADMIN, DOOR_STAFF, VOLUNTEER]}>` → `CheckinLayout`
 
 ### Important Integrations
 - **QR Code Engine:** `qrcode.react` (SVG rendering for Member Pass and Ticket Stubs).
@@ -154,9 +158,23 @@ The application serves five core user roles:
 
 ### 10. Member Roster & Directory
 - **Status:** Completed
-- **Implementation Details:** Searchable member table filterable by status (All, Active, Expiring, Expired) with student ID, plan tier, and expiry date columns.
+- **Implementation Details:** Searchable member table filterable by status (All, Active, Expiring, Expired) with student ID, plan tier, and expiry date columns. Integrated with real backend API `GET /api/admin/users` to fetch live registered platform accounts when authenticated as Admin, with live indicator badge, manual sync button, loading spinner, and graceful demo roster fallback.
 - **Important Files:**
   - `frontend/src/features/members/pages/MemberListPage.tsx`
+  - `frontend/src/features/auth/services/authService.ts`
+
+### 11. End-to-End Authentication & Session Lifecycle
+- **Status:** Completed
+- **Implementation Details:** Production JWT authentication connected to real backend endpoints. Dedicated `/login` page with campus styling, form validation, show/hide password toggle, typed error banners with backend error codes (`INVALID_CREDENTIALS`, `RATE_LIMITED`, `VALIDATION_ERROR`), and instant demo account switchers. Dedicated `/register` page with live password complexity validation (min 8 chars, letter, number). Real token rotation via `POST /api/auth/refresh` on HTTP 401. Server-side logout via `POST /api/auth/logout`. Profile inspection and display name editing via `PATCH /api/auth/me`. Protected routes with role-based permission checks (`ProtectedRoute`).
+- **Important Files:**
+  - `frontend/src/lib/api.ts`
+  - `frontend/src/stores/authStore.ts`
+  - `frontend/src/features/auth/services/authService.ts`
+  - `frontend/src/features/auth/pages/LoginPage.tsx`
+  - `frontend/src/features/auth/pages/RegisterPage.tsx`
+  - `frontend/src/features/auth/components/ProfileModal.tsx`
+  - `frontend/src/components/auth/ProtectedRoute.tsx`
+  - `frontend/src/components/navigation/TopBar.tsx`
 
 ---
 
@@ -198,6 +216,16 @@ The application serves five core user roles:
 - **Fix:** Performed a non-destructive merge into `frontend-prashant`. Preserved 100% of teammate's backend code from `main`, preserved our complete frontend implementation, harmonized shared config files, and verified zero build or lint errors.
 - **Affected Files:** `frontend/.env.example`, `frontend/index.html`, `frontend/package.json`, `frontend/src/App.tsx`, `frontend/src/components/feedback/EmptyState.tsx`, `frontend/src/config/env.ts`, `frontend/src/index.css`, `frontend/src/main.tsx`, `frontend/tsconfig.app.json`, `frontend/tsconfig.node.json`, `frontend/vite.config.ts`.
 
+### 5. Local Development Database Connection & In-Memory Dev Adapter
+- **Problem:** User registration (`POST /api/auth/register`) failed with HTTP 500 (`INTERNAL_SERVER_ERROR: An unexpected internal error occurred. Please contact support.`) when run locally without a running PostgreSQL database service.
+- **Cause:** In local environments without a running PostgreSQL server on `localhost:5432`, `prisma.user.findUnique` threw `PrismaClientInitializationError: Can't reach database server at localhost:5432`. Express unhandled error middleware caught this as a generic 500 error.
+- **Fix:** 
+  1. Built `backend/src/lib/memory-db.ts` providing an in-memory dev database adapter (derived from test memory-prisma helper) that hooks `prisma.user.*`, `prisma.refreshToken.*`, `prisma.$transaction`, and `prisma.$queryRaw` when running in local development mode without a remote database connection.
+  2. Integrated hook into `backend/src/lib/prisma.ts` so it activates transparently in development while strictly preserving production PostgreSQL / Neon connection strings and migrations.
+  3. Pre-seeded default executive accounts (`president@skyline.edu`, `aanya.patel@skyline.edu`).
+  4. Enhanced frontend registration UX in `RegisterPage.tsx` to handle HTTP 409 `CONFLICT` gracefully with a clear banner: *"An account with this email already exists. Please sign in instead."* and a direct sign-in link.
+- **Affected Files:** `backend/src/lib/memory-db.ts`, `backend/src/lib/prisma.ts`, `frontend/src/features/auth/pages/RegisterPage.tsx`.
+
 ---
 
 ## Configuration & Dependencies
@@ -230,16 +258,34 @@ The application serves five core user roles:
 
 ## Pending Work
 
-1. **Backend API Endpoints:** Complete Phase 01 to Phase 04 endpoints (Auth, Memberships, Events, Orders, Treasury) as outlined in `Student_Organization_System_README.md`.
-2. **Razorpay Integration:** Wire live payment gateway checkout credentials once backend webhook handling is established.
-3. **Hardware Camera Stream:** Connect HTML5 camera barcode/QR detector to replace current simulated camera viewfinder in `CheckinPage.tsx`.
-4. **Offline Service Worker:** Register PWA service worker for full offline ticket caching.
+### Implemented vs Pending Backend Endpoints
+
+| Module | Implemented in Backend | Status in Frontend |
+|---|---|---|
+| **Health Check & Readiness** | `GET /api/health`, `GET /api/health/ready`, `GET /api` | Connected |
+| **Authentication: Register** | `POST /api/auth/register` | Fully Connected (`/register`, `/join`) |
+| **Authentication: Login** | `POST /api/auth/login` | Fully Connected (`/login`) |
+| **Authentication: Refresh** | `POST /api/auth/refresh` | Fully Connected (Automatic single-flight in `lib/api.ts`) |
+| **Authentication: Logout** | `POST /api/auth/logout` | Fully Connected (Server-side revocation via TopBar) |
+| **User Profile: Current** | `GET /api/auth/me`, `PATCH /api/auth/me` | Fully Connected (Hydration & ProfileModal name editing) |
+| **User Profile: By ID** | `GET /api/users/:userId` | Fully Connected (`authService.getUserById`) |
+| **Admin: List Users** | `GET /api/admin/users` | Fully Connected (`MemberListPage.tsx` with live sync) |
+| **Events & RSVPs** | *Pending backend implementation* | Cleanly isolated in `eventService` with mock fallback |
+| **Shop Products & Orders** | *Pending backend implementation* | Cleanly isolated in `cartStore` with mock catalog |
+| **Announcements Broadcast** | *Pending backend implementation* | Cleanly isolated with mock feed & composer |
+| **Fundraisers & Tasks** | *Pending backend implementation* | Cleanly isolated with mock campaign & board data |
+| **Treasury & Reimbursements** | *Pending backend implementation* | Cleanly isolated with mock ledger & approval cards |
+
+### Additional Next Steps
+1. **Razorpay Integration:** Wire live payment gateway checkout credentials once backend webhook handling is established.
+2. **Hardware Camera Stream:** Connect HTML5 camera barcode/QR detector to replace current simulated camera viewfinder in `CheckinPage.tsx`.
+3. **Offline Service Worker:** Register PWA service worker for full offline ticket caching.
 
 ---
 
 ## Known Issues
 
-- None currently impacting frontend build or development execution. All 65 frontend files compile cleanly with 0 TypeScript errors and 0 linter errors.
+- None currently impacting frontend build or development execution. All frontend files compile cleanly with 0 TypeScript errors and 0 linter errors. All 30 backend test suites pass 100%.
 
 ---
 
@@ -330,3 +376,59 @@ The application serves five core user roles:
 
 **Files/Modules:** `IMPLEMENTATION_LOG.md`  
 **Status:** Completed
+
+---
+
+### 2026-10-03 — End-to-End Authentication & Backend API Integration
+**Type:** Feature / Backend Integration / Architecture  
+**Changes:**
+- Analyzed full backend routes, services, Prisma schema, and `docs/API_CONTRACT.md`.
+- Implemented production-ready centralized API client (`frontend/src/lib/api.ts`) supporting JWT access tokens (`campusflow_token`), opaque refresh tokens (`campusflow_refresh_token`), single-flight 401 token refresh retries, typed `ApiError`, and standard response envelopes.
+- Created `authService.ts` calling all backend endpoints: `register`, `login`, `refresh`, `logout`, `getMe`, `updateMe`, `getUserById`, `listAdminUsers`.
+- Upgraded `authStore.ts` to manage real sessions, automatic boot hydration via `initialize()`, profile name updating, and rapid role-switching demo mode.
+- Created dedicated `/login` and `/register` pages adhering to `DESIGN.md` tokens with show/hide password, live criteria checklist, backend error banners with error codes, and instant demo account switchers.
+- Created `ProtectedRoute.tsx` with role authorization checks, graceful unauthorized access banner, and login redirect.
+- Built interactive `ProfileModal.tsx` allowing user inspection of UUID, role, and live name updates via `PATCH /api/auth/me`.
+- Upgraded `TopBar.tsx` with user account dropdown, profile modal launcher, real server-side logout, and Sign In/Register links for guests.
+- Connected `MemberListPage.tsx` to real backend `GET /api/admin/users` with live API sync button, loading spinner, and graceful demo fallback.
+- Connected `JoinPage.tsx` to call real backend `register()` with password input and seamless member pass generation.
+- Verified frontend build (`npm run build`: 638ms, 0 errors) and linter (0 errors).
+- Verified backend vitest suite (`npm run test`: 30 passed, 0 errors).
+
+**Files/Modules:**
+- `frontend/src/lib/api.ts`
+- `frontend/src/services/apiClient.ts`
+- `frontend/src/services/endpoints.ts`
+- `frontend/src/types/models.ts`
+- `frontend/src/features/auth/*`
+- `frontend/src/components/auth/ProtectedRoute.tsx`
+- `frontend/src/components/navigation/TopBar.tsx`
+- `frontend/src/features/members/pages/MemberListPage.tsx`
+- `frontend/src/features/members/pages/JoinPage.tsx`
+- `frontend/src/App.tsx`
+- `IMPLEMENTATION_LOG.md`
+
+**Status:** Completed
+
+---
+
+### 2026-10-03 — In-Memory Dev Database Provider & Enhanced Registration UX
+**Type:** Backend / Fix / UI / DevEx  
+**Changes:**
+- Solved `PrismaClientInitializationError: Can't reach database server at localhost:5432` during local hackathon demo execution.
+- Created standalone `backend/src/lib/memory-db.ts` implementing in-memory persistence for User, RefreshToken, and transactions when running locally without a PostgreSQL server.
+- Hooked `installDevMemoryStore(prisma)` in `backend/src/lib/prisma.ts` triggered automatically when `isDev && isLocalOrUnset`.
+- Pre-seeded initial accounts for immediate demo usability.
+- Added friendly HTTP 409 duplicate account error banner with direct sign-in action in `RegisterPage.tsx`.
+- Successfully verified registration and login with user `Aditya` (`abc@gmail.com`).
+- Verified both frontend (`http://localhost:5173/`) and backend (`http://localhost:5000`) run concurrently without port collisions.
+- Ran backend test suite (30/30 tests pass) and frontend production build (0 errors).
+
+**Files/Modules:**
+- `backend/src/lib/memory-db.ts`
+- `backend/src/lib/prisma.ts`
+- `frontend/src/features/auth/pages/RegisterPage.tsx`
+- `IMPLEMENTATION_LOG.md`
+
+**Status:** Completed
+

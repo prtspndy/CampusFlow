@@ -1,3 +1,6 @@
 export * from './types/auth.types'
 export * from './services/authService'
 export * from './components/LoginForm'
+export * from './components/ProfileModal'
+export * from './pages/LoginPage'
+export * from './pages/RegisterPage'

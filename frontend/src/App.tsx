@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import { PublicLayout } from './components/layout/PublicLayout'
@@ -6,6 +6,9 @@ import { MemberLayout } from './components/layout/MemberLayout'
 import { AdminLayout } from './components/layout/AdminLayout'
 import { CheckinLayout } from './components/layout/CheckinLayout'
 import { LandingPage } from './features/public/pages/LandingPage'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { ROLES } from './lib/constants'
+import { useAuthStore } from './stores/authStore'
 
 const EventListPage = lazy(() =>
   import('./features/events/pages/EventListPage').then((module) => ({
@@ -30,6 +33,12 @@ const AnnouncementFeed = lazy(() =>
   import('./features/announcements/pages/AnnouncementFeed').then((module) => ({
     default: module.AnnouncementFeed,
   })),
+)
+const LoginPage = lazy(() =>
+  import('./features/auth/pages/LoginPage').then((module) => ({ default: module.LoginPage })),
+)
+const RegisterPage = lazy(() =>
+  import('./features/auth/pages/RegisterPage').then((module) => ({ default: module.RegisterPage })),
 )
 const MemberHome = lazy(() =>
   import('./features/dashboard/pages/MemberHome').then((module) => ({ default: module.MemberHome })),
@@ -80,55 +89,97 @@ const CheckinPage = lazy(() =>
 
 function PageFallback() {
   return (
-    <div className="min-h-[40vh] flex items-center justify-center text-sm text-[var(--color-muted)]">
-      Loading
+    <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3 text-body-sm text-[var(--color-muted)]">
+      <div className="w-8 h-8 rounded-full border-3 border-[var(--color-primary-tint)] border-t-[var(--color-primary)] animate-spin" />
+      <span>Loading CampusFlow...</span>
     </div>
   )
 }
 
 export function App() {
+  const { initialize } = useAuthStore()
+
+  useEffect(() => {
+    initialize()
+  }, [initialize])
+
   return (
     <BrowserRouter>
       <Suspense fallback={<PageFallback />}>
-      <Routes>
-        {/* 1. Public Surfaces (max 1200px) */}
-        <Route path="/" element={<PublicLayout />}>
-          <Route index element={<LandingPage />} />
-          <Route path="events" element={<EventListPage />} />
-          <Route path="events/:id" element={<EventDetailPage />} />
-          <Route path="shop" element={<ShopPage />} />
-          <Route path="shop/:id" element={<ProductPage />} />
-          <Route path="join" element={<JoinPage />} />
-          <Route path="announcements" element={<AnnouncementFeed />} />
-        </Route>
+        <Routes>
+          {/* 1. Public Surfaces (max 1200px) */}
+          <Route path="/" element={<PublicLayout />}>
+            <Route index element={<LandingPage />} />
+            <Route path="events" element={<EventListPage />} />
+            <Route path="events/:id" element={<EventDetailPage />} />
+            <Route path="shop" element={<ShopPage />} />
+            <Route path="shop/:id" element={<ProductPage />} />
+            <Route path="join" element={<JoinPage />} />
+            <Route path="announcements" element={<AnnouncementFeed />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
+          </Route>
 
-        {/* 2. Member App (Phone-first, max 640px, bottom tab nav) */}
-        <Route path="/member" element={<MemberLayout />}>
-          <Route index element={<MemberHome />} />
-          <Route path="pass" element={<MemberPassPage />} />
-          <Route path="tickets" element={<MyTicketsPage />} />
-        </Route>
+          {/* 2. Member App (Phone-first, max 640px, bottom tab nav) */}
+          <Route
+            path="/member"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.MEMBER,
+                  ROLES.VOLUNTEER,
+                  ROLES.ADMIN,
+                  ROLES.TREASURER,
+                  ROLES.DOOR_STAFF,
+                ]}
+              >
+                <MemberLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<MemberHome />} />
+            <Route path="pass" element={<MemberPassPage />} />
+            <Route path="tickets" element={<MyTicketsPage />} />
+          </Route>
 
-        {/* 3. Admin Console (Sidebar 248px + 1280px fluid container) */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="members" element={<MemberListPage />} />
-          <Route path="events" element={<EventListPage />} />
-          <Route path="announcements" element={<AnnouncementComposer />} />
-          <Route path="shop" element={<AdminStockPage />} />
-          <Route path="fundraisers" element={<FundraiserPage />} />
-          <Route path="treasury" element={<TreasuryDashboard />} />
-        </Route>
+          {/* 3. Admin Console (Sidebar 248px + 1280px fluid container) */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute
+                allowedRoles={[ROLES.ADMIN, ROLES.TREASURER, ROLES.VOLUNTEER]}
+              >
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="members" element={<MemberListPage />} />
+            <Route path="events" element={<EventListPage />} />
+            <Route path="announcements" element={<AnnouncementComposer />} />
+            <Route path="shop" element={<AdminStockPage />} />
+            <Route path="fundraisers" element={<FundraiserPage />} />
+            <Route path="treasury" element={<TreasuryDashboard />} />
+          </Route>
 
-        {/* 4. Door Staff Check-in Scanner (Full screen dark mode) */}
-        <Route path="/checkin" element={<CheckinLayout />}>
-          <Route path=":eventId" element={<CheckinPage />} />
-          <Route index element={<Navigate to="/checkin/event-gala-1" replace />} />
-        </Route>
+          {/* 4. Door Staff Check-in Scanner (Full screen dark mode) */}
+          <Route
+            path="/checkin"
+            element={
+              <ProtectedRoute
+                allowedRoles={[ROLES.ADMIN, ROLES.DOOR_STAFF, ROLES.VOLUNTEER]}
+              >
+                <CheckinLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path=":eventId" element={<CheckinPage />} />
+            <Route index element={<Navigate to="/checkin/event-gala-1" replace />} />
+          </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </Suspense>
     </BrowserRouter>
   )

@@ -33,6 +33,7 @@ export interface User {
   studentId?: string
   avatarUrl?: string
   role: UserRole
+  status?: string
   membership?: Membership
 }
 

@@ -1,9 +1,21 @@
 export const API_ENDPOINTS = {
+  HEALTH: {
+    LIVE: '/health',
+    READY: '/health/ready',
+  },
+  INFO: '/',
   AUTH: {
-    LOGIN: '/auth/login',
     REGISTER: '/auth/register',
+    LOGIN: '/auth/login',
+    REFRESH: '/auth/refresh',
     LOGOUT: '/auth/logout',
     ME: '/auth/me',
+  },
+  USERS: {
+    BY_ID: (userId: string) => `/users/${userId}`,
+  },
+  ADMIN: {
+    USERS: '/admin/users',
   },
   CLUBS: {
     LIST: '/clubs',
@@ -22,12 +34,21 @@ export const API_ENDPOINTS = {
     EXPENSES: (clubId: string) => `/clubs/${clubId}/expenses`,
     REQUESTS: (clubId: string) => `/clubs/${clubId}/budget/requests`,
   },
-  APPROVALS: {
-    LIST: '/approvals',
-    DECISION: (id: string) => `/approvals/${id}/decision`,
+  SHOP: {
+    PRODUCTS: '/shop/products',
+    PRODUCT: (id: string) => `/shop/products/${id}`,
+    ORDERS: '/orders',
   },
-  DASHBOARD: {
-    STATS: '/dashboard/stats',
-    ACTIVITIES: '/dashboard/activities',
+  ANNOUNCEMENTS: {
+    LIST: '/announcements',
+    CREATE: '/announcements',
+  },
+  FUNDRAISERS: {
+    LIST: '/fundraisers',
+    TASKS: '/tasks',
+  },
+  TREASURY: {
+    TRANSACTIONS: '/treasury/transactions',
+    REIMBURSEMENTS: '/treasury/reimbursements',
   },
 } as const
