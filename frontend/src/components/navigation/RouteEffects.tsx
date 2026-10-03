@@ -9,6 +9,7 @@ const TITLES: Array<[RegExp, string]> = [
   [/^\/shop\/[^/]+$/, 'Product'],
   [/^\/shop$/, 'Merch store'],
   [/^\/join$/, 'Join the club'],
+  [/^\/login$/, 'Sign in'],
   [/^\/announcements$/, 'Announcements'],
   [/^\/member$/, 'Member home'],
   [/^\/member\/pass$/, 'Member pass'],

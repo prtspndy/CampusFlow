@@ -1,4 +1,4 @@
-import { lazy } from 'react'
+import { lazy, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import { PublicLayout } from './components/layout/PublicLayout'
@@ -6,8 +6,11 @@ import { MemberLayout } from './components/layout/MemberLayout'
 import { AdminLayout } from './components/layout/AdminLayout'
 import { CheckinLayout } from './components/layout/CheckinLayout'
 import { RouteEffects } from './components/navigation/RouteEffects'
+import { RequireAuth } from './components/navigation/RequireAuth'
 import { LandingPage } from './features/public/pages/LandingPage'
 import { NotFoundPage } from './features/public/pages/NotFoundPage'
+import { useAuthStore } from './stores/authStore'
+import { ADMIN_CONSOLE_ROLES, CHECKIN_ROLES } from './lib/constants'
 
 // Each page is its own chunk. Layouts render a PageBoundary around <Outlet />,
 // so the header and navigation stay on screen while a page downloads.
@@ -25,6 +28,9 @@ const ProductPage = lazy(() =>
 )
 const JoinPage = lazy(() =>
   import('./features/members/pages/JoinPage').then((m) => ({ default: m.JoinPage })),
+)
+const LoginPage = lazy(() =>
+  import('./features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })),
 )
 const AnnouncementFeed = lazy(() =>
   import('./features/announcements/pages/AnnouncementFeed').then((m) => ({
@@ -69,6 +75,11 @@ const CheckinPage = lazy(() =>
 )
 
 export function App() {
+  // Confirm any stored session with /auth/me once on startup.
+  useEffect(() => {
+    void useAuthStore.getState().hydrate()
+  }, [])
+
   return (
     <BrowserRouter>
       <RouteEffects />
@@ -81,34 +92,41 @@ export function App() {
           <Route path="shop" element={<ShopPage />} />
           <Route path="shop/:id" element={<ProductPage />} />
           <Route path="join" element={<JoinPage />} />
+          <Route path="login" element={<LoginPage />} />
           <Route path="announcements" element={<AnnouncementFeed />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
 
-        {/* 2. Member App (Phone-first, max 640px, bottom tab nav) */}
-        <Route path="/member" element={<MemberLayout />}>
-          <Route index element={<MemberHome />} />
-          <Route path="pass" element={<MemberPassPage />} />
-          <Route path="tickets" element={<MyTicketsPage />} />
-          <Route path="*" element={<Navigate to="/member" replace />} />
+        {/* 2. Member App (Phone-first, max 640px, bottom tab nav). Any signed-in user. */}
+        <Route element={<RequireAuth />}>
+          <Route path="/member" element={<MemberLayout />}>
+            <Route index element={<MemberHome />} />
+            <Route path="pass" element={<MemberPassPage />} />
+            <Route path="tickets" element={<MyTicketsPage />} />
+            <Route path="*" element={<Navigate to="/member" replace />} />
+          </Route>
         </Route>
 
-        {/* 3. Admin Console (Sidebar 248px + 1280px fluid container) */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="members" element={<MemberListPage />} />
-          <Route path="events" element={<EventListPage />} />
-          <Route path="announcements" element={<AnnouncementComposer />} />
-          <Route path="shop" element={<AdminStockPage />} />
-          <Route path="fundraisers" element={<FundraiserPage />} />
-          <Route path="treasury" element={<TreasuryDashboard />} />
-          <Route path="*" element={<Navigate to="/admin" replace />} />
+        {/* 3. Admin Console (Sidebar 248px + 1280px fluid container). Staff roles only. */}
+        <Route element={<RequireAuth roles={ADMIN_CONSOLE_ROLES} />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="members" element={<MemberListPage />} />
+            <Route path="events" element={<EventListPage />} />
+            <Route path="announcements" element={<AnnouncementComposer />} />
+            <Route path="shop" element={<AdminStockPage />} />
+            <Route path="fundraisers" element={<FundraiserPage />} />
+            <Route path="treasury" element={<TreasuryDashboard />} />
+            <Route path="*" element={<Navigate to="/admin" replace />} />
+          </Route>
         </Route>
 
         {/* 4. Door Staff Check-in Scanner (Full screen dark mode) */}
-        <Route path="/checkin" element={<CheckinLayout />}>
-          <Route path=":eventId" element={<CheckinPage />} />
-          <Route index element={<Navigate to="/checkin/event-gala-1" replace />} />
+        <Route element={<RequireAuth roles={CHECKIN_ROLES} />}>
+          <Route path="/checkin" element={<CheckinLayout />}>
+            <Route path=":eventId" element={<CheckinPage />} />
+            <Route index element={<Navigate to="/checkin/event-gala-1" replace />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

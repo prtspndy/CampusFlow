@@ -1,114 +1,116 @@
 import { create } from 'zustand'
 import type { User } from '../types/models'
-import { ROLES, type UserRole } from '../lib/constants'
+import type { UserRole } from '../lib/constants'
+import { authApi, type ApiSession, type ApiUser } from '../lib/authApi'
+import { isApiError, setSessionExpiredHandler } from '../lib/api'
+import { session } from '../lib/session'
+
+/**
+ * `checking`      tokens exist and /auth/me has not answered yet
+ * `anonymous`     no valid session
+ * `authenticated` /auth/me confirmed the user, or a cached user is shown while offline
+ */
+export type AuthStatus = 'checking' | 'anonymous' | 'authenticated'
 
 interface AuthState {
   user: User | null
-  token: string | null
-  isAuthenticated: boolean
-  login: (user: User, token: string) => void
-  logout: () => void
-  switchRole: (role: UserRole) => void
+  status: AuthStatus
+  /** Confirms a stored session with the server. Call once on app start. */
+  hydrate: () => Promise<void>
+  login: (email: string, password: string) => Promise<User>
+  /** Creates a member account, then signs in with the same credentials. */
+  register: (name: string, email: string, password: string) => Promise<User>
+  /** Revokes the session on the server and clears it locally. */
+  logout: () => Promise<void>
+  updateName: (name: string) => Promise<User>
+  clearSession: () => void
 }
 
-const DEMO_USERS: Record<UserRole, User> = {
-  [ROLES.MEMBER]: {
-    id: 'user-member-1',
-    name: 'Aanya Patel',
-    email: 'aanya.patel@skyline.edu',
-    studentId: 'SKY-2024-8831',
-    role: ROLES.MEMBER,
-    membership: {
-      id: 'mem-101',
-      userId: 'user-member-1',
-      memberCode: 'CF-8831-2026',
-      status: 'ACTIVE',
-      validUntil: '2026-12-31T23:59:59Z',
-      planName: 'Annual Gold Member',
-      perks: ['Member ticket prices', '15% Merch discount', 'Priority RSVP'],
-    },
-  },
-  [ROLES.VOLUNTEER]: {
-    id: 'user-vol-1',
-    name: 'Marcus Vance',
-    email: 'marcus.v@skyline.edu',
-    studentId: 'SKY-2024-5219',
-    role: ROLES.VOLUNTEER,
-    membership: {
-      id: 'mem-102',
-      userId: 'user-vol-1',
-      memberCode: 'CF-5219-2026',
-      status: 'ACTIVE',
-      validUntil: '2026-12-31T23:59:59Z',
-      planName: 'Volunteer Crew',
-      perks: ['Staff t-shirt', 'Event access', 'Service hours credits'],
-    },
-  },
-  [ROLES.DOOR_STAFF]: {
-    id: 'user-door-1',
-    name: 'Priya Sharma',
-    email: 'priya.s@skyline.edu',
-    role: ROLES.DOOR_STAFF,
-  },
-  [ROLES.TREASURER]: {
-    id: 'user-treasurer-1',
-    name: 'Devon Lee',
-    email: 'treasurer@skyline.edu',
-    role: ROLES.TREASURER,
-  },
-  [ROLES.ADMIN]: {
-    id: 'user-admin-1',
-    name: 'Elena Rostova',
-    email: 'president@skyline.edu',
-    role: ROLES.ADMIN,
-  },
+/** Backend roles are lowercase; the UI's role constants are uppercase. */
+export function toClientUser(apiUser: ApiUser): User {
+  return {
+    id: apiUser.id,
+    name: apiUser.name,
+    email: apiUser.email,
+    role: apiUser.role.toUpperCase() as UserRole,
+    status: apiUser.status,
+  }
 }
 
-const STORAGE_TOKEN_KEY = 'campusflow_token'
-const STORAGE_USER_KEY = 'campusflow_user'
+export const useAuthStore = create<AuthState>((set, get) => {
+  const cachedUser = session.readCachedUser<User>()
+  const hasTokens = session.hasTokens()
+  let hydration: Promise<void> | null = null
 
-export const useAuthStore = create<AuthState>((set) => {
-  let initialToken: string | null = null
-  let initialUser: User | null = null
-
-  if (typeof window !== 'undefined') {
-    initialToken = localStorage.getItem(STORAGE_TOKEN_KEY)
-    const storedUser = localStorage.getItem(STORAGE_USER_KEY)
-    if (storedUser) {
-      try {
-        initialUser = JSON.parse(storedUser)
-      } catch {
-        initialUser = null
-      }
-    }
-
-    // Default to Member demo user if nothing stored to facilitate instant preview
-    if (!initialUser) {
-      initialUser = DEMO_USERS[ROLES.MEMBER]
-      initialToken = 'demo-jwt-token-campusflow'
-    }
+  const applySession = (apiSession: ApiSession): User => {
+    const user = toClientUser(apiSession.user)
+    session.setTokens({ accessToken: apiSession.token, refreshToken: apiSession.refreshToken })
+    session.cacheUser(user)
+    set({ user, status: 'authenticated' })
+    return user
   }
 
   return {
-    user: initialUser,
-    token: initialToken,
-    isAuthenticated: !!initialUser,
-    login: (user, token) => {
-      localStorage.setItem(STORAGE_TOKEN_KEY, token)
-      localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(user))
-      set({ user, token, isAuthenticated: true })
+    user: hasTokens ? cachedUser : null,
+    status: hasTokens ? 'checking' : 'anonymous',
+
+    hydrate: () => {
+      // Concurrent callers (StrictMode, several guards) share one /auth/me request.
+      if (hydration) return hydration
+      hydration = (async () => {
+        if (!session.hasTokens()) {
+          set({ user: null, status: 'anonymous' })
+          return
+        }
+        try {
+          const user = toClientUser(await authApi.me())
+          session.cacheUser(user)
+          set({ user, status: 'authenticated' })
+        } catch (error) {
+          if (isApiError(error) && (error.status === 401 || error.status === 403)) {
+            session.clear()
+            set({ user: null, status: 'anonymous' })
+            return
+          }
+          // Server unreachable: keep the cached user visible rather than logging them out.
+          set({ status: get().user ? 'authenticated' : 'anonymous' })
+        }
+      })().finally(() => {
+        hydration = null
+      })
+      return hydration
     },
-    logout: () => {
-      localStorage.removeItem(STORAGE_TOKEN_KEY)
-      localStorage.removeItem(STORAGE_USER_KEY)
-      set({ user: null, token: null, isAuthenticated: false })
+
+    login: async (email, password) => applySession(await authApi.login({ email, password })),
+
+    register: async (name, email, password) => {
+      await authApi.register({ name, email, password })
+      return get().login(email, password)
     },
-    switchRole: (role: UserRole) => {
-      const demoUser = DEMO_USERS[role]
-      const token = `demo-token-${role.toLowerCase()}`
-      localStorage.setItem(STORAGE_TOKEN_KEY, token)
-      localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(demoUser))
-      set({ user: demoUser, token, isAuthenticated: true })
+
+    logout: async () => {
+      try {
+        if (session.getAccessToken()) await authApi.logout()
+      } catch {
+        // The server may already consider this session gone; clear locally either way.
+      } finally {
+        session.clear()
+        set({ user: null, status: 'anonymous' })
+      }
+    },
+
+    updateName: async (name) => {
+      const user = toClientUser(await authApi.updateName(name))
+      session.cacheUser(user)
+      set({ user })
+      return user
+    },
+
+    clearSession: () => {
+      session.clear()
+      set({ user: null, status: 'anonymous' })
     },
   }
 })
+
+setSessionExpiredHandler(() => useAuthStore.getState().clearSession())

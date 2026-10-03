@@ -6,7 +6,10 @@ export interface DropdownMenuItem {
   id: string
   label: string
   icon?: React.ComponentType<{ className?: string }>
+  /** When set, the item behaves as a radio option and shows a check mark. */
   selected?: boolean
+  /** Styles the item for a destructive or sign-out action. */
+  tone?: 'default' | 'danger'
   onSelect: () => void
 }
 
@@ -49,7 +52,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
 
   useEffect(() => {
     if (!open) return
-    const first = listRef.current?.querySelector<HTMLButtonElement>('[role="menuitemradio"]')
+    const first = listRef.current?.querySelector<HTMLButtonElement>('[role^="menuitem"]')
     first?.focus()
   }, [open])
 
@@ -57,7 +60,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
     event.preventDefault()
     const buttons = Array.from(
-      listRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? [],
+      listRef.current?.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]') ?? [],
     )
     const index = buttons.indexOf(document.activeElement as HTMLButtonElement)
     const next =
@@ -102,32 +105,44 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
                 {heading}
               </div>
             )}
-            {items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                role="menuitemradio"
-                aria-checked={item.selected ?? false}
-                onClick={() => {
-                  item.onSelect()
-                  close()
-                }}
-                className={cn(
-                  'w-full flex items-center gap-2 text-left px-3 py-2 text-body-sm font-medium rounded-[8px] transition-colors cursor-pointer',
-                  item.selected
-                    ? 'bg-[var(--color-primary-tint)] text-[var(--color-primary-deep)]'
-                    : 'text-[var(--color-ink)] hover:bg-[var(--color-surface)]',
-                )}
-              >
-                {item.icon && <item.icon className="w-4 h-4 text-[var(--color-muted)]" />}
-                <span className="flex-1">{item.label}</span>
-                {item.selected && (
-                  <span aria-hidden="true" className="text-[var(--color-primary)]">
-                    ✓
-                  </span>
-                )}
-              </button>
-            ))}
+            {items.map((item) => {
+              const isRadio = item.selected !== undefined
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role={isRadio ? 'menuitemradio' : 'menuitem'}
+                  aria-checked={isRadio ? item.selected : undefined}
+                  onClick={() => {
+                    item.onSelect()
+                    close()
+                  }}
+                  className={cn(
+                    'w-full flex items-center gap-2 text-left px-3 py-2 text-body-sm font-medium rounded-[8px] transition-colors cursor-pointer',
+                    item.selected
+                      ? 'bg-[var(--color-primary-tint)] text-[var(--color-primary-deep)]'
+                      : item.tone === 'danger'
+                        ? 'text-[var(--color-error)] hover:bg-[var(--color-error-tint)]'
+                        : 'text-[var(--color-ink)] hover:bg-[var(--color-surface)]',
+                  )}
+                >
+                  {item.icon && (
+                    <item.icon
+                      className={cn(
+                        'w-4 h-4',
+                        item.tone === 'danger' ? 'text-current' : 'text-[var(--color-muted)]',
+                      )}
+                    />
+                  )}
+                  <span className="flex-1">{item.label}</span>
+                  {item.selected && (
+                    <span aria-hidden="true" className="text-[var(--color-primary)]">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </>
       )}

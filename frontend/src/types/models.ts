@@ -33,6 +33,8 @@ export interface User {
   studentId?: string
   avatarUrl?: string
   role: UserRole
+  status?: 'active' | 'disabled'
+  /** Populated once membership plans ship (Phase 02). */
   membership?: Membership
 }
 

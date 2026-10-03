@@ -92,3 +92,13 @@ export const ROLES = {
 } as const
 
 export type UserRole = (typeof ROLES)[keyof typeof ROLES]
+
+/** Roles that may open the admin console. Mirrors the sidebar's section rules. */
+export const ADMIN_CONSOLE_ROLES: UserRole[] = [ROLES.ADMIN, ROLES.TREASURER, ROLES.VOLUNTEER]
+
+/** Roles that may run the door check-in scanner. */
+export const CHECKIN_ROLES: UserRole[] = [ROLES.ADMIN, ROLES.DOOR_STAFF, ROLES.VOLUNTEER]
+
+export function formatRole(role: UserRole): string {
+  return role.toLowerCase().replace('_', ' ')
+}
