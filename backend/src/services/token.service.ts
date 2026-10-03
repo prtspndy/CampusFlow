@@ -1,7 +1,10 @@
 import crypto from 'node:crypto';
-import jwt, { JwtPayload, TokenExpiredError } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+import type { JwtPayload } from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { UnauthorizedError } from '../utils/errors.js';
+
+const { TokenExpiredError } = jwt;
 
 interface AccessTokenClaims {
   sub: string;

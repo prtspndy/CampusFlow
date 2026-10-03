@@ -385,6 +385,17 @@ describe('Authentication and authorization', () => {
         .set('Authorization', `Bearer ${expired}`);
       expect(expiredRes.status).toBe(401);
       expect(expiredRes.body.error.code).toBe('TOKEN_EXPIRED');
+
+      const wrongSignature = jwt.sign(
+        { sub: session.user.id, tv: 0, typ: 'access' },
+        'different-secret-that-is-at-least-32-chars',
+        { algorithm: 'HS256', issuer: env.JWT_ISSUER, audience: env.JWT_AUDIENCE },
+      );
+      const invalidSignature = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${wrongSignature}`);
+      expect(invalidSignature.status).toBe(401);
+      expect(invalidSignature.body.error.code).toBe('UNAUTHORIZED');
     });
   });
 
