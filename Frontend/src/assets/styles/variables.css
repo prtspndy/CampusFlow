@@ -1,0 +1,56 @@
+/* CampusFlow Design System Variables */
+:root {
+  /* Main Palette */
+  --cf-primary: #2563EB;
+  --cf-primary-hover: #1D4ED8;
+  --cf-primary-light: #EFF6FF;
+  --cf-primary-rgb: 37, 99, 235;
+
+  --cf-secondary: #0EA5E9;
+  --cf-secondary-hover: #0284C7;
+  --cf-secondary-light: #F0F9FF;
+
+  --cf-success: #16A34A;
+  --cf-success-hover: #15803D;
+  --cf-success-light: #F0FDF4;
+
+  --cf-warning: #F59E0B;
+  --cf-warning-hover: #D97706;
+  --cf-warning-light: #FFFBEB;
+
+  --cf-danger: #DC2626;
+  --cf-danger-hover: #B91C1C;
+  --cf-danger-light: #FEF2F2;
+
+  --cf-bg: #F8FAFC;
+  --cf-card: #FFFFFF;
+  --cf-border: #E5E7EB;
+  --cf-border-light: #F1F5F9;
+
+  --cf-text-main: #1F2937;
+  --cf-text-secondary: #4B5563;
+  --cf-text-muted: #6B7280;
+  --cf-text-light: #9CA3AF;
+
+  /* Typography */
+  --cf-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --cf-font-heading: 'Plus Jakarta Sans', var(--cf-font-sans);
+
+  /* Geometry & Elevation */
+  --cf-radius-sm: 8px;
+  --cf-radius-md: 12px;
+  --cf-radius-lg: 16px;
+  --cf-radius-pill: 9999px;
+
+  --cf-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --cf-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --cf-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --cf-shadow-hover: 0 12px 24px -4px rgba(37, 99, 235, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.04);
+
+  /* Layout Dimensions */
+  --cf-sidebar-width: 260px;
+  --cf-sidebar-collapsed-width: 76px;
+  --cf-navbar-height: 68px;
+  --cf-footer-height: 52px;
+  --cf-transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
