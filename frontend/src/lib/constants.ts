@@ -84,21 +84,33 @@ export const APP_NAME = 'CampusFlow'
 export const ORG_NAME = 'Skyline Student Association'
 
 export const ROLES = {
-  MEMBER: 'MEMBER',
-  VOLUNTEER: 'VOLUNTEER',
-  DOOR_STAFF: 'DOOR_STAFF',
-  TREASURER: 'TREASURER',
   ADMIN: 'ADMIN',
+  MEMBER: 'MEMBER',
+  EVENT_MANAGER: 'EVENT_MANAGER',
+  TREASURER: 'TREASURER',
+  // Backward compatibility aliases
+  VOLUNTEER: 'EVENT_MANAGER',
+  DOOR_STAFF: 'EVENT_MANAGER',
 } as const
 
 export type UserRole = (typeof ROLES)[keyof typeof ROLES]
 
+export const ROLE_DISPLAY_NAMES: Record<string, string> = {
+  ADMIN: 'Admin / Organization President',
+  MEMBER: 'Club Member / Student',
+  EVENT_MANAGER: 'Event Manager / Volunteer',
+  TREASURER: 'Treasurer',
+}
+
 /** Roles that may open the admin console. Mirrors the sidebar's section rules. */
-export const ADMIN_CONSOLE_ROLES: UserRole[] = [ROLES.ADMIN, ROLES.TREASURER, ROLES.VOLUNTEER]
+export const ADMIN_CONSOLE_ROLES: UserRole[] = [ROLES.ADMIN, ROLES.TREASURER, ROLES.EVENT_MANAGER]
 
 /** Roles that may run the door check-in scanner. */
-export const CHECKIN_ROLES: UserRole[] = [ROLES.ADMIN, ROLES.DOOR_STAFF, ROLES.VOLUNTEER]
+export const CHECKIN_ROLES: UserRole[] = [ROLES.ADMIN, ROLES.EVENT_MANAGER]
 
-export function formatRole(role: UserRole): string {
-  return role.toLowerCase().replace('_', ' ')
+export function formatRole(role: UserRole | string): string {
+  if (role in ROLE_DISPLAY_NAMES) {
+    return ROLE_DISPLAY_NAMES[role]
+  }
+  return String(role).toLowerCase().replace('_', ' ')
 }

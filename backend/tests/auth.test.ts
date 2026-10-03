@@ -43,7 +43,7 @@ describe('Authentication and authorization', () => {
       expect(res.body.data).toMatchObject({
         email: 'ada@campus.edu',
         name: 'Ada Lovelace',
-        role: 'member',
+        role: 'MEMBER',
         status: 'active',
       });
       expect(res.body.data.passwordHash).toBeUndefined();
@@ -52,7 +52,7 @@ describe('Authentication and authorization', () => {
       const stored = memoryUsers()[0];
       expect(stored?.passwordHash).toBeDefined();
       expect(stored?.passwordHash).not.toBe(password);
-      expect(stored?.role).toBe('member');
+      expect(stored?.role).toBe('MEMBER');
       await expect(bcrypt.compare(password, stored?.passwordHash ?? '')).resolves.toBe(true);
     });
 
@@ -132,7 +132,7 @@ describe('Authentication and authorization', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.user.role).toBe('member');
+      expect(res.body.data.user.role).toBe('MEMBER');
       expect(res.body.data.expiresIn).toBe(env.JWT_ACCESS_TTL_SECONDS);
       expect(res.body.data.refreshToken).toEqual(expect.any(String));
       expect(JSON.stringify(res.body)).not.toContain('passwordHash');
@@ -422,14 +422,14 @@ describe('Authentication and authorization', () => {
         .send({ name: 'Ada Updated' });
       expect(updated.status).toBe(200);
       expect(updated.body.data.name).toBe('Ada Updated');
-      expect(updated.body.data.role).toBe('member');
+      expect(updated.body.data.role).toBe('MEMBER');
 
       const escalation = await request(app)
         .patch('/api/auth/me')
         .set('Authorization', `Bearer ${ada.token}`)
         .send({ name: 'Ada Admin', role: 'admin' });
       expect(escalation.status).toBe(422);
-      expect(memoryUsers().find((user) => user.email === 'ada@campus.edu')?.role).toBe('member');
+      expect(memoryUsers().find((user) => user.email === 'ada@campus.edu')?.role).toBe('MEMBER');
     });
 
     it('lets an admin read another profile and list users', async () => {

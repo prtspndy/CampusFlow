@@ -56,7 +56,18 @@ export const userIdParamSchema = z.object({
   userId: z.string().uuid('User id must be a UUID'),
 });
 
+export const assignRoleSchema = z
+  .object({
+    role: z.enum(['ADMIN', 'MEMBER', 'EVENT_MANAGER', 'TREASURER'], {
+      errorMap: () => ({
+        message: "Role must be 'ADMIN', 'MEMBER', 'EVENT_MANAGER', or 'TREASURER'",
+      }),
+    }),
+  })
+  .strict();
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type AssignRoleInput = z.infer<typeof assignRoleSchema>;

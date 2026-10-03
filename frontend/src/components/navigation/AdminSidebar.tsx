@@ -9,10 +9,11 @@ import {
   CheckSquare,
   Landmark,
   QrCode,
+  ShieldCheck,
 } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import type { UserRole } from '../../lib/constants'
-import { ROLES } from '../../lib/constants'
+import { ROLES, formatRole } from '../../lib/constants'
 import { cn } from '../../lib/cn'
 
 interface NavItem {
@@ -32,7 +33,15 @@ const NAV_ITEMS: NavItem[] = [
     shortLabel: 'Dashboard',
     icon: LayoutDashboard,
     end: true,
-    roles: [ROLES.ADMIN, ROLES.TREASURER, ROLES.VOLUNTEER],
+    roles: [ROLES.ADMIN, ROLES.TREASURER, ROLES.EVENT_MANAGER],
+  },
+  {
+    to: '/admin/users',
+    label: 'Users & Roles',
+    shortLabel: 'Users',
+    icon: ShieldCheck,
+    tintColor: 'var(--color-primary)',
+    roles: [ROLES.ADMIN],
   },
   {
     to: '/admin/members',
@@ -40,7 +49,7 @@ const NAV_ITEMS: NavItem[] = [
     shortLabel: 'Members',
     icon: Users,
     tintColor: 'var(--color-tint-sky-deep)',
-    roles: [ROLES.ADMIN],
+    roles: [ROLES.ADMIN, ROLES.TREASURER],
   },
   {
     to: '/admin/events',
@@ -48,7 +57,7 @@ const NAV_ITEMS: NavItem[] = [
     shortLabel: 'Events',
     icon: Calendar,
     tintColor: 'var(--color-tint-peach-deep)',
-    roles: [ROLES.ADMIN, ROLES.VOLUNTEER],
+    roles: [ROLES.ADMIN, ROLES.EVENT_MANAGER],
   },
   {
     to: '/checkin/event-gala-1',
@@ -56,7 +65,7 @@ const NAV_ITEMS: NavItem[] = [
     shortLabel: 'Check-in',
     icon: QrCode,
     tintColor: 'var(--color-sunset)',
-    roles: [ROLES.ADMIN, ROLES.DOOR_STAFF, ROLES.VOLUNTEER],
+    roles: [ROLES.ADMIN, ROLES.EVENT_MANAGER],
   },
   {
     to: '/admin/announcements',
@@ -64,7 +73,7 @@ const NAV_ITEMS: NavItem[] = [
     shortLabel: 'Announce',
     icon: Megaphone,
     tintColor: 'var(--color-tint-lavender-deep)',
-    roles: [ROLES.ADMIN],
+    roles: [ROLES.ADMIN, ROLES.EVENT_MANAGER],
   },
   {
     to: '/admin/shop',
@@ -72,7 +81,7 @@ const NAV_ITEMS: NavItem[] = [
     shortLabel: 'Shop',
     icon: ShoppingBag,
     tintColor: 'var(--color-tint-mint-deep)',
-    roles: [ROLES.ADMIN],
+    roles: [ROLES.ADMIN, ROLES.TREASURER],
   },
   {
     to: '/admin/fundraisers',
@@ -80,7 +89,7 @@ const NAV_ITEMS: NavItem[] = [
     shortLabel: 'Tasks',
     icon: CheckSquare,
     tintColor: 'var(--color-tint-butter-deep)',
-    roles: [ROLES.ADMIN, ROLES.VOLUNTEER],
+    roles: [ROLES.ADMIN, ROLES.EVENT_MANAGER, ROLES.TREASURER],
   },
   {
     to: '/admin/treasury',
@@ -98,12 +107,20 @@ function useVisibleNavItems(): NavItem[] {
 }
 
 export const AdminSidebar: React.FC = () => {
+  const user = useAuthStore((state) => state.user)
   const visibleItems = useVisibleNavItems()
 
   return (
     <aside className="hidden md:flex flex-col w-[248px] shrink-0 min-h-[calc(100vh-4rem)] bg-[var(--color-surface)] border-r border-[var(--color-hairline)] p-4 select-none">
-      <div className="mb-4 px-3 py-2 text-micro-uppercase text-[var(--color-muted)] font-bold">
-        Club Management
+      <div className="mb-4 px-3 py-2">
+        <div className="text-micro-uppercase text-[var(--color-muted)] font-bold">
+          Club Management
+        </div>
+        {user && (
+          <div className="mt-1 text-caption text-[var(--color-primary-deep)] font-semibold truncate">
+            {user.roleDisplayName ?? formatRole(user.role)}
+          </div>
+        )}
       </div>
 
       <nav aria-label="Admin sections" className="flex flex-col gap-1">

@@ -21,7 +21,12 @@ const publicUserSchema = {
     name: { type: 'string' },
     role: {
       type: 'string',
-      enum: ['member', 'volunteer', 'door_staff', 'treasurer', 'admin'],
+      enum: ['ADMIN', 'MEMBER', 'EVENT_MANAGER', 'TREASURER'],
+    },
+    roleDisplayName: { type: 'string', example: 'Club Member / Student' },
+    permissions: {
+      type: 'array',
+      items: { type: 'string' },
     },
     status: { type: 'string', enum: ['active', 'disabled'] },
     createdAt: { type: 'string', format: 'date-time' },
@@ -302,9 +307,73 @@ export const authOpenApiPaths = {
       },
     },
   },
+  '/admin/users/{userId}/role': {
+    patch: {
+      tags: ['Admin'],
+      summary: 'Assign user role',
+      security: bearer,
+      description:
+        'Admin only (requires users.assign_roles permission). Assigns one of the canonical four roles to a user and revokes their active sessions. Cannot demote the last active admin.',
+      parameters: [
+        {
+          name: 'userId',
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/AssignRoleRequest' },
+          },
+        },
+      },
+      responses: {
+        '200': {
+          description: 'Role updated successfully',
+          content: {
+            'application/json': { schema: { $ref: '#/components/schemas/PublicUserResponse' } },
+          },
+        },
+        '400': {
+          description: 'Cannot demote last active admin',
+          content: { 'application/json': { schema: errorSchema } },
+        },
+        '401': {
+          description: 'Unauthenticated',
+          content: { 'application/json': { schema: errorSchema } },
+        },
+        '403': {
+          description: 'Forbidden / Missing permission',
+          content: { 'application/json': { schema: errorSchema } },
+        },
+        '404': {
+          description: 'User not found',
+          content: { 'application/json': { schema: errorSchema } },
+        },
+        '422': {
+          description: 'Validation failed',
+          content: { 'application/json': { schema: errorSchema } },
+        },
+      },
+    },
+  },
 };
 
 export const authOpenApiSchemas = {
+  AssignRoleRequest: {
+    type: 'object',
+    required: ['role'],
+    additionalProperties: false,
+    properties: {
+      role: {
+        type: 'string',
+        enum: ['ADMIN', 'MEMBER', 'EVENT_MANAGER', 'TREASURER'],
+      },
+    },
+  },
   RegisterRequest: {
     type: 'object',
     required: ['name', 'email', 'password'],

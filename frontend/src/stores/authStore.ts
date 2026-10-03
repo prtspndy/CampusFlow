@@ -26,14 +26,25 @@ interface AuthState {
   clearSession: () => void
 }
 
-/** Backend roles are lowercase; the UI's role constants are uppercase. */
 export function toClientUser(apiUser: ApiUser): User {
+  const upperRole = apiUser.role.toUpperCase()
+  let role: UserRole = 'MEMBER'
+  if (upperRole === 'ADMIN') role = 'ADMIN'
+  else if (upperRole === 'TREASURER') role = 'TREASURER'
+  else if (upperRole === 'EVENT_MANAGER' || upperRole === 'VOLUNTEER' || upperRole === 'DOOR_STAFF')
+    role = 'EVENT_MANAGER'
+  else role = 'MEMBER'
+
   return {
     id: apiUser.id,
     name: apiUser.name,
     email: apiUser.email,
-    role: apiUser.role.toUpperCase() as UserRole,
+    role,
+    roleDisplayName: apiUser.roleDisplayName,
+    permissions: apiUser.permissions,
     status: apiUser.status,
+    createdAt: apiUser.createdAt,
+    updatedAt: apiUser.updatedAt,
   }
 }
 
