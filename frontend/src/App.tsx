@@ -42,6 +42,14 @@ const AnnouncementFeed = lazy(() =>
     default: m.AnnouncementFeed,
   })),
 )
+const AnnouncementDetailPage = lazy(() =>
+  import('./features/announcements/pages/AnnouncementDetailPage').then((m) => ({
+    default: m.AnnouncementDetailPage,
+  })),
+)
+const MyOrdersPage = lazy(() =>
+  import('./features/shop/pages/MyOrdersPage').then((m) => ({ default: m.MyOrdersPage })),
+)
 const MemberHome = lazy(() =>
   import('./features/dashboard/pages/MemberHome').then((m) => ({ default: m.MemberHome })),
 )
@@ -99,6 +107,7 @@ export function App() {
           <Route path="join" element={<JoinPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="announcements" element={<AnnouncementFeed />} />
+          <Route path="announcements/:id" element={<AnnouncementDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
 
@@ -108,6 +117,7 @@ export function App() {
             <Route index element={<MemberHome />} />
             <Route path="pass" element={<MemberPassPage />} />
             <Route path="tickets" element={<MyTicketsPage />} />
+            <Route path="orders" element={<MyOrdersPage />} />
             <Route path="*" element={<Navigate to="/member" replace />} />
           </Route>
         </Route>

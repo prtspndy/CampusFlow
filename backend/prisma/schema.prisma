@@ -78,6 +78,27 @@ enum TicketTier {
   STANDARD
 }
 
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MerchOrderStatus {
+  PLACED
+  CANCELLED
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum AnnouncementAudience {
+  ALL_MEMBERS
+  VOLUNTEERS
+  EVENT_ATTENDEES
+}
+
 /// Application user. Password hashes and token versions are never returned by the API.
 model User {
   id              String         @id @default(uuid())
@@ -97,6 +118,8 @@ model User {
   payments          Payment[]
   checkInsPerformed CheckIn[]            @relation("CheckInStaff")
   ticketsCheckedIn  Ticket[]             @relation("TicketCheckedInBy")
+  merchOrders       MerchOrder[]
+  announcements     Announcement[]
 
   @@index([role])
   @@map("users")
@@ -276,4 +299,92 @@ model PaymentWebhookDelivery {
 
   @@index([razorpayOrderId])
   @@map("payment_webhook_deliveries")
+}
+
+/// Club merchandise. Prices are whole INR rupees, matching events.
+/// Deactivation keeps the row so historical order lines can still reference it.
+model Product {
+  id            String          @id @default(uuid())
+  name          String
+  description   String
+  imageUrl      String?
+  category      String
+  sku           String?         @unique
+  memberPrice   Int
+  standardPrice Int
+  status        ProductStatus   @default(ACTIVE)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  variants      ProductVariant[]
+  orderItems    MerchOrderItem[]
+
+  @@index([status])
+  @@index([category])
+  @@map("products")
+}
+
+/// Available stock for one size. Orders decrement this only when stock is still sufficient.
+model ProductVariant {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      String
+  stock     Int
+
+  @@unique([productId, size])
+  @@map("product_variants")
+}
+
+/// Pickup order. Stock is taken when the order is placed. Payment is not collected here.
+model MerchOrder {
+  id             String           @id @default(uuid())
+  orderNumber    String           @unique
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status         MerchOrderStatus @default(PLACED)
+  totalAmount    Int
+  currency       String           @default("INR")
+  idempotencyKey String?          @unique
+  cancelledAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  items          MerchOrderItem[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("merch_orders")
+}
+
+model MerchOrderItem {
+  id          String     @id @default(uuid())
+  orderId     String
+  order       MerchOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  size        String
+  productName String
+  unitPrice   Int
+  quantity    Int
+  lineTotal   Int
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("merch_order_items")
+}
+
+model Announcement {
+  id          String                 @id @default(uuid())
+  title       String
+  body        String
+  authorId    String
+  author      User                   @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  status      AnnouncementStatus     @default(DRAFT)
+  audience    AnnouncementAudience   @default(ALL_MEMBERS)
+  publishedAt DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([authorId])
+  @@map("announcements")
 }

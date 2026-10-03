@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, ShoppingBag, Check } from 'lucide-react'
-import { MOCK_PRODUCTS } from '../../../lib/mockData'
 import { Button } from '../../../components/ui/Button'
+import { api, isApiError } from '../../../lib/api'
 import { MemberPriceBadge } from '../../../components/badges/MemberPriceBadge'
 import { EmptyState } from '../../../components/feedback/EmptyState'
 import { useAuthStore } from '../../../stores/authStore'
@@ -21,7 +21,32 @@ function pickDefaultSize(product: Product): ProductSize {
 
 export const ProductPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const product = MOCK_PRODUCTS.find((p) => p.id === id)
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!id) return
+    const controller = new AbortController()
+    setLoading(true)
+    setError(null)
+    api
+      .get<Product>(`/products/${id}`, { auth: false, signal: controller.signal })
+      .then(setProduct)
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return
+        setProduct(null)
+        setError(isApiError(err) ? err.message : 'This product could not be loaded.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [id])
+
+  if (loading) {
+    return <p className="text-body-md text-[var(--color-muted)]">Loading product…</p>
+  }
 
   if (!product) {
     return (
@@ -36,7 +61,7 @@ export const ProductPage: React.FC = () => {
         <EmptyState
           icon={<ShoppingBag className="w-6 h-6" />}
           title="Product not found"
-          description="This item may have sold out or been removed from the store."
+          description={error ?? 'This item may have sold out or been removed from the store.'}
           action={
             <Link to="/shop">
               <Button variant="primary">Browse all merch</Button>

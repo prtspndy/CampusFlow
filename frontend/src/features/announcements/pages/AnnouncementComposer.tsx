@@ -6,6 +6,9 @@ import { Input } from '../../../components/ui/Input'
 import { FormField } from '../../../components/forms/FormField'
 import type { AudienceType } from '../../../types/enums'
 import { cn } from '../../../lib/cn'
+import { api, isApiError } from '../../../lib/api'
+import { hasPermission } from '../../../lib/permissions'
+import { useAuthStore } from '../../../stores/authStore'
 
 export const AnnouncementComposer: React.FC = () => {
   const navigate = useNavigate()
@@ -17,6 +20,9 @@ export const AnnouncementComposer: React.FC = () => {
     email: true,
   })
   const [isSending, setIsSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const user = useAuthStore((state) => state.user)
+  const canPublish = hasPermission(user, 'announcements.publish')
 
   const audienceCounts: Record<AudienceType, { label: string; count: number }> = {
     ALL_MEMBERS: { label: 'All Members', count: 214 },
@@ -26,16 +32,25 @@ export const AnnouncementComposer: React.FC = () => {
 
   const currentCount = audienceCounts[audience].count
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title || !body) return
 
     setIsSending(true)
-    setTimeout(() => {
+    setError(null)
+    try {
+      const draft = await api.post<{ id: string }>('/announcements', { title, body, audience })
+      if (canPublish) {
+        await api.post(`/announcements/${draft.id}/publish`)
+        navigate('/announcements')
+      } else {
+        setError('Draft saved. An admin still needs to publish it.')
+      }
+    } catch (err: unknown) {
+      setError(isApiError(err) ? err.message : 'The announcement could not be saved.')
+    } finally {
       setIsSending(false)
-      alert(`Broadcast sent to ${currentCount} recipients!`)
-      navigate('/announcements')
-    }, 600)
+    }
   }
 
   return (
@@ -53,6 +68,7 @@ export const AnnouncementComposer: React.FC = () => {
       </div>
 
       {/* Signature Composer Single Card per DESIGN.md */}
+      {error && <p className="text-body-sm text-[var(--color-error)]" role="alert">{error}</p>}
       <form
         onSubmit={handleSend}
         className="rounded-[14px] bg-[var(--color-canvas)] border border-[var(--color-hairline)] p-6 md:p-8 space-y-5 shadow-sm"

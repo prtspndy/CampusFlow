@@ -409,3 +409,29 @@ A frontend "payment successful" message is not accepted. Pending and failed prov
 - `GET /api/payments` and `GET /api/payments/:paymentId` — finance read. A payment that is not yours is **404** unless the caller has `payments.read`.
 
 Check-in updates the ticket from `ISSUED` to `USED` only when that is still its status, and inserts one `check_ins` row per ticket. The second request cannot succeed.
+
+## 7. Phase 04 — merchandise and announcements
+
+Prices are whole INR rupees. Orders are pickup reservations: placing an order decrements stock immediately. Razorpay is not used for merchandise. A repeat with the same `idempotencyKey` returns the original order and does not decrement stock again. Cancelling a `PLACED` order restores stock once.
+
+| Method and path | Auth | Behavior |
+|---|---|---|
+| `GET /api/products` | Public. Admins with `merchandise.manage` also see inactive products when they do not filter `status` | Paginated catalogue. `search`, `category`, `status`, `sort`, `direction` |
+| `POST /api/products` | `merchandise.manage` | Create a product and size stock |
+| `GET /api/products/:productId` | Public for active products. Admins can read inactive products | **404** when hidden |
+| `PATCH /api/products/:productId` | `merchandise.manage` | Edit fields or set `INACTIVE`. Historical order prices stay unchanged |
+| `PATCH /api/products/:productId/stock` | `merchandise.manage` | Body `{ size, stock, expectedStock }`. Updates only when `expectedStock` still matches the database. **409** `STOCK_CONFLICT` asks the admin to reload. Rejects negative stock |
+| `POST /api/orders` | `orders.create` | Body `{ items: [{ productId, size, quantity }], idempotencyKey? }`. Server prices. **409** `INSUFFICIENT_STOCK` or `PRODUCT_UNAVAILABLE` |
+| `GET /api/orders/me` | `orders.read_own` | Own orders |
+| `GET /api/orders` | `orders.read_all` | All orders |
+| `GET /api/orders/:orderId` | Owner or `orders.read_all` | Anyone else **404** |
+| `POST /api/orders/:orderId/cancel` | Owner or `merchandise.manage` | Restores stock once |
+| `GET /api/announcements` | Public | Published only |
+| `GET /api/announcements/manage` | `announcements.create` or `announcements.publish` | Drafts the caller may manage |
+| `POST /api/announcements` | `announcements.create` | Creates a draft. Members cannot set status |
+| `GET /api/announcements/:announcementId` | Public if published. Drafts are **404** unless the author or a publisher | |
+| `PATCH /api/announcements/:announcementId` | Author with `announcements.create`, or `announcements.publish` | |
+| `POST /api/announcements/:announcementId/publish` | `announcements.publish` | Sets `publishedAt` |
+| `POST /api/announcements/:announcementId/unpublish` | `announcements.publish` | Returns the row to `DRAFT` |
+
+Stock for an order is reduced with `UPDATE ... WHERE stock >= quantity`. If any line fails, the transaction rolls back and no order row remains. Variant stock cannot go below zero.

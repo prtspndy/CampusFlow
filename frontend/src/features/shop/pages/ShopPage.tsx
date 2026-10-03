@@ -1,26 +1,50 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShoppingBag, Sparkles } from 'lucide-react'
-import { MOCK_PRODUCTS } from '../../../lib/mockData'
 import { FilterChips } from '../../../components/forms/FilterChips'
 import { MemberPriceBadge } from '../../../components/badges/MemberPriceBadge'
+import { EmptyState } from '../../../components/feedback/EmptyState'
 import { formatMoney } from '../../../lib/format'
+import { api, isApiError } from '../../../lib/api'
 import { useAuthStore } from '../../../stores/authStore'
+import type { Product } from '../../../types/models'
 
 export const ShopPage: React.FC = () => {
   const { user } = useAuthStore()
   const isMember = !!user?.membership && user.membership.status === 'ACTIVE'
   const [selectedCategory, setSelectedCategory] = useState('ALL')
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setLoading(true)
+    setError(null)
+    const category = selectedCategory === 'ALL' ? '' : `&category=${encodeURIComponent(selectedCategory)}`
+    api
+      .get<{ products: Product[] }>(`/products?limit=100${category}`, {
+        auth: false,
+        signal: controller.signal,
+      })
+      .then((data) => setProducts(data.products.filter((product) => product.isAvailable !== false)))
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return
+        setError(isApiError(err) ? err.message : 'The shop could not be loaded.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [selectedCategory])
 
   const categories = [
-    { value: 'ALL', label: 'All Merch', count: MOCK_PRODUCTS.length },
+    { value: 'ALL', label: 'All Merch' },
     { value: 'Apparel', label: 'Apparel & Hoodies' },
     { value: 'Accessories', label: 'Accessories & Flasks' },
   ]
 
-  const filteredProducts = MOCK_PRODUCTS.filter(
-    (p) => selectedCategory === 'ALL' || p.category === selectedCategory
-  )
+  const filteredProducts = products
 
   return (
     <div className="space-y-6">
@@ -58,7 +82,26 @@ export const ShopPage: React.FC = () => {
         onChange={setSelectedCategory}
       />
 
+      {loading && <p className="text-body-md text-[var(--color-muted)]">Loading the shop…</p>}
+      {error && (
+        <EmptyState
+          icon={<ShoppingBag className="w-6 h-6" />}
+          title="Shop unavailable"
+          description={error}
+          actionLabel="Try again"
+          onAction={() => setSelectedCategory((current) => current)}
+        />
+      )}
+      {!loading && !error && filteredProducts.length === 0 && (
+        <EmptyState
+          icon={<ShoppingBag className="w-6 h-6" />}
+          title="Nothing in the shop yet"
+          description="Available merchandise will show up here once the club publishes it."
+        />
+      )}
+
       {/* Product Grid: 2-up on mobile, 4-up on desktop per DESIGN.md */}
+      {!loading && !error && (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 pt-2">
         {filteredProducts.map((product) => {
           const displayPrice = isMember ? product.memberPrice : product.standardPrice
@@ -104,6 +147,7 @@ export const ShopPage: React.FC = () => {
           )
         })}
       </div>
+      )}
     </div>
   )
 }

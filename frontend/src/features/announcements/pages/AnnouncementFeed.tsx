@@ -1,17 +1,50 @@
-import { useState } from 'react'
-import { Megaphone, Calendar, Eye } from 'lucide-react'
-import { MOCK_ANNOUNCEMENTS } from '../../../lib/mockData'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Megaphone, Calendar } from 'lucide-react'
 import { SearchPill } from '../../../components/forms/SearchPill'
 import { EmptyState } from '../../../components/feedback/EmptyState'
+import { api, isApiError } from '../../../lib/api'
+
+interface Announcement {
+  id: string
+  title: string
+  body: string
+  authorName: string
+  authorRole: string
+  publishedAt: string | null
+}
 
 export const AnnouncementFeed: React.FC = () => {
   const [search, setSearch] = useState('')
+  const [items, setItems] = useState<Announcement[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filtered = MOCK_ANNOUNCEMENTS.filter(
-    (a) =>
-      a.title.toLowerCase().includes(search.toLowerCase()) ||
-      a.body.toLowerCase().includes(search.toLowerCase())
-  )
+  useEffect(() => {
+    const controller = new AbortController()
+    const handle = window.setTimeout(() => {
+      setLoading(true)
+      const query = search ? `?search=${encodeURIComponent(search)}` : ''
+      api
+        .get<{ announcements: Announcement[] }>(`/announcements${query}`, {
+          auth: false,
+          signal: controller.signal,
+        })
+        .then((data) => setItems(data.announcements))
+        .catch((err: unknown) => {
+          if (!controller.signal.aborted) {
+            setError(isApiError(err) ? err.message : 'Announcements could not be loaded.')
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false)
+        })
+    }, 250)
+    return () => {
+      controller.abort()
+      window.clearTimeout(handle)
+    }
+  }, [search])
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -23,77 +56,57 @@ export const AnnouncementFeed: React.FC = () => {
           <h1 className="text-display-lg font-display text-[var(--color-ink)] font-extrabold tracking-tight mt-1">
             Announcements
           </h1>
-          <p className="text-body-md text-[var(--color-muted)] mt-1">
-            Official association updates, general body meetings, and deadlines.
-          </p>
         </div>
-
         <div className="w-full sm:w-64">
           <SearchPill
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             onClear={() => setSearch('')}
             placeholder="Search bulletins..."
           />
         </div>
       </div>
 
+      {loading && <p className="text-body-md text-[var(--color-muted)]">Loading announcements…</p>}
+      {error && (
+        <EmptyState icon={<Megaphone className="w-6 h-6" />} title="Could not load announcements" description={error} />
+      )}
+
       <div className="space-y-6 pt-2">
-        {filtered.map((item) => {
-          const dateStr = new Date(item.sentAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          })
-
-          return (
-            <article
-              key={item.id}
-              className="rounded-[14px] overflow-hidden bg-[var(--color-canvas)] border border-[var(--color-hairline)] shadow-[var(--elevation-1)] select-none"
-            >
-              {/* Lavender Tint Header per DESIGN.md */}
-              <div className="bg-[var(--color-tint-lavender)] text-[var(--color-tint-lavender-deep)] p-4 sm:px-6 flex flex-wrap items-center justify-between gap-2 border-b border-purple-200/40 dark:border-purple-800/30">
-                <div className="flex items-center gap-2 text-caption font-semibold">
-                  <Megaphone className="w-4 h-4 shrink-0" />
-                  <span>
-                    Posted by {item.authorName} ({item.authorRole})
+        {!loading &&
+          !error &&
+          items.map((item) => {
+            const dateStr = new Date(item.publishedAt ?? '').toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })
+            return (
+              <article key={item.id} className="rounded-[14px] overflow-hidden bg-[var(--color-canvas)] border border-[var(--color-hairline)]">
+                <div className="bg-[var(--color-tint-lavender)] text-[var(--color-tint-lavender-deep)] p-4 sm:px-6 flex flex-wrap items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-caption font-semibold">
+                    <Megaphone className="w-4 h-4" /> Posted by {item.authorName} ({item.authorRole})
+                  </span>
+                  <span className="flex items-center gap-1 text-caption">
+                    <Calendar className="w-3.5 h-3.5" /> {dateStr}
                   </span>
                 </div>
-
-                <div className="flex items-center gap-4 text-caption text-[var(--color-tint-lavender-deep)]/80">
-                  <span className="flex items-center gap-1 font-mono text-[12px]">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>{dateStr}</span>
-                  </span>
-
-                  {/* Sent to 214 · Opened by 171 per DESIGN.md */}
-                  <span className="flex items-center gap-1 font-mono text-[12px] font-semibold">
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>
-                      Sent to {item.recipientCount} · Opened by {item.openedCount}
-                    </span>
-                  </span>
+                <div className="p-5 sm:p-6 space-y-3">
+                  <h2 className="text-heading-2 font-display font-bold">
+                    <Link to={`/announcements/${item.id}`} className="hover:underline">
+                      {item.title}
+                    </Link>
+                  </h2>
+                  <p className="text-body-md text-[var(--color-body)] line-clamp-4 whitespace-pre-line">{item.body}</p>
                 </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-5 sm:p-6 space-y-3">
-                <h2 className="text-heading-2 font-display font-bold text-[var(--color-ink)] leading-snug">
-                  {item.title}
-                </h2>
-                <p className="text-body-md text-[var(--color-body)] leading-relaxed whitespace-pre-line">
-                  {item.body}
-                </p>
-              </div>
-            </article>
-          )
-        })}
-
-        {filtered.length === 0 && (
+              </article>
+            )
+          })}
+        {!loading && !error && items.length === 0 && (
           <EmptyState
             icon={<Megaphone className="w-6 h-6" />}
             title="No bulletins found"
-            description="No announcements matching your search query were found."
+            description="No published announcements match this search."
             actionLabel="Reset Search"
             onAction={() => setSearch('')}
           />

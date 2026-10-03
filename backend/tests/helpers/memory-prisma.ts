@@ -142,6 +142,69 @@ const payments: MemoryPayment[] = [];
 const tickets: MemoryTicket[] = [];
 const checkIns: MemoryCheckIn[] = [];
 const webhookDeliveries: MemoryWebhookDelivery[] = [];
+
+export interface MemoryVariant {
+  id: string;
+  productId: string;
+  size: string;
+  stock: number;
+}
+
+export interface MemoryProduct {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string | null;
+  category: string;
+  sku: string | null;
+  memberPrice: number;
+  standardPrice: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryMerchOrder {
+  id: string;
+  orderNumber: string;
+  userId: string;
+  status: 'PLACED' | 'CANCELLED';
+  totalAmount: number;
+  currency: string;
+  idempotencyKey: string | null;
+  cancelledAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MemoryMerchItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  size: string;
+  productName: string;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface MemoryAnnouncement {
+  id: string;
+  title: string;
+  body: string;
+  authorId: string;
+  status: 'DRAFT' | 'PUBLISHED';
+  audience: string;
+  publishedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const products: MemoryProduct[] = [];
+const variants: MemoryVariant[] = [];
+const merchOrders: MemoryMerchOrder[] = [];
+const merchItems: MemoryMerchItem[] = [];
+const announcements: MemoryAnnouncement[] = [];
 let refreshReadWaiters: Array<() => void> | null = null;
 let refreshReadTarget = 0;
 let transactionQueue: Promise<void> = Promise.resolve();
@@ -156,6 +219,11 @@ export function resetMemoryDb(): void {
   tickets.length = 0;
   checkIns.length = 0;
   webhookDeliveries.length = 0;
+  products.length = 0;
+  variants.length = 0;
+  merchOrders.length = 0;
+  merchItems.length = 0;
+  announcements.length = 0;
   refreshReadWaiters = null;
   refreshReadTarget = 0;
   transactionQueue = Promise.resolve();
@@ -363,6 +431,11 @@ function snapshotState() {
     tickets: tickets.map((row) => ({ ...row })),
     checkIns: checkIns.map((row) => ({ ...row })),
     webhookDeliveries: webhookDeliveries.map((row) => ({ ...row })),
+    products: products.map((row) => ({ ...row })),
+    variants: variants.map((row) => ({ ...row })),
+    merchOrders: merchOrders.map((row) => ({ ...row })),
+    merchItems: merchItems.map((row) => ({ ...row })),
+    announcements: announcements.map((row) => ({ ...row })),
   };
 }
 
@@ -383,6 +456,15 @@ function restoreState(state: ReturnType<typeof snapshotState>): void {
     0,
     webhookDeliveries.length,
     ...state.webhookDeliveries.map((row) => ({ ...row })),
+  );
+  products.splice(0, products.length, ...state.products.map((row) => ({ ...row })));
+  variants.splice(0, variants.length, ...state.variants.map((row) => ({ ...row })));
+  merchOrders.splice(0, merchOrders.length, ...state.merchOrders.map((row) => ({ ...row })));
+  merchItems.splice(0, merchItems.length, ...state.merchItems.map((row) => ({ ...row })));
+  announcements.splice(
+    0,
+    announcements.length,
+    ...state.announcements.map((row) => ({ ...row })),
   );
 }
 
@@ -407,7 +489,14 @@ function matchesPrimitive(actual: unknown, filter: unknown): boolean {
     if (actual instanceof Date) return actual.getTime() > new Date(ops.gt as Date).getTime();
     return typeof actual === 'number' && actual > Number(ops.gt);
   }
+  if ('gte' in ops) return typeof actual === 'number' && actual >= Number(ops.gte);
+  if ('lte' in ops) return typeof actual === 'number' && actual <= Number(ops.lte);
   if ('lt' in ops) return typeof actual === 'number' && actual < Number(ops.lt);
+  if (typeof ops.contains === 'string') {
+    return (
+      typeof actual === 'string' && actual.toLowerCase().includes(ops.contains.toLowerCase())
+    );
+  }
   return false;
 }
 
@@ -1208,4 +1297,278 @@ export function installPrismaMemory(): void {
     applyPatch(match as unknown as Record<string, any>, args.data as any);
     return { ...match } as never;
   });
+
+  const withVariants = (product: MemoryProduct) => ({
+    ...product,
+    variants: variants
+      .filter((variant) => variant.productId === product.id)
+      .map((variant) => ({ ...variant })),
+  });
+
+  vi.spyOn(prisma.product, 'count').mockImplementation(async (args) => {
+    return products.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.product, 'findMany').mockImplementation(async (args) => {
+    let matches = products.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const orderBy = args?.orderBy as Record<string, 'asc' | 'desc'> | undefined;
+    const sortKey = orderBy ? Object.keys(orderBy)[0] : undefined;
+    if (sortKey) {
+      const direction = orderBy?.[sortKey];
+      matches = [...matches].sort((left, right) => {
+        const a = (left as unknown as Record<string, unknown>)[sortKey];
+        const b = (right as unknown as Record<string, unknown>)[sortKey];
+        const cmp = a instanceof Date && b instanceof Date ? a.getTime() - b.getTime() : String(a).localeCompare(String(b));
+        return direction === 'desc' ? -cmp : cmp;
+      });
+    }
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map(withVariants) as never;
+  });
+
+  vi.spyOn(prisma.product, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as { id: string };
+    const match = products.find((row) => row.id === where.id);
+    return (match ? withVariants(match) : null) as never;
+  });
+
+  vi.spyOn(prisma.product, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    if (data.sku && products.some((row) => row.sku === data.sku)) throw uniqueError();
+    const now = new Date();
+    const product: MemoryProduct = {
+      id: data.id ?? crypto.randomUUID(),
+      name: data.name,
+      description: data.description,
+      imageUrl: data.imageUrl ?? null,
+      category: data.category,
+      sku: data.sku ?? null,
+      memberPrice: data.memberPrice,
+      standardPrice: data.standardPrice,
+      status: data.status ?? 'ACTIVE',
+      createdAt: now,
+      updatedAt: now,
+    };
+    products.push(product);
+    const createdVariants = (data.variants?.create ?? []) as Array<{ size: string; stock: number }>;
+    for (const variant of createdVariants) {
+      variants.push({
+        id: crypto.randomUUID(),
+        productId: product.id,
+        size: variant.size,
+        stock: variant.stock,
+      });
+    }
+    return withVariants(product) as never;
+  });
+
+  vi.spyOn(prisma.product, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = products.find((row) => row.id === where.id);
+    if (!match) throw new Error('Product not found');
+    const data = args.data as any;
+    if (data.sku && products.some((row) => row.sku === data.sku && row.id !== match.id)) {
+      throw uniqueError();
+    }
+    applyPatch(match as unknown as Record<string, any>, data);
+    return withVariants(match) as never;
+  });
+
+  vi.spyOn(prisma.productVariant, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const match = variants.find((row) => {
+      if (where.id) return row.id === where.id;
+      if (where.productId_size) {
+        return row.productId === where.productId_size.productId && row.size === where.productId_size.size;
+      }
+      return false;
+    });
+    return (match ? { ...match } : null) as never;
+  });
+
+  vi.spyOn(prisma.productVariant, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = variants.find((row) => row.id === where.id);
+    if (!match) throw new Error('Variant not found');
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
+    return { ...match } as never;
+  });
+
+  vi.spyOn(prisma.productVariant, 'updateMany').mockImplementation(async (args) => {
+    const where = args.where as any;
+    let count = 0;
+    for (const row of variants) {
+      if (!matchesWhere(row as unknown as Record<string, unknown>, where)) continue;
+      applyPatch(row as unknown as Record<string, any>, args.data as any);
+      count += 1;
+    }
+    return { count } as never;
+  });
+
+  const withItems = (order: MemoryMerchOrder) => ({
+    ...order,
+    items: merchItems.filter((item) => item.orderId === order.id).map((item) => ({ ...item })),
+    user: (() => {
+      const user = users.find((entry) => entry.id === order.userId);
+      return user ? { id: user.id, name: user.name, email: user.email } : null;
+    })(),
+  });
+
+  vi.spyOn(prisma.merchOrder, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as any;
+    const match = merchOrders.find((row) => {
+      if (where.id) return row.id === where.id;
+      if (where.idempotencyKey) return row.idempotencyKey === where.idempotencyKey;
+      if (where.orderNumber) return row.orderNumber === where.orderNumber;
+      return false;
+    });
+    return (match ? withItems(match) : null) as never;
+  });
+
+  vi.spyOn(prisma.merchOrder, 'findMany').mockImplementation(async (args) => {
+    let matches = merchOrders.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    if ((args?.orderBy as any)?.createdAt === 'desc') {
+      matches = [...matches].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map(withItems) as never;
+  });
+
+  vi.spyOn(prisma.merchOrder, 'count').mockImplementation(async (args) => {
+    return merchOrders.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.merchOrder, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    if (data.idempotencyKey && merchOrders.some((row) => row.idempotencyKey === data.idempotencyKey)) {
+      throw uniqueError();
+    }
+    if (merchOrders.some((row) => row.orderNumber === data.orderNumber)) throw uniqueError();
+    const now = new Date();
+    const order: MemoryMerchOrder = {
+      id: crypto.randomUUID(),
+      orderNumber: data.orderNumber,
+      userId: data.userId,
+      status: data.status ?? 'PLACED',
+      totalAmount: data.totalAmount,
+      currency: data.currency ?? 'INR',
+      idempotencyKey: data.idempotencyKey ?? null,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    merchOrders.push(order);
+    const creates = (data.items?.create ?? []) as any[];
+    for (const item of creates) {
+      merchItems.push({
+        id: crypto.randomUUID(),
+        orderId: order.id,
+        productId: item.product.connect.id,
+        size: item.size,
+        productName: item.productName,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        lineTotal: item.lineTotal,
+      });
+    }
+    return withItems(order) as never;
+  });
+
+  vi.spyOn(prisma.merchOrder, 'updateMany').mockImplementation(async (args) => {
+    let count = 0;
+    for (const row of merchOrders) {
+      if (!matchesWhere(row as unknown as Record<string, unknown>, args.where as any)) continue;
+      applyPatch(row as unknown as Record<string, any>, args.data as any);
+      count += 1;
+    }
+    return { count } as never;
+  });
+
+  const withAuthor = (row: MemoryAnnouncement) => {
+    const author = users.find((entry) => entry.id === row.authorId);
+    return {
+      ...row,
+      author: author
+        ? { id: author.id, name: author.name, role: author.role }
+        : { id: row.authorId, name: 'Unknown', role: 'MEMBER' },
+    };
+  };
+
+  vi.spyOn(prisma.announcement, 'count').mockImplementation(async (args) => {
+    return announcements.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    ).length as never;
+  });
+
+  vi.spyOn(prisma.announcement, 'findMany').mockImplementation(async (args) => {
+    let matches = announcements.filter((row) =>
+      matchesWhere(row as unknown as Record<string, unknown>, args?.where as any),
+    );
+    const orderBy = args?.orderBy as any;
+    if (orderBy?.publishedAt === 'desc') {
+      matches = [...matches].sort(
+        (a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0),
+      );
+    } else if (orderBy?.updatedAt === 'desc') {
+      matches = [...matches].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    }
+    const skip = args?.skip ?? 0;
+    const take = args?.take ?? matches.length;
+    return matches.slice(skip, skip + take).map(withAuthor) as never;
+  });
+
+  vi.spyOn(prisma.announcement, 'findUnique').mockImplementation(async (args) => {
+    const where = args?.where as { id: string };
+    const match = announcements.find((row) => row.id === where.id);
+    return (match ? withAuthor(match) : null) as never;
+  });
+
+  vi.spyOn(prisma.announcement, 'create').mockImplementation(async (args) => {
+    const data = args.data as any;
+    const now = new Date();
+    const row: MemoryAnnouncement = {
+      id: crypto.randomUUID(),
+      title: data.title,
+      body: data.body,
+      authorId: data.authorId,
+      status: data.status ?? 'DRAFT',
+      audience: data.audience ?? 'ALL_MEMBERS',
+      publishedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    announcements.push(row);
+    return withAuthor(row) as never;
+  });
+
+  vi.spyOn(prisma.announcement, 'update').mockImplementation(async (args) => {
+    const where = args.where as { id: string };
+    const match = announcements.find((row) => row.id === where.id);
+    if (!match) throw new Error('Announcement not found');
+    applyPatch(match as unknown as Record<string, any>, args.data as any);
+    if ((args.data as any).publishedAt) match.publishedAt = new Date((args.data as any).publishedAt);
+    return withAuthor(match) as never;
+  });
+}
+
+export function memoryVariants(): MemoryVariant[] {
+  return variants.map((row) => ({ ...row }));
+}
+
+export function memoryMerchOrders(): MemoryMerchOrder[] {
+  return merchOrders.map((row) => ({ ...row }));
+}
+
+export function memoryAnnouncements(): MemoryAnnouncement[] {
+  return announcements.map((row) => ({ ...row }));
 }

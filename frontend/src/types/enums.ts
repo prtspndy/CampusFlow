@@ -21,4 +21,4 @@ export type TransactionCategory =
 
 export type ReimbursementStatus = 'SUBMITTED' | 'APPROVED' | 'PAID' | 'REJECTED'
 
-export type OrderStatus = 'PENDING' | 'PAID' | 'FULFILLED' | 'CANCELLED'
+export type OrderStatus = 'PLACED' | 'PENDING' | 'PAID' | 'FULFILLED' | 'CANCELLED'

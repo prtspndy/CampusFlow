@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { X, Trash2, ShoppingBag, CheckCircle2, Minus, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCartStore } from '../../stores/cartStore'
+import { useAuthStore } from '../../stores/authStore'
 import { Button } from '../ui/Button'
 import { formatMoney } from '../../lib/format'
+import { api, isApiError } from '../../lib/api'
 import { useBodyScrollLock, useEscapeKey } from '../../hooks/useEscapeKey'
 
 export const CartSheet: React.FC = () => {
@@ -13,8 +15,12 @@ export const CartSheet: React.FC = () => {
   const removeItem = useCartStore((state) => state.removeItem)
   const updateQuantity = useCartStore((state) => state.updateQuantity)
   const clearCart = useCartStore((state) => state.clearCart)
+  const user = useAuthStore((state) => state.user)
 
-  const [placedOrder, setPlacedOrder] = useState<{ total: number; count: number } | null>(null)
+  const [placedOrder, setPlacedOrder] = useState<{ total: number; count: number; orderNumber: string } | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const [idempotencyKey] = useState(() => crypto.randomUUID())
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   const close = useCallback(() => {
@@ -34,9 +40,33 @@ export const CartSheet: React.FC = () => {
   const total = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
   const count = items.reduce((sum, item) => sum + item.quantity, 0)
 
-  const handleCheckout = () => {
-    setPlacedOrder({ total, count })
-    clearCart()
+  const handleCheckout = async () => {
+    if (!user) {
+      setCheckoutError('Sign in before placing a pickup order.')
+      return
+    }
+    setSubmitting(true)
+    setCheckoutError(null)
+    try {
+      const result = await api.post<{ order: { orderNumber: string; totalAmount: number } }>('/orders', {
+        idempotencyKey,
+        items: items.map((item) => ({
+          productId: item.productId,
+          size: item.size,
+          quantity: item.quantity,
+        })),
+      })
+      setPlacedOrder({
+        total: result.order.totalAmount,
+        count,
+        orderNumber: result.order.orderNumber,
+      })
+      clearCart()
+    } catch (error) {
+      setCheckoutError(isApiError(error) ? error.message : 'The order could not be placed.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -88,7 +118,7 @@ export const CartSheet: React.FC = () => {
                 <span className="font-semibold text-[var(--color-ink)]">
                   {formatMoney(placedOrder.total)}
                 </span>
-                . Pick up at the club table during the next meeting.
+                . Order {placedOrder.orderNumber}. Pick up at the club table.
               </p>
               <Link to="/shop" onClick={close} className="mt-6">
                 <Button variant="secondary">Keep browsing</Button>
@@ -179,9 +209,22 @@ export const CartSheet: React.FC = () => {
               <span className="text-money-lg font-bold">{formatMoney(total)}</span>
             </div>
 
-            <Button variant="primary" fullWidth onClick={handleCheckout}>
-              Pay {formatMoney(total)}
+            {checkoutError && (
+              <p className="text-caption text-[var(--color-error)]" role="alert">
+                {checkoutError}{' '}
+                {!user && (
+                  <Link to="/login" className="underline">
+                    Sign in
+                  </Link>
+                )}
+              </p>
+            )}
+            <Button variant="primary" fullWidth onClick={() => void handleCheckout()} disabled={submitting}>
+              {submitting ? 'Placing order…' : `Place pickup order ${formatMoney(total)}`}
             </Button>
+            <p className="text-caption text-[var(--color-muted)]">
+              Stock is reserved now. Pay when you collect the order. The server sets the final total.
+            </p>
           </div>
         )}
       </aside>

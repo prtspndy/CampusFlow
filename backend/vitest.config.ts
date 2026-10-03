@@ -6,6 +6,7 @@ export default defineConfig({
     globals: true,
     testTimeout: 10000,
     include: ['tests/**/*.test.ts'],
+    exclude: ['tests/phase4.postgres.test.ts'],
     env: {
       NODE_ENV: 'test',
       DATABASE_URL: 'postgresql://user:password@127.0.0.1:5432/campusflow_test',
