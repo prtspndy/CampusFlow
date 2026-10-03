@@ -1,0 +1,23 @@
+// Prisma Schema for CampusFlow (PostgreSQL hosted on Neon)
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// Baseline system health check model for Phase 00 foundation.
+/// Speculative business models (Organizations, Memberships, Events) will be
+/// introduced in Phase 01+ after team RFC review.
+model SystemHealthCheck {
+  id        String   @id @default(uuid())
+  status    String   @default("OK")
+  createdAt DateTime @default(now())
+
+  @@map("system_health_checks")
+}
