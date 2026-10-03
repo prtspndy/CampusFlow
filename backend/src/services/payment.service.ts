@@ -8,6 +8,7 @@ import {
   fetchRazorpayOrder,
   fetchRazorpayPayment,
   publicRazorpayKeyId,
+  razorpayConfigured,
   verifyPaymentSignature,
   verifyWebhookSignature,
 } from '../lib/razorpay.js';
@@ -62,6 +63,10 @@ async function callProvider<T>(action: () => Promise<T>): Promise<T> {
 }
 
 export async function createPaymentOrder(userId: string, registrationId: string) {
+  if (!razorpayConfigured()) {
+    throw new ServiceUnavailableError('Payment provider is not configured');
+  }
+
   const registration = await prisma.eventRegistration.findUnique({ where: { id: registrationId } });
   if (!registration || registration.userId !== userId) {
     throw new NotFoundError('Registration not found');
@@ -200,6 +205,10 @@ async function settleCapturedPayment(
 }
 
 export async function verifyPayment(userId: string, input: VerifyPaymentInput) {
+  if (!razorpayConfigured()) {
+    throw new ServiceUnavailableError('Payment provider is not configured');
+  }
+
   const payment = await prisma.payment.findUnique({
     where: { razorpayOrderId: input.razorpay_order_id },
   });

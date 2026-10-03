@@ -1,23 +1,79 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { MOCK_EVENTS } from '../../../lib/mockData'
 import { EventCard } from '../../../components/cards/EventCard'
 import { FilterChips } from '../../../components/forms/FilterChips'
 import { SearchPill } from '../../../components/forms/SearchPill'
 import { EmptyState } from '../../../components/feedback/EmptyState'
 import { Calendar } from 'lucide-react'
+import { eventApiService, type BackendEvent } from '../services/eventService'
+import type { ClubEvent } from '../../../types/models'
+import type { EventStatus } from '../../../types/enums'
+
+function toClubEvent(b: BackendEvent): ClubEvent {
+  return {
+    id: b.id,
+    title: b.title,
+    description: b.description,
+    venue: b.venue,
+    startsAt: b.startsAt,
+    endsAt: b.endsAt,
+    memberPrice: b.memberPrice,
+    standardPrice: b.standardPrice,
+    totalCapacity: b.totalCapacity,
+    registeredCount: b.registeredCount,
+    status: b.status as EventStatus,
+    category: b.category || undefined,
+    imageUrl: b.imageUrl || undefined,
+    isFeatured: b.isFeatured,
+  }
+}
 
 export const EventListPage: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const [events, setEvents] = useState<ClubEvent[]>(MOCK_EVENTS)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const fetchEvents = async () => {
+      setLoading(true)
+      try {
+        const res = await eventApiService.listEvents({
+          search: searchQuery.trim() || undefined,
+          category: selectedFilter !== 'ALL' ? selectedFilter : undefined,
+        })
+        if (!isCancelled && res.events && res.events.length > 0) {
+          setEvents(res.events.map(toClubEvent))
+        } else if (!isCancelled && res.events && res.events.length === 0) {
+          // If the server answered but returned 0 results for a specific filter
+          setEvents([])
+        }
+      } catch {
+        // Fallback to MOCK_EVENTS if server is unreachable
+        if (!isCancelled) {
+          setEvents(MOCK_EVENTS)
+        }
+      } finally {
+        if (!isCancelled) setLoading(false)
+      }
+    }
+
+    void fetchEvents()
+    return () => {
+      isCancelled = true
+    }
+  }, [selectedFilter, searchQuery])
 
   const filterOptions = [
-    { value: 'ALL', label: 'All Events', count: MOCK_EVENTS.length },
+    { value: 'ALL', label: 'All Events', count: events.length },
     { value: 'Gala', label: 'Galas & Formals' },
     { value: 'Tech', label: 'Tech & Hackathons' },
     { value: 'Social', label: 'Social & Mixers' },
   ]
 
-  const filteredEvents = MOCK_EVENTS.filter((event) => {
+  const filteredEvents = events.filter((event) => {
     const matchesCategory =
       selectedFilter === 'ALL' || event.category === selectedFilter
     const matchesSearch =
@@ -60,7 +116,11 @@ export const EventListPage: React.FC = () => {
       />
 
       {/* Event Grid: 1-col on mobile, 2-col tablet, 3-col desktop */}
-      {filteredEvents.length > 0 ? (
+      {loading && filteredEvents.length === 0 ? (
+        <div className="py-12 text-center text-body-sm text-[var(--color-muted)]">
+          Loading events...
+        </div>
+      ) : filteredEvents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
           {filteredEvents.map((event) => (
             <EventCard key={event.id} event={event} />
@@ -81,3 +141,4 @@ export const EventListPage: React.FC = () => {
     </div>
   )
 }
+export default EventListPage

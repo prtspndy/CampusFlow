@@ -155,14 +155,22 @@ export function normalizeRole(role: UserRole | string | undefined | null): UserR
   const upper = String(role).toUpperCase();
   if (upper === 'ADMIN') return 'ADMIN';
   if (upper === 'MEMBER') return 'MEMBER';
-  if (upper === 'EVENT_MANAGER' || upper === 'VOLUNTEER' || upper === 'DOOR_STAFF' || upper === 'STAFF') {
+  if (
+    upper === 'EVENT_MANAGER' ||
+    upper === 'VOLUNTEER' ||
+    upper === 'DOOR_STAFF' ||
+    upper === 'STAFF'
+  ) {
     return 'EVENT_MANAGER';
   }
   if (upper === 'TREASURER') return 'TREASURER';
   return 'MEMBER';
 }
 
-export function hasPermission(role: UserRole | string | undefined | null, permission: Permission | string): boolean {
+export function hasPermission(
+  role: UserRole | string | undefined | null,
+  permission: Permission | string,
+): boolean {
   const normalized = normalizeRole(role);
   const perms = (ROLE_PERMISSIONS[normalized] ?? []) as readonly string[];
   if (perms.includes(permission)) {

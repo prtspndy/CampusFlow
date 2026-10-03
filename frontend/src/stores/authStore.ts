@@ -4,6 +4,7 @@ import type { UserRole } from '../lib/constants'
 import { authApi, type ApiSession, type ApiUser } from '../lib/authApi'
 import { isApiError, setSessionExpiredHandler } from '../lib/api'
 import { session } from '../lib/session'
+import { membershipApiService } from '../features/members/services/membershipService'
 
 /**
  * `checking`      tokens exist and /auth/me has not answered yet
@@ -23,6 +24,7 @@ interface AuthState {
   /** Revokes the session on the server and clears it locally. */
   logout: () => Promise<void>
   updateName: (name: string) => Promise<User>
+  fetchMembership: () => Promise<void>
   clearSession: () => void
 }
 
@@ -75,6 +77,23 @@ export const useAuthStore = create<AuthState>((set, get) => {
         }
         try {
           const user = toClientUser(await authApi.me())
+          try {
+            const memberships = await membershipApiService.getOwnMembership()
+            if (Array.isArray(memberships) && memberships.length > 0) {
+              const active = memberships.find((m) => m.status === 'ACTIVE') ?? memberships[0]
+              user.membership = {
+                id: active.id,
+                userId: active.userId,
+                memberCode: active.memberCode,
+                status: active.status as any,
+                validUntil: active.validUntil,
+                planName: active.planName,
+                perks: active.perks,
+              }
+            }
+          } catch {
+            // Ignore membership load errors during hydration
+          }
           session.cacheUser(user)
           set({ user, status: 'authenticated' })
         } catch (error) {
@@ -92,7 +111,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
       return hydration
     },
 
-    login: async (email, password) => applySession(await authApi.login({ email, password })),
+    login: async (email, password) => {
+      const u = applySession(await authApi.login({ email, password }))
+      void get().fetchMembership()
+      return u
+    },
 
     register: async (name, email, password) => {
       await authApi.register({ name, email, password })
@@ -115,6 +138,33 @@ export const useAuthStore = create<AuthState>((set, get) => {
       session.cacheUser(user)
       set({ user })
       return user
+    },
+
+    fetchMembership: async () => {
+      const currentUser = get().user
+      if (!currentUser) return
+      try {
+        const memberships = await membershipApiService.getOwnMembership()
+        if (Array.isArray(memberships) && memberships.length > 0) {
+          const active = memberships.find((m) => m.status === 'ACTIVE') ?? memberships[0]
+          const updatedUser: User = {
+            ...currentUser,
+            membership: {
+              id: active.id,
+              userId: active.userId,
+              memberCode: active.memberCode,
+              status: active.status as any,
+              validUntil: active.validUntil,
+              planName: active.planName,
+              perks: active.perks,
+            },
+          }
+          session.cacheUser(updatedUser)
+          set({ user: updatedUser })
+        }
+      } catch {
+        // Ignored
+      }
     },
 
     clearSession: () => {

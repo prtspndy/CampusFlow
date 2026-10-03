@@ -3,7 +3,12 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
 import { AuthSession, PublicUser, UserRole } from '../types/auth.js';
-import { BadRequestError, ConflictError, NotFoundError, UnauthorizedError } from '../utils/errors.js';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../utils/errors.js';
 import { LoginInput, RegisterInput } from '../validators/auth.validators.js';
 import { dummyPasswordHash, hashPassword, verifyPassword } from './password.service.js';
 import {
@@ -224,7 +229,9 @@ export async function updateUserRole(
         });
 
         if (activeAdminCount <= 1) {
-          throw new BadRequestError('Cannot demote or change the role of the last active administrator');
+          throw new BadRequestError(
+            'Cannot demote or change the role of the last active administrator',
+          );
         }
       }
 

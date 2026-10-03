@@ -1,17 +1,7 @@
-import { createRequire } from 'node:module';
+import crypto from 'node:crypto';
 import Razorpay from 'razorpay';
 import { env } from '../config/env.js';
 import { ServiceUnavailableError } from '../utils/errors.js';
-
-const require = createRequire(import.meta.url);
-const razorpayUtils = require('razorpay/dist/utils/razorpay-utils.js') as {
-  validatePaymentVerification: (
-    params: { order_id: string; payment_id: string },
-    signature: string,
-    secret: string,
-  ) => boolean;
-  validateWebhookSignature: (body: string, signature: string, secret: string) => boolean;
-};
 
 export interface RazorpayOrder {
   id: string;
@@ -96,21 +86,27 @@ export async function fetchRazorpayPayment(paymentId: string): Promise<RazorpayP
 
 /**
  * Official checkout signature: HMAC-SHA256 of `order_id|payment_id` with the key secret.
+ * Compares using constant-time timingSafeEqual.
  */
 export function verifyPaymentSignature(
   orderId: string,
   paymentId: string,
   signature: string,
 ): boolean {
-  if (!env.RAZORPAY_KEY_SECRET || !signature) {
+  if (!env.RAZORPAY_KEY_SECRET || !signature || !orderId || !paymentId) {
     return false;
   }
   try {
-    return razorpayUtils.validatePaymentVerification(
-      { order_id: orderId, payment_id: paymentId },
-      signature,
-      env.RAZORPAY_KEY_SECRET,
-    );
+    const expected = crypto
+      .createHmac('sha256', env.RAZORPAY_KEY_SECRET)
+      .update(`${orderId}|${paymentId}`)
+      .digest('hex');
+    const expectedBuf = Buffer.from(expected, 'utf8');
+    const signatureBuf = Buffer.from(signature, 'utf8');
+    if (expectedBuf.length !== signatureBuf.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(expectedBuf, signatureBuf);
   } catch {
     return false;
   }
@@ -125,11 +121,16 @@ export function verifyWebhookSignature(rawBody: Buffer, signature: string | unde
     return false;
   }
   try {
-    return razorpayUtils.validateWebhookSignature(
-      rawBody.toString('utf8'),
-      signature,
-      env.RAZORPAY_WEBHOOK_SECRET,
-    );
+    const expected = crypto
+      .createHmac('sha256', env.RAZORPAY_WEBHOOK_SECRET)
+      .update(rawBody)
+      .digest('hex');
+    const expectedBuf = Buffer.from(expected, 'utf8');
+    const signatureBuf = Buffer.from(signature, 'utf8');
+    if (expectedBuf.length !== signatureBuf.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(expectedBuf, signatureBuf);
   } catch {
     return false;
   }

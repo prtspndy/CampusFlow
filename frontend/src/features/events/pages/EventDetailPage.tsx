@@ -1,11 +1,12 @@
-import React, { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   Calendar,
   MapPin,
   Clock,
   ArrowLeft,
   CheckCircle,
+  Loader2,
 } from 'lucide-react'
 import { MOCK_EVENTS } from '../../../lib/mockData'
 import { Button } from '../../../components/ui/Button'
@@ -13,13 +14,84 @@ import { SeatMeter } from '../../../components/data-display/SeatMeter'
 import { MemberPriceBadge } from '../../../components/badges/MemberPriceBadge'
 import { TicketStub } from '../../../components/tickets/TicketStub'
 import { EmptyState } from '../../../components/feedback/EmptyState'
+import { Banner } from '../../../components/feedback/Banner'
 import { formatMoney } from '../../../lib/format'
+import { isApiError } from '../../../lib/api'
 import { useAuthStore } from '../../../stores/authStore'
+import { eventApiService, type BackendEvent } from '../services/eventService'
+import { ticketApiService } from '../../tickets/services/ticketService'
+import { paymentApiService, loadRazorpayScript } from '../../payments/services/paymentService'
 import type { ClubEvent, Ticket } from '../../../types/models'
+import type { EventStatus } from '../../../types/enums'
+
+function toClubEvent(b: BackendEvent): ClubEvent {
+  return {
+    id: b.id,
+    title: b.title,
+    description: b.description,
+    venue: b.venue,
+    startsAt: b.startsAt,
+    endsAt: b.endsAt,
+    memberPrice: b.memberPrice,
+    standardPrice: b.standardPrice,
+    totalCapacity: b.totalCapacity,
+    registeredCount: b.registeredCount,
+    status: b.status as EventStatus,
+    category: b.category || undefined,
+    imageUrl: b.imageUrl || undefined,
+    isFeatured: b.isFeatured,
+  }
+}
 
 export const EventDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const event = MOCK_EVENTS.find((e) => e.id === id)
+  const [event, setEvent] = useState<ClubEvent | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!id) return
+    let isCancelled = false
+
+    const loadEvent = async () => {
+      setLoading(true)
+      setFetchError(null)
+      try {
+        const liveEvent = await eventApiService.getEvent(id)
+        if (!isCancelled && liveEvent) {
+          setEvent(toClubEvent(liveEvent))
+        }
+      } catch (err) {
+        // Fallback to mock data if backend event is not found or server is unreachable
+        const fallback = MOCK_EVENTS.find((e) => e.id === id)
+        if (!isCancelled) {
+          if (fallback) {
+            setEvent(fallback)
+          } else if (isApiError(err) && err.status === 404) {
+            setFetchError('Event not found')
+          } else {
+            setFetchError(isApiError(err) ? err.message : 'Failed to load event details.')
+          }
+        }
+      } finally {
+        if (!isCancelled) setLoading(false)
+      }
+    }
+
+    void loadEvent()
+    return () => {
+      isCancelled = true
+    }
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 space-y-3">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+        <span className="text-body-sm text-[var(--color-muted)]">Loading event details...</span>
+      </div>
+    )
+  }
 
   if (!event) {
     return (
@@ -33,7 +105,7 @@ export const EventDetailPage: React.FC = () => {
         </Link>
         <EmptyState
           icon={<Calendar className="w-6 h-6" />}
-          title="Event not found"
+          title={fetchError || 'Event not found'}
           description="This event may have ended or the link is out of date."
           action={
             <Link to="/events">
@@ -49,11 +121,15 @@ export const EventDetailPage: React.FC = () => {
 }
 
 const EventDetail: React.FC<{ event: ClubEvent }> = ({ event }) => {
+  const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
+  const status = useAuthStore((state) => state.status)
   const [purchasedTicket, setPurchasedTicket] = useState<Ticket | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [actionNotice, setActionNotice] = useState<string | null>(null)
 
-  const isMember = !!user?.membership && user.membership.status === 'ACTIVE'
+  const isMember = Boolean(user?.membership && user.membership.status === 'ACTIVE')
   const ticketPrice = isMember ? event.memberPrice : event.standardPrice
   const isSoldOut = event.registeredCount >= event.totalCapacity
 
@@ -69,26 +145,167 @@ const EventDetail: React.FC<{ event: ClubEvent }> = ({ event }) => {
     minute: '2-digit',
   })
 
-  const handleBuyTicket = () => {
+  const handleBuyTicket = async () => {
+    setActionError(null)
+    setActionNotice(null)
+
+    if (status !== 'authenticated' || !user) {
+      navigate(`/login?next=${encodeURIComponent(`/events/${event.id}`)}`)
+      return
+    }
+
     setIsProcessing(true)
-    setTimeout(() => {
-      setIsProcessing(false)
-      const newTicket: Ticket = {
-        id: `tick-${Date.now()}`,
-        eventId: event.id,
-        eventTitle: event.title,
-        eventDate: `${formattedDate}, ${timeStr}`,
-        eventVenue: event.venue,
-        holderName: user?.name || 'Aanya Patel',
-        holderEmail: user?.email || 'aanya.patel@skyline.edu',
-        ticketType: isMember ? 'Member' : 'General',
-        ticketCode: `SKY-${Math.floor(1000 + Math.random() * 9000)}-${isMember ? 'M' : 'G'}`,
-        qrPayload: `https://campusflow.skyline.edu/tickets/SKY-VALID`,
-        status: 'VALID',
-        pricePaid: ticketPrice,
+
+    try {
+      // 1. Register for the event via backend API
+      const regResponse = await eventApiService.registerForEvent(event.id)
+
+      if (regResponse.ticket) {
+        // Free event or membership waiver -> ticket issued immediately!
+        let qrPayload = `https://campusflow.skyline.edu/tickets/${regResponse.ticket.id}`
+        try {
+          const qrData = await ticketApiService.getTicketQr(regResponse.ticket.id)
+          qrPayload = qrData.qrToken || qrData.qrDataUrl || qrPayload
+        } catch {
+          // Non-blocking fallback
+        }
+
+        const issuedTicket: Ticket = {
+          id: regResponse.ticket.id,
+          eventId: event.id,
+          eventTitle: event.title,
+          eventDate: `${formattedDate}, ${timeStr}`,
+          eventVenue: event.venue,
+          holderName: user.name,
+          holderEmail: user.email,
+          ticketType: isMember ? 'Member' : 'General',
+          ticketCode: `CF-${regResponse.ticket.id.slice(-6).toUpperCase()}`,
+          qrPayload,
+          status: 'VALID',
+          pricePaid: ticketPrice,
+        }
+        setPurchasedTicket(issuedTicket)
+      } else if (
+        regResponse.registration.status === 'PENDING_PAYMENT' ||
+        regResponse.registration.status === 'PENDING'
+      ) {
+        // Paid event -> registration reserved pending payment
+        try {
+          const orderRes = await paymentApiService.createPaymentOrder(regResponse.registration.id)
+          const payment = orderRes.payment
+
+          // Ensure Razorpay checkout script is loaded
+          await loadRazorpayScript()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const rzp = (window as any).Razorpay
+          if (rzp && payment.razorpayOrderId && payment.keyId) {
+            const options = {
+              key: payment.keyId,
+              amount: payment.amountPaise,
+              currency: payment.currency,
+              name: 'CampusFlow',
+              description: `Ticket: ${event.title}`,
+              order_id: payment.razorpayOrderId,
+              modal: {
+                ondismiss: () => {
+                  setActionNotice('Checkout closed. Your registration is reserved pending payment.')
+                  setIsProcessing(false)
+                },
+              },
+              handler: async (response: {
+                razorpay_order_id: string
+                razorpay_payment_id: string
+                razorpay_signature: string
+              }) => {
+                setIsProcessing(true)
+                try {
+                  const verified = await paymentApiService.verifyPayment(response)
+                  const confirmedTicket: Ticket = {
+                    id: verified.ticket.id,
+                    eventId: event.id,
+                    eventTitle: event.title,
+                    eventDate: `${formattedDate}, ${timeStr}`,
+                    eventVenue: event.venue,
+                    holderName: user.name,
+                    holderEmail: user.email,
+                    ticketType: isMember ? 'Member' : 'General',
+                    ticketCode: `CF-${verified.ticket.id.slice(-6).toUpperCase()}`,
+                    qrPayload:
+                      verified.ticket.qrToken || verified.ticket.qrDataUrl || verified.ticket.id,
+                    status: 'VALID',
+                    pricePaid: ticketPrice,
+                  }
+                  setPurchasedTicket(confirmedTicket)
+                  setActionNotice(null)
+                  setActionError(null)
+                } catch (verifyErr) {
+                  setActionError(
+                    isApiError(verifyErr)
+                      ? verifyErr.message
+                      : 'Payment verification failed. Please contact support.',
+                  )
+                } finally {
+                  setIsProcessing(false)
+                }
+              },
+              prefill: {
+                name: user.name,
+                email: user.email,
+              },
+              theme: {
+                color: '#3b82f6',
+              },
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const instance = new rzp(options)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            instance.on('payment.failed', (failResponse: any) => {
+              setActionError(
+                failResponse?.error?.description ||
+                  'Payment was declined or failed. Please try again.',
+              )
+              setIsProcessing(false)
+            })
+            instance.open()
+          } else {
+            // Live payment provider sandbox is pending configuration on server
+            setActionNotice(
+              `Registration reserved! Order #${payment.id.slice(0, 8)} created for ${formatMoney(
+                payment.amountPaise / 100,
+              )}. Payment gateway credentials are required for card settlement.`,
+            )
+            setIsProcessing(false)
+          }
+        } catch (paymentErr) {
+          if (isApiError(paymentErr) && paymentErr.status === 503) {
+            setActionNotice(
+              'Registration reserved! Payment provider is currently in sandbox setup. Please try completing payment shortly.',
+            )
+          } else {
+            setActionError(
+              isApiError(paymentErr)
+                ? paymentErr.message
+                : 'Failed to create payment order. Please try again.',
+            )
+          }
+          setIsProcessing(false)
+        }
       }
-      setPurchasedTicket(newTicket)
-    }, 600)
+    } catch (err) {
+      if (isApiError(err)) {
+        if (err.status === 409 || err.code === 'ALREADY_REGISTERED') {
+          setActionError('You are already registered for this event. Check your passbook.')
+        } else if (err.status === 400 && err.message.includes('capacity')) {
+          setActionError('This event is now at maximum capacity.')
+        } else {
+          setActionError(err.message || 'Unable to register for event. Please try again.')
+        }
+      } else {
+        setActionError('Network error connecting to CampusFlow server.')
+      }
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -170,6 +387,14 @@ const EventDetail: React.FC<{ event: ClubEvent }> = ({ event }) => {
               </div>
             </div>
 
+            {/* Notifications / Errors */}
+            {actionError && (
+              <Banner variant="warning" message={actionError} />
+            )}
+            {actionNotice && (
+              <Banner variant="info" message={actionNotice} />
+            )}
+
             {/* Description */}
             <div className="space-y-3">
               <h3 className="text-heading-3 font-display font-bold text-[var(--color-ink)]">
@@ -217,8 +442,8 @@ const EventDetail: React.FC<{ event: ClubEvent }> = ({ event }) => {
 
               {/* One primary action per screen per DESIGN.md */}
               {isSoldOut ? (
-                <Button variant="secondary" fullWidth>
-                  Join the waitlist
+                <Button variant="secondary" fullWidth disabled>
+                  Sold Out
                 </Button>
               ) : (
                 <Button
@@ -227,7 +452,7 @@ const EventDetail: React.FC<{ event: ClubEvent }> = ({ event }) => {
                   isLoading={isProcessing}
                   onClick={handleBuyTicket}
                 >
-                  Buy Ticket {ticketPrice > 0 ? `• ${formatMoney(ticketPrice)}` : ''}
+                  {ticketPrice > 0 ? `Buy Ticket • ${formatMoney(ticketPrice)}` : 'Register Free'}
                 </Button>
               )}
 
@@ -241,3 +466,4 @@ const EventDetail: React.FC<{ event: ClubEvent }> = ({ event }) => {
     </div>
   )
 }
+export default EventDetailPage
