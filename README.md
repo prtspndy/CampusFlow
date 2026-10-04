@@ -2,264 +2,219 @@
 
 ### The Operating System for Student Organizations
 
-> **One platform to manage members, events, tickets, merchandise, volunteers, announcements, and finances — without the chaos of spreadsheets, paper records, and scattered WhatsApp messages.**
+**CampusFlow** is a full-stack platform that brings student-organization operations into one centralized system — replacing scattered spreadsheets, manual records, chat groups, and disconnected workflows with a single digital workspace.
 
-🚧 **CampusFlow is actively under development.**
+> **Manage members. Run events. Sell tickets. Track finances. Coordinate volunteers. Manage merchandise. — All from one place.**
 
----
-
-## 💡 What is CampusFlow?
-
-CampusFlow is a modern **student organization management platform** designed to bring the day-to-day operations of college clubs and student organizations into one centralized system.
-
-Student organizations often depend on a mix of:
-
-- 📊 Spreadsheets for members
-- 💵 Notebooks for finances
-- 🎟️ Manual ticket sales
-- 💬 WhatsApp for announcements
-- 🧾 Paper receipts for expenses
-- 👕 Manual tracking for merchandise
-- 🧑‍🤝‍🧑 Group chats for volunteer coordination
-
-CampusFlow aims to replace this fragmented workflow with **one connected digital platform**.
-
-The goal is simple:
-
-> **Make running a student organization as organized as running a modern digital business.**
+<p align="center">
+  <a href="https://campusflow-os.vercel.app/"><strong>🚀 Live Demo</strong></a>
+  &nbsp;&nbsp;•&nbsp;&nbsp;
+  <a href="https://github.com/prtspndy/CampusFlow"><strong>💻 GitHub Repository</strong></a>
+  &nbsp;&nbsp;•&nbsp;&nbsp;
+  <a href="https://youtu.be/O_EZjerq9rk"><strong>🎬 Demo Video</strong></a>
+</p>
 
 ---
 
-## 🎯 Problem We're Solving
+# 🏆 Built for a 24-Hour Hackathon
 
-Managing a student organization involves much more than organizing events.
+CampusFlow was built as a practical solution to a real campus problem:
 
-Teams need to manage:
+> **Student organizations manage important operations across too many disconnected tools.**
 
-- Members and memberships
-- Membership renewals
-- Events and ticket sales
-- Event check-ins
-- Announcements
-- Merchandise and inventory
-- Volunteer tasks
-- Fundraisers
-- Expenses and reimbursements
-- Revenue and financial reporting
+Members live in spreadsheets.  
+Events live in forms and chat groups.  
+Tickets are tracked manually.  
+Expenses live in notebooks or messages.  
+Volunteers are coordinated through group chats.  
+Financial information is difficult to consolidate.
 
-When all of this is managed through disconnected tools, information gets lost, processes become manual, and nobody has a complete picture of the organization.
+CampusFlow brings these workflows together into one structured platform.
 
-**CampusFlow brings these workflows together into a single operating system.**
+The goal was not to build another generic college dashboard.
+
+**The goal was to build an actual operating system for student organizations.**
 
 ---
 
-## ✨ Core Features
+# 💡 The Problem
 
-### 👥 Membership Management
+Running a college club or student organization involves many moving parts:
 
-Manage the complete member lifecycle from one place.
+- 👥 Member management
+- 🎟️ Events and ticketing
+- 📢 Announcements
+- 🧑‍🤝‍🧑 Volunteer coordination
+- 👕 Merchandise
+- 📦 Inventory
+- 💰 Revenue and expenses
+- 🧾 Payments and reimbursements
+- 📊 Operational visibility
+
+The problem is that these activities are usually handled using a mixture of:
+
+```text
+Spreadsheets
+     +
+Google Forms
+     +
+WhatsApp / Group Chats
+     +
+Paper Records
+     +
+Manual Payment Tracking
+     +
+Separate Event Tools
+```
+
+This creates fragmented data, duplicated work, poor visibility, and unnecessary administrative effort.
+
+---
+
+# 🚀 Our Solution
+
+CampusFlow provides a centralized platform where an organization can manage its operational lifecycle from one place.
+
+```text
+                    ┌───────────────────────┐
+                    │       CampusFlow      │
+                    └───────────┬───────────┘
+                                │
+       ┌────────────┬───────────┼───────────┬────────────┐
+       ▼            ▼           ▼           ▼            ▼
+   Members       Events      Ticketing   Merchandise   Finance
+       │            │           │           │            │
+       └────────────┴───────────┼───────────┴────────────┘
+                                │
+                         ┌──────▼──────┐
+                         │ Organization │
+                         │   Operations │
+                         └─────────────┘
+```
+
+Instead of managing individual processes separately, CampusFlow connects them into a single workflow.
+
+---
+
+# ✨ Key Features
+
+## 👥 Membership Management
+
+Centralize the complete member lifecycle.
 
 - Member registration
 - Member profiles
 - Membership status
+- Membership information
 - Membership payments
-- Membership benefits
-- Membership expiry
-- Renewal workflows
-- Member verification
+- Membership verification
+- Membership lifecycle management
 
 ---
 
-### 🎟️ Event & Ticket Management
+## 🎟️ Event Management
 
-Create and manage events without relying on manual ticket lists.
+Create and manage organization events from one place.
 
 - Event creation
-- Event information
-- Online ticket sales
-- Member & non-member pricing
+- Event details
+- Event scheduling
+- Ticket management
 - Ticket availability
-- Ticket validation
-- Event check-in
-- Attendance tracking
-- Event revenue tracking
+- Member / non-member pricing
+- Event participation
+- Attendance workflows
 
 ---
 
-### 📢 Announcements
+## 🎫 Digital Ticketing & QR
 
-Keep members informed from one centralized communication system.
+CampusFlow supports digital event ticketing with QR-based workflows.
+
+```text
+User
+  │
+  ▼
+Register / Purchase Ticket
+  │
+  ▼
+Digital Ticket
+  │
+  ▼
+QR Code
+  │
+  ▼
+Event Check-in
+```
+
+This reduces dependency on manual ticket lists and makes event entry easier to manage.
+
+---
+
+## 📢 Announcements
+
+Keep organization members informed through centralized announcements.
 
 - Create announcements
 - Publish updates
-- Reach members from one place
+- Share important information
 - Maintain announcement history
-- Organize important club communication
 
 ---
 
-### 👕 Merchandise & Inventory
+## 👕 Merchandise & Inventory
 
-Manage club merchandise and inventory digitally.
+Manage organization merchandise digitally.
 
-- Product management
-- T-shirt / hoodie / merchandise listings
-- Size-based inventory
-- Online orders
+- Product listings
+- Merchandise management
+- Inventory tracking
+- Size-based stock
+- Orders
 - Payment tracking
-- Stock management
-- Inventory updates
+- Stock updates
 
 ---
 
-### 🧑‍🤝‍🧑 Volunteer & Task Management
+## 🧑‍🤝‍🧑 Volunteer & Task Management
 
-Turn scattered volunteer coordination into structured workflows.
+Turn informal volunteer coordination into structured work.
 
 - Create tasks
 - Assign volunteers
 - Track task status
-- Monitor fundraiser activities
-- See what is completed and what is still pending
+- Monitor operational activities
+- Track pending and completed work
 
 ---
 
-### 💰 Finance Management
+## 💰 Finance Management
 
-Give the organization a clear picture of its money.
+CampusFlow brings organization finances into one place.
 
 Track:
 
 - Membership revenue
-- Ticket revenue
+- Event revenue
 - Merchandise revenue
 - Fundraising revenue
 - Expenses
-- Volunteer reimbursements
-- Financial balance
+- Reimbursements
+- Overall financial position
 
-The goal is to make it possible to answer:
+The objective is simple:
 
-> **How much money came in, where did it go, and how much do we have left?**
-
----
-
-### 📊 Dashboards & Analytics
-
-Turn operational data into useful insights.
-
-Planned/ongoing dashboard capabilities include:
-
-- Membership statistics
-- Event performance
-- Ticket sales
-- Attendance
-- Merchandise performance
-- Revenue
-- Expenses
-- Financial summaries
-- Operational insights
+> **Know where the money came from, where it went, and what remains.**
 
 ---
 
-## 🏗️ Architecture
+# 👤 User Roles
 
-CampusFlow follows a modern full-stack architecture:
-
-```text
-┌─────────────────────────────────────────────┐
-│                  CampusFlow                 │
-├─────────────────────────────────────────────┤
-│                                             │
-│              React + Vite                  │
-│              TypeScript                   │
-│              Tailwind CSS                 │
-│              shadcn/ui                    │
-│                     │                       │
-│                     ▼                       │
-│             Node.js + Express              │
-│                     │                       │
-│                     ▼                       │
-│                  Prisma                    │
-│                     │                       │
-│                     ▼                       │
-│               PostgreSQL                   │
-│                                             │
-└─────────────────────────────────────────────┘
-```
-
-The application is being built with a separation between the frontend and backend so that the platform can evolve into a scalable multi-role system.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | React + Vite |
-| Language | TypeScript |
-| Styling | Tailwind CSS |
-| UI Components | shadcn/ui |
-| Backend | Node.js + Express |
-| Database | PostgreSQL |
-| ORM | Prisma |
-| Authentication | JWT / Better Auth |
-| Validation | Zod |
-| Forms | React Hook Form |
-| Charts | Recharts |
-| QR / Ticketing | qrcode |
-| Payments | Razorpay |
-| Frontend Deployment | Vercel |
-| Backend Deployment | Render / Railway |
-| Database Hosting | Neon |
-
----
-
-## 🎨 Design Philosophy
-
-CampusFlow is being designed as a **modern SaaS product rather than a traditional college administration dashboard**.
-
-The visual direction focuses on:
-
-- Minimal interfaces
-- Strong typography
-- Clean information hierarchy
-- Generous whitespace
-- Restrained color palette
-- Thin borders
-- Subtle UI surfaces
-- Clear data visualization
-- Responsive layouts
-- Accessible interactions
-- Consistent reusable components
-
-### Design principles
-
-**Clarity over decoration**
-
-Every UI element should have a purpose.
-
-**Consistency over complexity**
-
-Reusable components and design tokens keep the experience coherent.
-
-**Data should be easy to understand**
-
-Dashboards, tables and analytics should communicate information quickly.
-
-**Functionality first**
-
-The interface should help organization members complete real tasks efficiently.
-
----
-
-## 👤 User Roles
-
-CampusFlow is being designed around the different people involved in running a student organization.
+CampusFlow is designed around the different people involved in a student organization.
 
 ### 👨‍💼 Administrator
 
-Responsible for managing the organization.
+Manages the organization and its operations.
 
 Typical responsibilities include:
 
@@ -270,30 +225,30 @@ Typical responsibilities include:
 - Announcements
 - Volunteers
 - Finances
-- Organization settings
+- Organization operations
 
 ### 💳 Treasurer
 
-Focuses on:
+Focuses primarily on financial operations.
 
 - Revenue
 - Expenses
 - Reimbursements
 - Financial records
-- Financial reporting
+- Payment-related workflows
 
-### 🧑‍🤝‍🧑 Volunteer / Organizer
+### 🧑‍🤝‍🧑 Organizer / Volunteer
 
-Focuses on:
+Focuses on execution.
 
 - Assigned tasks
 - Events
-- Fundraisers
+- Fundraising activities
 - Operational activities
 
 ### 🎓 Member
 
-Can interact with the organization through:
+Interacts with the organization through:
 
 - Membership
 - Events
@@ -302,68 +257,300 @@ Can interact with the organization through:
 - Merchandise
 - Orders
 
-> Role capabilities will continue to evolve as development progresses.
+---
+
+# 🧠 Why CampusFlow?
+
+CampusFlow is not just an event-management application.
+
+It connects multiple operational systems that normally exist independently.
+
+| Traditional Approach | CampusFlow |
+|---|---|
+| Spreadsheet-based members | Centralized member management |
+| Manual ticket lists | Digital ticketing |
+| Paper / manual check-ins | QR-based workflow |
+| Group-chat announcements | Centralized announcements |
+| Manual merchandise tracking | Inventory management |
+| Volunteer group chats | Structured task management |
+| Separate finance records | Centralized financial tracking |
+| Multiple disconnected tools | One operating system |
 
 ---
 
-## 🔐 Security
+# 🏗️ System Architecture
 
-Security is an important part of the platform architecture.
+CampusFlow follows a separated full-stack architecture.
 
-The project includes/targets:
+```text
+                    ┌────────────────────────┐
+                    │        Frontend        │
+                    │ React + Vite + TS      │
+                    │ Tailwind CSS            │
+                    └────────────┬───────────┘
+                                 │
+                              HTTP/API
+                                 │
+                                 ▼
+                    ┌────────────────────────┐
+                    │         Backend        │
+                    │ Node.js + Express      │
+                    │ TypeScript              │
+                    └────────────┬───────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    │                         │
+                    ▼                         ▼
+              ┌───────────┐            ┌────────────┐
+              │  Prisma   │            │ External   │
+              │    ORM    │            │ Services   │
+              └─────┬─────┘            └────────────┘
+                    │
+                    ▼
+              ┌─────────────┐
+              │ PostgreSQL  │
+              └─────────────┘
+```
 
-- Authentication
-- Role-based authorization
+---
+
+# 🛠️ Tech Stack
+
+The implementation uses the technologies actually present in the repository.
+
+### Frontend
+
+- **React 19**
+- **Vite**
+- **TypeScript**
+- **Tailwind CSS**
+- **React Router**
+- **TanStack React Query**
+- **Axios**
+- **Lucide React**
+
+### Backend
+
+- **Node.js**
+- **Express**
+- **TypeScript**
+- **Prisma ORM**
+- **PostgreSQL**
+- **JWT**
+- **Zod**
+- **bcryptjs**
+- **Helmet**
+- **CORS**
+- **Express Rate Limit**
+
+### Payments & Ticketing
+
+- **Razorpay**
+- **QRCode**
+
+### API & Development
+
+- **Swagger UI**
+- **Vitest**
+- **Supertest**
+- **ESLint**
+- **Prettier**
+- **Oxlint**
+
+### Deployment
+
+- **Vercel** for the live frontend
+- Backend and database are configured separately through environment-based deployment architecture.
+
+> The repository's package configuration is the source of truth for the technology stack.
+
+---
+
+# 🔐 Security
+
+Security was considered as part of the backend architecture.
+
+CampusFlow includes security-oriented mechanisms such as:
+
+- JWT-based authentication
+- Password hashing with bcrypt
 - Protected API routes
-- Input validation
-- Secure password handling
-- Environment-based configuration
+- Role-aware authorization
+- Zod request validation
+- Helmet security headers
+- CORS configuration
+- API rate limiting
+- Environment-based secrets
 - Controlled access to organization data
 
-Security-related implementation will continue to evolve alongside the application.
+Sensitive credentials are never intended to be committed to the repository.
 
 ---
 
-## 📁 Project Structure
+# 💳 Payment Architecture
+
+CampusFlow integrates **Razorpay** for payment-related workflows.
+
+The intended flow is:
+
+```text
+User
+ │
+ ▼
+Select Product / Ticket
+ │
+ ▼
+Create Payment Order
+ │
+ ▼
+Razorpay Checkout
+ │
+ ▼
+Payment Verification
+ │
+ ▼
+Application Records Transaction
+ │
+ ▼
+Ticket / Order Confirmation
+```
+
+Payment secrets are supplied through environment variables rather than stored in source code.
+
+---
+
+# 🎫 Event & QR Workflow
+
+One of the important workflows in CampusFlow is digital event participation.
+
+```text
+                EVENT
+                  │
+                  ▼
+          User selects event
+                  │
+                  ▼
+            Ticket purchase
+                  │
+                  ▼
+           Payment workflow
+                  │
+                  ▼
+          Digital ticket issued
+                  │
+                  ▼
+              QR Code
+                  │
+                  ▼
+            Event check-in
+```
+
+This provides a much more structured alternative to manually maintaining attendee lists.
+
+---
+
+# 📁 Repository Structure
 
 ```text
 CampusFlow/
 │
 ├── backend/
-│   ├── ...
-│   └── Backend services & APIs
+│   ├── prisma/
+│   ├── src/
+│   ├── tests/
+│   ├── package.json
+│   └── ...
 │
 ├── frontend/
-│   ├── ...
-│   └── React frontend application
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── ...
 │
 ├── docs/
-│   ├── design/          # Visual system
-│   ├── product/         # Brief and project context
-│   ├── reference/       # API, roles, flows, codebase guide
-│   └── delivery/        # Phase notes and viva prep
+│   ├── design/
+│   ├── product/
+│   ├── reference/
+│   └── delivery/
 │
+├── DESIGN.md
 ├── SECURITY.md
-│
+├── project_context.md
+├── Student_Organization_System.pdf
 └── README.md
 ```
 
 ---
 
-## 🚀 Getting Started
+# 🔌 Backend API
 
-### Prerequisites
+The backend is implemented as a dedicated Express API.
 
-Make sure you have installed:
+It provides the application layer responsible for:
 
-- Node.js
+- Authentication
+- Organization operations
+- Member workflows
+- Events
+- Ticketing
+- Payments
+- Merchandise
+- Inventory
+- Tasks
+- Financial operations
+- Data validation
+
+API documentation is supported through **Swagger UI** in the backend.
+
+---
+
+# 🧪 Testing & Code Quality
+
+The project includes dedicated development tooling for maintaining code quality.
+
+### Frontend
+
+```bash
+npm run build
+npm run lint
+npm run test
+```
+
+### Backend
+
+```bash
+npm run build
+npm run typecheck
+npm run lint
+npm run test
+```
+
+Database-related commands are also provided through Prisma:
+
+```bash
+npm run db:generate
+npm run db:validate
+npm run db:migrate
+npm run db:seed
+npm run db:studio
+```
+
+---
+
+# 🚀 Run Locally
+
+## Prerequisites
+
+Make sure you have:
+
+- Node.js 20+
 - npm
 - PostgreSQL
 - Git
 
 ---
 
-### 1. Clone the repository
+## 1. Clone the repository
 
 ```bash
 git clone https://github.com/prtspndy/CampusFlow.git
@@ -372,16 +559,16 @@ cd CampusFlow
 
 ---
 
-### 2. Install dependencies
-
-Install dependencies for the frontend and backend according to their respective project configuration.
+## 2. Install frontend dependencies
 
 ```bash
 cd frontend
 npm install
 ```
 
-Then:
+---
+
+## 3. Install backend dependencies
 
 ```bash
 cd ../backend
@@ -390,11 +577,11 @@ npm install
 
 ---
 
-### 3. Configure environment variables
+## 4. Configure environment variables
 
-Create the required `.env` files for the frontend and backend.
+Create the required environment files according to the backend/frontend configuration.
 
-Environment configuration may include:
+Typical backend configuration may include values such as:
 
 ```env
 DATABASE_URL=
@@ -403,117 +590,210 @@ RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 ```
 
-> Never commit real secrets or credentials to the repository.
+> **Never commit real credentials, API keys, database URLs, or secrets to Git.**
 
 ---
 
-### 4. Configure the database
-
-CampusFlow uses **PostgreSQL with Prisma**.
-
-Run the Prisma commands required by the current backend configuration.
+## 5. Generate Prisma client
 
 ```bash
-npx prisma generate
-```
-
-For development migrations:
-
-```bash
-npx prisma migrate dev
+cd backend
+npm run db:generate
 ```
 
 ---
 
-### 5. Start the development servers
+## 6. Configure the database
 
-Frontend:
+Run the required Prisma migration:
+
+```bash
+npm run db:migrate
+```
+
+If seed data is configured:
+
+```bash
+npm run db:seed
+```
+
+---
+
+## 7. Start the backend
+
+```bash
+npm run dev
+```
+
+---
+
+## 8. Start the frontend
+
+In another terminal:
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Backend:
-
-```bash
-cd backend
-npm run dev
-```
-
-The exact scripts may evolve as development continues.
+The frontend will then be available through the Vite development server.
 
 ---
 
-## 🧪 Development Status
+# 🌐 Live Demo
 
-CampusFlow is currently being actively developed.
+## 🚀 Try CampusFlow
 
-### Current development focus
+**Live Application:**  
 
-- [x] Project architecture
-- [x] Frontend foundation
-- [x] Backend foundation
-- [x] Database architecture
-- [x] Design system direction
-- [ ] Complete membership workflows
-- [ ] Complete event workflows
-- [ ] Ticketing & QR check-in
-- [ ] Merchandise & inventory
-- [ ] Volunteer management
-- [ ] Finance workflows
-- [ ] Advanced analytics
-- [ ] Production hardening
-- [ ] Final deployment
+https://campusflow-os.vercel.app/
 
-> This checklist represents
-# CampusFlow
-The Operating System for Student Organizations
+**Source Code:**  
 
-# Tech Stack
+https://github.com/prtspndy/CampusFlow
 
-- Frontend        → React + Vite
-- Language        → TypeScript
-- UI              → Tailwind CSS + shadcn/ui
-- Backend         → Node.js + Express
-- Database        → PostgreSQL
-- ORM             → Prisma
-- Auth            → JWT / Better Auth
-- Validation      → Zod
-- Forms           → React Hook Form
-- Charts          → Recharts
-- QR              → qrcode
-- Payments        → Razorpay
-- Deployment      → Vercel + Render/Railway + Neon
+---
 
-# Theme 
+# 🎬 Demo Video
 
-Frontend Theme Direction for CampusFlow
+Watch the complete walkthrough of CampusFlow, including the platform experience and core student-organization workflows.
 
-I want CampusFlow's frontend to follow this visual direction: minimal, premium, modern SaaS/AI-tech aesthetic, similar to the reference image I shared.
-Visual style:
+▶️ **[Watch CampusFlow Demo Video](https://youtu.be/O_EZjerq9rk)**
 
-- Clean white / slightly off-white background
-- Strong black/dark charcoal typography
-- Very minimal color palette with electric blue as the primary accent and orange as a small secondary accent
-- Lots of whitespace and clean spacing
-- Thin borders and subtle UI elements
-- Modern editorial-style typography — bold clean headings + simple readable body text
-- Minimal shadows; avoid heavy cards and excessive rounded/glassmorphism effects
-- Use clean geometric/abstract illustrations where appropriate
-- Overall feeling should be premium, futuristic, technical, trustworthy and minimal
-  
-Color direction:
-Background → #FAFAF8 / white
-Primary text → near-black / charcoal
-Primary accent → electric blue
-Secondary accent → orange
-Keep the palette restrained; don't introduce many random colors.
+**YouTube:**  
 
-Important: Don't copy the reference image's exact layout or graphics. Use it only as visual inspiration for the design language.
-For CampusFlow, adapt this aesthetic into a student-organization management SaaS: clean dashboard, elegant data tables, modern cards, charts, event pages, membership pages, QR ticket UI, finance dashboard, etc.
+https://youtu.be/O_EZjerq9rk
 
-Goal: It should look like a serious modern startup product, not a generic college project/admin template.
-Please first establish a complete design system (colors, typography, spacing, buttons, cards, inputs, tables, badges, navigation, dashboard components) and then apply it consistently across the application.
+---
 
-“CampusFlow should feel like a premium minimalist AI/SaaS product — white/off-white canvas, dark typography, electric-blue primary accents, tiny orange highlights, lots of whitespace, thin geometric details, and zero generic-dashboard vibes.” 🔥
+# 🎬 Recommended Judge Demo Flow
+
+For judges, the fastest way to understand CampusFlow is to follow one complete organization workflow:
+
+```text
+1. Organization Dashboard
+          ↓
+2. Members
+          ↓
+3. Create / Explore Event
+          ↓
+4. Ticket Workflow
+          ↓
+5. Payment
+          ↓
+6. Digital Ticket + QR
+          ↓
+7. Event Check-in
+          ↓
+8. Merchandise / Orders
+          ↓
+9. Tasks / Volunteers
+          ↓
+10. Finance & Organization Overview
+```
+
+This demonstrates how CampusFlow connects different operational areas instead of treating them as isolated features.
+
+---
+
+# 🏅 Hackathon Highlights
+
+### 🎯 Real-world Problem
+
+Student organizations genuinely deal with fragmented operational workflows.
+
+### 🔗 One Connected Platform
+
+CampusFlow connects members, events, ticketing, merchandise, tasks, and finance.
+
+### 💳 Real Payment Architecture
+
+Razorpay integration enables a practical payment workflow.
+
+### 🎫 QR-Based Event Workflow
+
+Digital tickets and QR-based processes make event participation more structured.
+
+### 🔐 Security-Aware Backend
+
+Authentication, password hashing, validation, security headers, CORS, and rate limiting are part of the backend architecture.
+
+### 🧩 Modular Full-Stack Architecture
+
+Frontend and backend are separated, making the application easier to evolve.
+
+### 📱 Product-Oriented UX
+
+CampusFlow is designed as a modern SaaS-style product rather than a traditional college administration portal.
+
+---
+
+# 🧭 Product Vision
+
+CampusFlow can grow beyond a single college club.
+
+The long-term vision is a platform where colleges and student organizations can manage their complete digital operations from one system.
+
+Potential future directions include:
+
+- Multi-organization support
+- College-level administration
+- Advanced analytics
+- Automated financial reporting
+- Event recommendations
+- Communication automation
+- Attendance insights
+- Organization performance metrics
+- Mobile applications
+- Deeper payment integrations
+- AI-powered organization assistance
+
+---
+
+# 📌 Project Status
+
+**Hackathon Release — Live**
+
+CampusFlow is a functional full-stack product developed during a 24-hour hackathon.
+
+The repository contains the application source code, backend services, frontend application, database architecture, documentation, and supporting project material.
+
+---
+
+# 👨‍💻 Team
+
+Built with ❤️ during a 24-hour hackathon.
+
+**CampusFlow Team**
+
+> We didn't want to build another CRUD dashboard.
+>
+> **We wanted to build something a real student organization could actually use.**
+
+---
+
+# 📄 License
+
+This project is provided under the license included in the repository.
+
+---
+
+<p align="center">
+
+### 🎓 CampusFlow
+
+**One platform. One organization. Zero operational chaos.**
+
+<br/>
+
+<a href="https://campusflow-os.vercel.app/">
+<strong>🚀 Try CampusFlow</strong>
+</a>
+
+&nbsp;&nbsp;•&nbsp;&nbsp;
+
+<a href="https://youtu.be/O_EZjerq9rk">
+<strong>🎬 Watch Demo</strong>
+</a>
+
+</p>
