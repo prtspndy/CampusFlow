@@ -28,7 +28,7 @@ import {
   ServiceUnavailableError,
 } from '../utils/errors.js';
 import { expirePendingRegistration, toPublicRegistration } from './registration.service.js';
-import { issueTicketRecord, withQr } from './ticket.service.js';
+import { issueTicketsForRegistration, withQr } from './ticket.service.js';
 import { paymentSourcesFor } from './ticket-state.js';
 
 type Tx = Prisma.TransactionClient;
@@ -110,6 +110,7 @@ export async function createPaymentOrder(userId: string, registrationId: string)
         registrationId: registration.id,
         eventId: registration.eventId,
         userId,
+        quantity: String(registration.quantity),
       },
     }),
   );
@@ -207,8 +208,8 @@ async function settleCapturedPayment(
   if (!settled) {
     throw new NotFoundError('Payment not found');
   }
-  const issued = await issueTicketRecord(tx, registration);
-  return { payment: settled, registration, issued };
+  const issuedTickets = await issueTicketsForRegistration(tx, registration);
+  return { payment: settled, registration, issuedTickets };
 }
 
 export async function verifyPayment(userId: string, input: VerifyPaymentInput) {
@@ -286,10 +287,15 @@ export async function verifyPayment(userId: string, input: VerifyPaymentInput) {
     }),
   );
 
+  const publicTickets = await Promise.all(
+    confirmed.issuedTickets.map((i) => withQr(i.ticket, i.qrToken)),
+  );
+
   return {
     payment: toPublicPayment(confirmed.payment),
     registration: toPublicRegistration(confirmed.registration),
-    ticket: await withQr(confirmed.issued.ticket, confirmed.issued.qrToken),
+    ticket: publicTickets[0] ?? null,
+    tickets: publicTickets,
   };
 }
 
@@ -477,26 +483,27 @@ async function applyWebhook(
       return 'IGNORED';
     }
 
-    const ticket = await tx.ticket.findUnique({
+    const tickets = await tx.ticket.findMany({
       where: { registrationId: payment.registrationId },
     });
-    if (ticket?.status === TicketStatus.USED) {
+    if (tickets.some((t) => t.status === TicketStatus.USED)) {
       return 'PROCESSED';
     }
-    if (ticket?.status === TicketStatus.ISSUED) {
-      await tx.ticket.updateMany({
-        where: { id: ticket.id, status: TicketStatus.ISSUED },
-        data: { status: TicketStatus.CANCELLED },
-      });
-    }
+    await tx.ticket.updateMany({
+      where: { registrationId: payment.registrationId, status: TicketStatus.ISSUED },
+      data: { status: TicketStatus.CANCELLED },
+    });
+    const registration = await tx.eventRegistration.findUnique({
+      where: { id: payment.registrationId },
+    });
     const cancelled = await tx.eventRegistration.updateMany({
       where: { id: payment.registrationId, status: RegistrationStatus.CONFIRMED },
       data: { status: RegistrationStatus.CANCELLED, cancelledAt: new Date() },
     });
-    if (cancelled.count === 1) {
+    if (cancelled.count === 1 && registration) {
       await tx.event.updateMany({
-        where: { id: payment.eventId, registeredCount: { gt: 0 } },
-        data: { registeredCount: { decrement: 1 } },
+        where: { id: payment.eventId, registeredCount: { gte: registration.quantity } },
+        data: { registeredCount: { decrement: registration.quantity } },
       });
     }
     return 'PROCESSED';

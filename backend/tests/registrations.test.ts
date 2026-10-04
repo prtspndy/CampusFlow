@@ -381,5 +381,134 @@ describe('Event registration', () => {
       expect(resOverLimit.body.error.code).toBe('VALIDATION_ERROR');
     });
   });
+
+  describe('Multi-quantity event registrations and capacity', () => {
+    it('registers for multiple tickets (3) on a free event and issues 3 distinct tickets', async () => {
+      const organizer = await login('org-multi@campus.edu', 'EVENT_MANAGER');
+      const member = await login('member-multi@campus.edu');
+      const event = publishedEvent(organizer.user.id, { capacity: 20 });
+
+      const response = await request(app)
+        .post(`/api/events/${event.id}/registrations`)
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ quantity: 3 });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.registration).toMatchObject({
+        eventId: event.id,
+        userId: member.user.id,
+        status: 'CONFIRMED',
+        tier: 'STANDARD',
+        quantity: 3,
+        amountPaise: 0,
+      });
+
+      expect(response.body.data.tickets).toHaveLength(3);
+      const ticketIds = response.body.data.tickets.map((t: any) => t.id);
+      const uniqueIds = new Set(ticketIds);
+      expect(uniqueIds.size).toBe(3);
+
+      const qrTokens = response.body.data.tickets.map((t: any) => t.qrToken);
+      const uniqueTokens = new Set(qrTokens);
+      expect(uniqueTokens.size).toBe(3);
+
+      // Verify event registeredCount incremented by 3
+      const updatedEvent = memoryRegistrations().find((r) => r.id === response.body.data.registration.id);
+      expect(updatedEvent?.quantity).toBe(3);
+      expect(memoryTickets()).toHaveLength(3);
+    });
+
+    it('calculates total price as unitPrice * quantity for paid events', async () => {
+      const organizer = await login('org-paid-multi@campus.edu', 'EVENT_MANAGER');
+      const member = await login('member-paid-multi@campus.edu');
+      const event = publishedEvent(organizer.user.id, { price: 500, capacity: 50 });
+
+      const response = await request(app)
+        .post(`/api/events/${event.id}/registrations`)
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ quantity: 4 });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.registration).toMatchObject({
+        eventId: event.id,
+        userId: member.user.id,
+        status: 'PENDING_PAYMENT',
+        quantity: 4,
+        amountPaise: 200000, // 4 * ₹500 * 100 paise = 200,000 paise (₹2,000)
+        currency: 'INR',
+      });
+      expect(response.body.data.tickets).toHaveLength(0);
+    });
+
+    it('rejects booking when requested quantity exceeds available capacity', async () => {
+      const organizer = await login('org-cap@campus.edu', 'EVENT_MANAGER');
+      const member = await login('member-cap@campus.edu');
+      const event = publishedEvent(organizer.user.id, { capacity: 5 });
+
+      // First member takes 4 seats
+      const res1 = await request(app)
+        .post(`/api/events/${event.id}/registrations`)
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ quantity: 4 });
+      expect(res1.status).toBe(201);
+
+      // Second member tries to take 2 seats (only 1 remaining)
+      const member2 = await login('member-cap2@campus.edu');
+      const res2 = await request(app)
+        .post(`/api/events/${event.id}/registrations`)
+        .set('Authorization', `Bearer ${member2.token}`)
+        .send({ quantity: 2 });
+
+      expect(res2.status).toBe(409);
+      expect(res2.body.error.code).toBe('CAPACITY_REACHED');
+    });
+
+    it('rejects invalid quantities (0, negative, > 10, non-integer)', async () => {
+      const organizer = await login('org-val@campus.edu', 'EVENT_MANAGER');
+      const member = await login('member-val@campus.edu');
+      const event = publishedEvent(organizer.user.id);
+
+      const res0 = await request(app)
+        .post(`/api/events/${event.id}/registrations`)
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ quantity: 0 });
+      expect(res0.status).toBe(422);
+
+      const resNeg = await request(app)
+        .post(`/api/events/${event.id}/registrations`)
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ quantity: -2 });
+      expect(resNeg.status).toBe(422);
+
+      const resOver = await request(app)
+        .post(`/api/events/${event.id}/registrations`)
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ quantity: 11 });
+      expect(resOver.status).toBe(422);
+    });
+
+    it('cancelling a multi-ticket registration releases all reserved seats and cancels all tickets', async () => {
+      const organizer = await login('org-cancel-multi@campus.edu', 'EVENT_MANAGER');
+      const member = await login('member-cancel-multi@campus.edu');
+      const event = publishedEvent(organizer.user.id, { capacity: 20 });
+
+      const regRes = await request(app)
+        .post(`/api/events/${event.id}/registrations`)
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ quantity: 3 });
+
+      const regId = regRes.body.data.registration.id;
+      expect(memoryTickets().filter((t) => t.status === 'ISSUED')).toHaveLength(3);
+
+      const cancelRes = await request(app)
+        .post(`/api/registrations/${regId}/cancel`)
+        .set('Authorization', `Bearer ${member.token}`);
+
+      expect(cancelRes.status).toBe(200);
+      expect(cancelRes.body.data.registration.status).toBe('CANCELLED');
+      expect(memoryTickets().filter((t) => t.status === 'CANCELLED')).toHaveLength(3);
+      expect(memoryTickets().filter((t) => t.status === 'ISSUED')).toHaveLength(0);
+    });
+  });
 });
 

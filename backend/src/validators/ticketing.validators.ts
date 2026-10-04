@@ -42,7 +42,15 @@ export const ticketTokenSchema = z
   })
   .strict();
 
+export const registerForEventSchema = z
+  .object({
+    quantity: z.coerce.number().int().min(1, 'Quantity must be at least 1').max(10, 'Maximum 10 tickets per booking').default(1),
+  })
+  .default({ quantity: 1 });
+
 export type ListEventRegistrationsQuery = z.infer<typeof listEventRegistrationsQuerySchema>;
 export type ListPaymentsQuery = z.infer<typeof listPaymentsQuerySchema>;
 export type VerifyPaymentInput = z.infer<typeof verifyPaymentSchema>;
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
+export type RegisterForEventInput = z.infer<typeof registerForEventSchema>;
+

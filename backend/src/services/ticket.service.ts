@@ -28,30 +28,49 @@ export interface IssuedTicket {
   qrToken: string;
 }
 
-export async function issueTicketRecord(
+export async function issueTicketsForRegistration(
   tx: Tx,
-  registration: Pick<EventRegistration, 'id' | 'eventId' | 'userId'>,
-): Promise<IssuedTicket> {
-  const existing = await tx.ticket.findUnique({ where: { registrationId: registration.id } });
-  if (existing) {
-    return {
-      ticket: existing,
-      qrToken: decryptVerificationToken(existing.encryptedVerificationToken),
-    };
+  registration: Pick<EventRegistration, 'id' | 'eventId' | 'userId'> & { quantity?: number },
+): Promise<IssuedTicket[]> {
+  const targetQuantity = registration.quantity ?? 1;
+  const existing = await tx.ticket.findMany({
+    where: { registrationId: registration.id },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  const issuedList: IssuedTicket[] = existing.map((ticket) => ({
+    ticket,
+    qrToken: decryptVerificationToken(ticket.encryptedVerificationToken),
+  }));
+
+  const needed = Math.max(0, targetQuantity - existing.length);
+  for (let i = 0; i < needed; i += 1) {
+    const qrToken = generateVerificationToken();
+    const ticket = await tx.ticket.create({
+      data: {
+        registrationId: registration.id,
+        eventId: registration.eventId,
+        userId: registration.userId,
+        status: TicketStatus.ISSUED,
+        verificationTokenHash: hashVerificationToken(qrToken),
+        encryptedVerificationToken: encryptVerificationToken(qrToken),
+      },
+    });
+    issuedList.push({ ticket, qrToken });
   }
 
-  const qrToken = generateVerificationToken();
-  const ticket = await tx.ticket.create({
-    data: {
-      registrationId: registration.id,
-      eventId: registration.eventId,
-      userId: registration.userId,
-      status: TicketStatus.ISSUED,
-      verificationTokenHash: hashVerificationToken(qrToken),
-      encryptedVerificationToken: encryptVerificationToken(qrToken),
-    },
-  });
-  return { ticket, qrToken };
+  return issuedList;
+}
+
+export async function issueTicketRecord(
+  tx: Tx,
+  registration: Pick<EventRegistration, 'id' | 'eventId' | 'userId'> & { quantity?: number },
+): Promise<IssuedTicket> {
+  const results = await issueTicketsForRegistration(tx, registration);
+  if (!results[0]) {
+    throw new Error('Failed to issue ticket record');
+  }
+  return results[0];
 }
 
 export function toPublicTicket(ticket: Ticket, qr?: { token: string; dataUrl: string }) {

@@ -86,6 +86,7 @@ export interface MemoryRegistration {
   userId: string;
   status: RegistrationStatus;
   tier: TicketTier;
+  quantity: number;
   amountPaise: number;
   currency: string;
   cancelledAt: Date | null;
@@ -409,6 +410,7 @@ export function insertRegistration(
     userId: partial.userId,
     status: partial.status,
     tier: partial.tier,
+    quantity: partial.quantity ?? 1,
     amountPaise: partial.amountPaise,
     currency: partial.currency ?? 'INR',
     cancelledAt: partial.cancelledAt ?? null,
@@ -1155,6 +1157,9 @@ export function installPrismaMemory(): void {
     if (include?.ticket) {
       result.ticket = tickets.find((ticket) => ticket.registrationId === row.id) ?? null;
     }
+    if (include?.tickets) {
+      result.tickets = tickets.filter((ticket) => ticket.registrationId === row.id);
+    }
     return result;
   };
 
@@ -1211,6 +1216,7 @@ export function installPrismaMemory(): void {
       userId: data.userId,
       status: data.status,
       tier: data.tier,
+      quantity: data.quantity ?? 1,
       amountPaise: data.amountPaise,
       currency: data.currency ?? 'INR',
       cancelledAt: null,
@@ -1422,7 +1428,6 @@ export function installPrismaMemory(): void {
 
   vi.spyOn(prisma.ticket, 'create').mockImplementation(async (args) => {
     const data = args.data as any;
-    if (tickets.some((row) => row.registrationId === data.registrationId)) throw uniqueError();
     if (tickets.some((row) => row.verificationTokenHash === data.verificationTokenHash)) {
       throw uniqueError();
     }

@@ -1,0 +1,731 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-surface-variant": "#c4c5da", "primary": "#b9c3ff", "surface-bright": "#2c3a4c", "on-tertiary": "#003824", "on-primary-fixed-variant": "#0033c0", "surface-container-highest": "#273647", "outline-variant": "#434657", "on-primary-fixed": "#001257", "on-secondary-fixed-variant": "#004c69", "surface-container": "#122131", "on-primary-container": "#d4d9ff", "error": "#ffb4ab", "on-secondary-fixed": "#001e2c", "secondary-container": "#00a6e0", "surface-container-lowest": "#010f1f", "surface": "#051424", "surface-container-low": "#0d1c2d", "tertiary-fixed-dim": "#4edea3", "background": "#051424", "primary-fixed": "#dde1ff", "surface-variant": "#273647", "on-secondary-container": "#00374d", "surface-dim": "#051424", "secondary-fixed-dim": "#7bd0ff", "inverse-surface": "#d4e4fa", "primary-fixed-dim": "#b9c3ff", "secondary": "#7bd0ff", "on-error": "#690005", "tertiary": "#4edea3", "outline": "#8e8fa3", "tertiary-fixed": "#6ffbbe", "on-secondary": "#00354a", "surface-tint": "#b9c3ff", "error-container": "#93000a", "tertiary-container": "#006e4b", "primary-container": "#0047ff", "on-primary": "#00228a", "on-tertiary-container": "#67f4b7", "secondary-fixed": "#c4e7ff", "on-tertiary-fixed": "#002113", "inverse-on-surface": "#233143", "surface-container-high": "#1c2b3c", "on-background": "#d4e4fa", "on-tertiary-fixed-variant": "#005236", "on-error-container": "#ffdad6", "inverse-primary": "#0046fa", "on-surface": "#d4e4fa" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xl": "2rem", "margin": "1rem", "margin-desktop": "2rem", "gutter-desktop": "1.5rem", "gutter": "1rem", "space-xs": "0.25rem", "space-lg": "1.25rem", "space-md": "0.75rem", "space-sm": "0.5rem" }, "fontFamily": { "body-md": ["Inter"], "body-lg": ["Inter"], "headline-lg": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "label-sm": ["Inter"], "display-lg": ["Plus Jakarta Sans"], "label-md": ["Inter"], "code-mono": ["JetBrains Mono"], "body-sm": ["Inter"], "headline-sm": ["Plus Jakarta Sans"] }, "fontSize": { "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-lg": ["24px", { "lineHeight": "32px", "fontWeight": "600" }], "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "600" }], "display-lg": ["36px", { "lineHeight": "44px", "fontWeight": "700" }], "label-md": ["13px", { "lineHeight": "16px", "fontWeight": "500" }], "code-mono": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }] } } } };</script></head><body class="bg-background text-on-surface font-body-md antialiased min-h-screen selection:bg-primary-container selection:text-on-primary-container"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.4)]"><div class="flex flex-col h-full overflow-y-auto"><div class="px-space-lg pt-space-lg pb-space-md flex flex-col gap-space-sm"><div class="flex items-center gap-space-sm"><img alt="CampusFlow Logo" class="h-10 w-10 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5Ftth8AFc9VbTBEd-CxPML5XOJS4AK8eYOEb4_6yQSFz7GjLiEWXoWaR81DnpT0Q_n6RXdtOd7k0BTS0e_RIOBAXBsjEPHtwirI9R4KigOuXlUPJ1LEZy4gcawUihv776WcLwXUQF18el2m9VDCLphw6I9CfH5vGt3yhM0_uyv5zsDaHm2ZpdMDsf7AOUozyvU7Yqj96acSUPUD2-6r-Ya_HG8jT3s9zQU8UPRixM1gv2YASeUxIpEj6CYbBsSRYfCw"><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight leading-none">CampusFlow</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-none mt-1">OS for Student Organizations</span></div></div><div class="mt-space-sm p-space-sm bg-surface-container rounded-lg flex items-center justify-between shadow-[0_1px_4px_rgba(0,0,0,0.2)]"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Term</span><span class="font-body-sm text-body-sm text-on-surface font-medium">Fall / Spring 2026</span></div><span class="font-label-sm text-label-sm bg-tertiary-container text-on-tertiary-container px-space-sm py-0.5 rounded-full">Active Term</span></div></div><nav class="flex-1 px-space-md space-y-space-md" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-lg shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)]"><div class="space-y-1"><div class="px-space-sm py-1 font-label-sm text-label-sm uppercase tracking-wider text-outline">Overview</div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="executive-dashboard" href="#"><span class="material-symbols-outlined text-[18px]">dashboard</span><span class="font-body-sm text-body-sm">Executive Dashboard</span></a></div><div class="space-y-1"><div class="px-space-sm py-1 font-label-sm text-label-sm uppercase tracking-wider text-outline">Operations</div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="members-and-dues" href="#"><span class="material-symbols-outlined text-[18px]">badge</span><span class="font-body-sm text-body-sm">Members &amp; Dues</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="events-and-gala-tickets" href="#"><span class="material-symbols-outlined text-[18px]">confirmation_number</span><span class="font-body-sm text-body-sm">Events &amp; Gala Tickets</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="merch-and-hoodies" href="#"><span class="material-symbols-outlined text-[18px]">apparel</span><span class="font-body-sm text-body-sm">Merch &amp; Hoodies</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="fundraiser-and-tasks" href="#"><span class="material-symbols-outlined text-[18px]">volunteer_activism</span><span class="font-body-sm text-body-sm">Fundraiser &amp; Tasks</span></a></div><div class="space-y-1"><div class="px-space-sm py-1 font-label-sm text-label-sm uppercase tracking-wider text-outline">Governance</div><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="treasurer-ledger" href="#"><span class="material-symbols-outlined text-[18px]">account_balance_wallet</span><span class="font-body-sm text-body-sm">Treasurer Ledger</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="announcements-and-broadcasts" href="#"><span class="material-symbols-outlined text-[18px]">campaign</span><span class="font-body-sm text-body-sm">Announcements</span></a></div></nav><div class="p-space-md space-y-space-sm bg-surface-container-low"><div class="p-space-sm rounded-lg bg-surface-container flex items-center justify-between"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Club Treasury</span><span class="font-code-mono text-code-mono text-tertiary font-semibold">$8,420.00</span></div><span class="font-label-sm text-label-sm text-tertiary-fixed-dim bg-surface-container-high px-space-xs py-0.5 rounded">Available</span></div><a class="flex items-center justify-between px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="system-settings" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[18px]">settings</span><span class="font-body-sm text-body-sm">Settings &amp; Audit</span></div><span class="font-label-sm text-label-sm text-outline">v2.4</span></a></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface/85 backdrop-blur-xl z-40 flex items-center justify-between px-gutter-desktop shadow-[0_1px_8px_rgba(0,0,0,0.3)]"><div class="flex items-center gap-space-md flex-1 max-w-xl"><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span><input class="w-full h-[38px] pl-10 pr-4 bg-surface-container rounded-lg text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary-container transition-all" placeholder="Search members, receipts, tickets, SKU sizes..." type="text"></div></div><div class="flex items-center gap-space-md"><button aria-label="Toggle Theme" class="h-8 w-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><button aria-label="Notifications" class="relative h-8 w-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 w-4 h-4 bg-primary-container text-on-primary-container font-label-sm text-label-sm rounded-full flex items-center justify-center leading-none">3</span></button><div class="flex items-center gap-space-sm pl-space-sm bg-surface-container rounded-full py-1 pr-space-md"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBDomU7p-jpjULE3fFWUs4hizxvRkkQeqVyylx68GNNUianQpp81Ypq8nzP8zMSCQX_e1vERAlIawtqNBnjjJ1yVA90W69qzWybGuz0qWvPdd_psvYSnR3eizeGTCwVyvHAJXkpqj0w-p2VDGiefVdQcq4cqLnHwEKUp4uMXdd4de9JLbftZoKVk2NMANbqVPRz7c2v09JCduFYfHVXv62SGqYd2u5_5S6S1JVq1vlA6AhAOCnCVHe"><div class="flex flex-col text-left"><span class="font-label-md text-label-md text-on-surface leading-tight">Rahul Sharma</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-tight">VP / Co-Lead</span></div></div></div></header><main class="relative pt-16 w-full px-gutter-desktop min-h-screen bg-background"><div class="flex flex-col w-full pb-space-xl">
+<!-- Top Header Banner & Context Bar -->
+<div class="flex flex-col gap-space-sm pt-space-md mb-space-lg">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm tracking-wide">
+<span class="hover:text-on-surface transition-colors cursor-pointer">Operations</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="hover:text-on-surface transition-colors cursor-pointer">Fundraiser &amp; Tasks</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-medium">Spring Quad Bake Sale 2026</span>
+</div>
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md mt-space-xs">
+<div>
+<div class="flex items-center gap-space-sm">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Quad Bake Sale &amp; Volunteer Dispatch</h1>
+<span class="font-label-sm text-label-sm px-2.5 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container">Live Booth</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Real-time task delegation, shift signups, baking commitments &amp; live cashbox tracker for Spring 2026 club fundraiser.</p>
+</div>
+<div class="flex items-center flex-wrap gap-space-xs">
+<button class="h-[38px] px-3.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-space-xs shadow-sm transition-all active:scale-[0.98]" id="btn-export-pdf">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">download</span>
+<span class="">Run-Sheet (PDF)</span>
+</button>
+<button class="h-[38px] px-3.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-space-xs shadow-sm transition-all active:scale-[0.98]" id="btn-open-pos">
+<span class="material-symbols-outlined text-[18px] text-tertiary">point_of_sale</span>
+<span class="">Log Table Sale</span>
+</button>
+<button class="h-[38px] px-3.5 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center gap-space-xs shadow-sm transition-all active:scale-[0.98]" id="btn-signup-shift">
+<span class="material-symbols-outlined text-[18px] text-secondary">person_add</span>
+<span class="">Volunteer Shift</span>
+</button>
+<button class="h-[38px] px-4 rounded-lg bg-primary-container hover:brightness-110 text-on-primary-container font-label-md text-label-md flex items-center gap-space-xs shadow-md transition-all active:scale-[0.98]" id="btn-new-task">
+<span class="material-symbols-outlined text-[18px]">add_task</span>
+<span class="">Create Task</span>
+</button>
+</div>
+</div>
+</div>
+<!-- KPI Metric Summary Bar (4 Cards) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md mb-space-xl">
+<!-- Card 1: Fundraiser Target -->
+<div class="p-space-lg rounded-xl bg-surface-container shadow-md flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Target Revenue</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-display-lg text-display-lg text-on-surface font-headline-lg tracking-tight" id="kpi-current-rev">$780</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/ $1,200</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">savings</span>
+</div>
+</div>
+<div class="mt-space-md">
+<div class="flex items-center justify-between font-label-sm text-label-sm mb-1.5">
+<span class="text-primary font-medium">65% Reached</span>
+<span class="text-on-surface-variant font-code-mono text-code-mono">Ends in 2 days</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
+<div class="h-full rounded-full bg-primary-container transition-all duration-500" style="width: 65%;"></div>
+</div>
+</div>
+</div>
+<!-- Card 2: Volunteer Shift Coverage -->
+<div class="p-space-lg rounded-xl bg-surface-container shadow-md flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Volunteer Shifts</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-display-lg text-display-lg text-on-surface font-headline-lg tracking-tight">12</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/ 12 Locked</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/30 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[22px]">group_add</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center justify-between">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+          Fully Staffed
+        </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">7 Active Handlers</span>
+</div>
+</div>
+<!-- Card 3: Baked Goods Pledged -->
+<div class="p-space-lg rounded-xl bg-surface-container shadow-md flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Baked Goods Pledged</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-display-lg text-display-lg text-on-surface font-headline-lg tracking-tight">148</span>
+<span class="font-body-md text-body-md text-on-surface-variant">items promised</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[22px]">bakery_dining</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center gap-2 flex-wrap">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-code-mono">Brownies: 45</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-code-mono">Cookies: 60</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-code-mono">GF/Vegan: 43</span>
+</div>
+</div>
+<!-- Card 4: Cashbox Balance -->
+<div class="p-space-lg rounded-xl bg-surface-container shadow-md flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Verified Live Balance</span>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-display-lg text-display-lg text-tertiary font-headline-lg tracking-tight font-code-mono" id="kpi-verified-balance">$780.00</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined text-[22px]">payments</span>
+</div>
+</div>
+<div class="mt-space-md flex items-center justify-between text-on-surface-variant font-code-mono text-code-mono text-body-sm">
+<span class="">Cash: <strong class="text-on-surface" id="kpi-cash-total">$520.00</strong></span>
+<span class="text-outline">|</span>
+<span class="">Digital: <strong class="text-on-surface" id="kpi-digital-total">$260.00</strong></span>
+</div>
+</div>
+</div>
+<!-- Main 2-Column Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- Left Column: Tasks & Volunteer Schedule (65% -> 8 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-space-lg">
+<!-- Component A: Task & Supply Board -->
+<section class="bg-surface-container rounded-xl p-space-lg shadow-md flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-xs">
+<div>
+<div class="flex items-center gap-space-xs">
+<h2 class="font-headline-md text-headline-md text-on-surface">Task &amp; Supply Delegation</h2>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant">9 Total</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Everything needed for the booth: baking allotments, permits, floats, and materials.</p>
+</div>
+<!-- Category Filter Pills -->
+<div class="flex items-center gap-1.5 overflow-x-auto py-1" id="task-filter-container">
+<button class="task-filter-btn px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-primary-container text-on-primary-container transition-all" data-filter="all">All (6)</button>
+<button class="task-filter-btn px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all" data-filter="baking">Baking (2)</button>
+<button class="task-filter-btn px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all" data-filter="supplies">Supplies &amp; Permits (2)</button>
+<button class="task-filter-btn px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all" data-filter="logistics">Logistics (2)</button>
+</div>
+</div>
+<!-- Task Item List Cards -->
+<div class="flex flex-col gap-space-sm" id="task-items-container">
+<!-- Task 1: Permit -->
+<div class="task-card flex flex-col md:flex-row md:items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors gap-space-sm" data-category="supplies">
+<div class="flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-tertiary-container/30 text-tertiary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Campus Quad Table Permit &amp; Canopy setup</span>
+<div class="flex items-center gap-2 mt-1 flex-wrap font-body-sm text-body-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">person</span> Priya M.</span>
+<span class="text-outline">•</span>
+<span class="">Desk of Student Activities</span>
+<span class="text-outline">•</span>
+<span class="font-code-mono text-code-mono text-tertiary">Cost: $0.00</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 self-end md:self-center">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-tertiary-container text-on-tertiary-container font-semibold">Done &amp; Approved</span>
+<button class="h-8 w-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="View permit notes">
+<span class="material-symbols-outlined text-[18px]">notes</span>
+</button>
+</div>
+</div>
+<!-- Task 2: Supplies -->
+<div class="task-card flex flex-col md:flex-row md:items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors gap-space-sm" data-category="supplies">
+<div class="flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-secondary-container/20 text-secondary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">shopping_cart</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Procure biodegradable napkins, paper plates, tongs &amp; sanitizer</span>
+<div class="flex items-center gap-2 mt-1 flex-wrap font-body-sm text-body-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">person</span> Marcus V.</span>
+<span class="text-outline">•</span>
+<span class="font-code-mono text-code-mono text-secondary">Budget: $35.00</span>
+<span class="text-outline">•</span>
+<span class="text-on-surface">Receipt submitted</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 self-end md:self-center">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-surface-container-highest text-secondary font-semibold">In Progress</span>
+<button class="h-8 w-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="View receipt">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+</button>
+</div>
+</div>
+<!-- Task 3: Baking Cookies -->
+<div class="task-card flex flex-col md:flex-row md:items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors gap-space-sm" data-category="baking">
+<div class="flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-primary-container/20 text-primary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">cookie</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Bake 4 dozen Dark Choc Chip Cookies</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container-highest text-tertiary">Nut-Free Tagged</span>
+</div>
+<div class="flex items-center gap-2 mt-1 flex-wrap font-body-sm text-body-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">person</span> Elena R.</span>
+<span class="text-outline">•</span>
+<span class="">Dropoff: 9:30 AM Quad Table</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 self-end md:self-center">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-primary-container/30 text-primary font-semibold">Committed</span>
+<button class="h-8 w-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Confirm Dropoff">
+<span class="material-symbols-outlined text-[18px]">check_box_outline_blank</span>
+</button>
+</div>
+</div>
+<!-- Task 4: Baking Cupcakes -->
+<div class="task-card flex flex-col md:flex-row md:items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors gap-space-sm" data-category="baking">
+<div class="flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-primary-container/20 text-primary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">cake</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Bake 3 dozen Vegan Lemon Cupcakes</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container-highest text-secondary">Dairy-Free</span>
+</div>
+<div class="flex items-center gap-2 mt-1 flex-wrap font-body-sm text-body-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">person</span> Devon P.</span>
+<span class="text-outline">•</span>
+<span class="">Dropoff: 10:00 AM Quad Table</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 self-end md:self-center">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-primary-container/30 text-primary font-semibold">Committed</span>
+<button class="h-8 w-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Confirm Dropoff">
+<span class="material-symbols-outlined text-[18px]">check_box_outline_blank</span>
+</button>
+</div>
+</div>
+<!-- Task 5: Cash Float -->
+<div class="task-card flex flex-col md:flex-row md:items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors gap-space-sm" data-category="logistics">
+<div class="flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-secondary-container/20 text-secondary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">currency_exchange</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Pick up change box ($100 cash float: $5s &amp; $1s) from Treasurer</span>
+<div class="flex items-center gap-2 mt-1 flex-wrap font-body-sm text-body-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">person</span> Rahul Sharma</span>
+<span class="text-outline">•</span>
+<span class="">Student Union 304</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 self-end md:self-center">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-surface-container-highest text-secondary-fixed-dim font-semibold">Ready for Pickup</span>
+<button class="h-8 w-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Mark Handed Over">
+<span class="material-symbols-outlined text-[18px]">check_box_outline_blank</span>
+</button>
+</div>
+</div>
+<!-- Task 6: Marketing -->
+<div class="task-card flex flex-col md:flex-row md:items-center justify-between p-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors gap-space-sm" data-category="logistics">
+<div class="flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-tertiary-container/30 text-tertiary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">campaign</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Design Instagram Stories &amp; WhatsApp broadcast graphics</span>
+<div class="flex items-center gap-2 mt-1 flex-wrap font-body-sm text-body-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">person</span> Samantha N.</span>
+<span class="text-outline">•</span>
+<span class="">Figma + Linktree Link</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 self-end md:self-center">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-tertiary-container text-on-tertiary-container font-semibold">Completed</span>
+<button class="h-8 w-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="View creative link">
+<span class="material-symbols-outlined text-[18px]">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Component B: Volunteer Shift Schedule & Time Slots -->
+<section class="bg-surface-container rounded-xl p-space-lg shadow-md flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div>
+<div class="flex items-center gap-space-xs">
+<h2 class="font-headline-md text-headline-md text-on-surface">Table Shifts &amp; Booth Roster</h2>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-semibold">Quad Main Lawn</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Bake sale run hours: 10:00 AM – 4:00 PM. Tap any volunteer to trigger contact.</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1.5 font-label-sm text-label-sm text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+              Shift 1 in Progress
+            </span>
+</div>
+</div>
+<!-- Shift Grid Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Shift 1 -->
+<div class="flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Shift 1</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-semibold">Active Now</span>
+</div>
+<div class="font-code-mono text-code-mono text-secondary mb-space-sm">10:00 AM – 12:00 PM</div>
+<div class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-2">Setup &amp; Morning Rush</div>
+<div class="space-y-2 mb-space-md">
+<!-- Volunteer 1 -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-sm text-label-sm shrink-0">MV</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Marcus Vance</span>
+<span class="font-label-sm text-label-sm text-outline">Lead / Cashier</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">check</span> In
+                  </span>
+</div>
+<!-- Volunteer 2 -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-label-sm text-label-sm shrink-0">PR</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Priya Roy</span>
+<span class="font-label-sm text-label-sm text-outline">Restocker</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">check</span> In
+                  </span>
+</div>
+</div>
+</div>
+<button class="w-full h-8 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]">call</span>
+<span class="">Notify Table Station</span>
+</button>
+</div>
+<!-- Shift 2 -->
+<div class="flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Shift 2</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-semibold">Upcoming</span>
+</div>
+<div class="font-code-mono text-code-mono text-on-surface mb-space-sm">12:00 PM – 2:00 PM</div>
+<div class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-2">Lunch Peak Rush</div>
+<div class="space-y-2 mb-space-md">
+<!-- Volunteer 1 -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-sm text-label-sm shrink-0">JL</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Jordan Lee</span>
+<span class="font-label-sm text-label-sm text-outline">Lead / Square POS</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Confirmed</span>
+</div>
+<!-- Volunteer 2 -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-label-sm text-label-sm shrink-0">EK</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Elena Kostas</span>
+<span class="font-label-sm text-label-sm text-outline">Baked Restock</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Confirmed</span>
+</div>
+<!-- Volunteer 3 -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-label-sm text-label-sm shrink-0">AY</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Aaliyah Yousef</span>
+<span class="font-label-sm text-label-sm text-outline">Greeter / Samples</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Confirmed</span>
+</div>
+</div>
+</div>
+<button class="w-full h-8 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]">sms</span>
+<span class="">Send 15m Reminder</span>
+</button>
+</div>
+<!-- Shift 3 -->
+<div class="flex flex-col justify-between p-space-md rounded-xl bg-surface-container-low shadow-sm">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Shift 3</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-semibold">Afternoon</span>
+</div>
+<div class="font-code-mono text-code-mono text-on-surface mb-space-sm">2:00 PM – 4:00 PM</div>
+<div class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-2">Teardown &amp; Audit</div>
+<div class="space-y-2 mb-space-md">
+<!-- Volunteer 1 -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-label-sm text-label-sm shrink-0">DP</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Devon Patel</span>
+<span class="font-label-sm text-label-sm text-outline">Cashier / Tally</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Confirmed</span>
+</div>
+<!-- Volunteer 2 -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center font-label-sm text-label-sm shrink-0">KB</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate">Kofi Boateng</span>
+<span class="font-label-sm text-label-sm text-outline">Canopy Teardown</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Confirmed</span>
+</div>
+</div>
+</div>
+<button class="w-full h-8 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm flex items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]">how_to_reg</span>
+<span class="">Fast Check-In</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Visual Element: Bake Sale Quad Setup Graphic & Realtime Feed -->
+<section class="p-space-lg rounded-xl bg-surface-container shadow-md flex flex-col md:flex-row items-center gap-space-lg">
+<div class="w-full md:w-48 h-36 rounded-lg bg-surface-container-low overflow-hidden relative shrink-0">
+<img class="w-full h-full object-cover" data-alt="University campus sunlit quad table setup with decorative banner, clear display bakery trays, modern cashbox, students smiling in college apparel, shot in cinematic soft sunlight with high sharpness" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ0jVpW1OkdKo6g8j4rAauy5K29YhbfQy2w-pC1BWw0zk1wvIs6DD-vaHFsTtLZVHygdAd1Pe_Bw6R6vCcqQ_svuzFeiJEfRJmSIgmI6v1hB6YZyP7NSlXUmz7RtdI_P-_bKouaIYGFrdjt9TTJKnbHQFETn6jHAo1Itg06Z8dRMcxuJtJQ0YwvGJHW5pKkC3vVNAYuqpmQgiB9PDcWpBn6iG0YhKPt-1LIUeFVwlpe2BnrfgmFpgA">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 via-transparent to-transparent flex items-end p-2">
+<span class="font-label-sm text-label-sm text-on-surface font-code-mono">Station #2 North Lawn</span>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">Quad Operations Notice</span>
+<span class="font-code-mono text-code-mono text-tertiary text-label-sm">LIVE FEED OK</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Table banner, sanitizer dispenser, and square NFC reader verified active on site. Elena dropped off batch #1 at 9:28 AM. Surplus baked items will be donated to Campus Food Pantry per club charter.</p>
+<div class="flex items-center gap-space-md mt-2">
+<span class="font-label-sm text-label-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">battery_charging_full</span> POS Battery: 94%
+            </span>
+<span class="font-label-sm text-label-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">wifi</span> Eduroam Signal: Strong
+            </span>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Inventory POS & Reimbursements (35% -> 4 cols) -->
+<div class="lg:col-span-4 flex flex-col gap-space-lg">
+<!-- Component C: Baked Goods & Pricing Inventory + Live POS Counter -->
+<section class="bg-surface-container rounded-xl p-space-lg shadow-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<h2 class="font-headline-md text-headline-md text-on-surface">Baked Goods Live POS</h2>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-high text-tertiary font-code-mono">Instant Tap</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant -mt-2">Tap item button to rapidly log a physical cash sale and update remaining inventory.</p>
+<!-- Inventory List / Interactive POS Items -->
+<div class="flex flex-col gap-space-sm" id="pos-items-list">
+<!-- Item 1: Brownies -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface">Double Fudge Brownies</div>
+<div class="font-code-mono text-code-mono text-secondary text-body-sm">$3.00 ea</div>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-semibold" id="stock-brownie">2 Left! (38/40 sold)</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<button class="btn-pos-add flex-1 h-8 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-1 transition-all active:scale-[0.97]" data-item="Double Fudge Brownie" data-price="3.00">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span class="">+$3.00 (Cash)</span>
+</button>
+<button class="btn-pos-add h-8 px-3 rounded bg-surface-container-highest hover:bg-secondary-container hover:text-on-secondary-container text-on-surface font-label-md text-label-md flex items-center justify-center transition-all active:scale-[0.97]" data-digital="true" data-item="Double Fudge Brownie" data-price="3.00" title="Tap Digital (Square/Venmo)">
+<span class="material-symbols-outlined text-[16px]">qr_code_2</span>
+</button>
+</div>
+</div>
+<!-- Item 2: Choc Chip Cookies -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface">Choc Chip Cookies</div>
+<div class="font-code-mono text-code-mono text-secondary text-body-sm">$2.00 ea <span class="text-outline text-label-sm">(3 for $5.00)</span></div>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-semibold" id="stock-cookie">12 Left (48/60 sold)</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<button class="btn-pos-add flex-1 h-8 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-1 transition-all active:scale-[0.97]" data-item="Choc Chip Cookie (Single)" data-price="2.00">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span class="">+$2.00 (1x)</span>
+</button>
+<button class="btn-pos-add flex-1 h-8 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-1 transition-all active:scale-[0.97]" data-item="Choc Chip Cookies (Trio Bundle)" data-price="5.00">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span class="">+$5.00 (3x)</span>
+</button>
+</div>
+</div>
+<!-- Item 3: Vegan Blueberry Muffins -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface">Vegan Blueberry Muffins</div>
+<div class="font-code-mono text-code-mono text-secondary text-body-sm">$3.50 ea</div>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-semibold" id="stock-muffin">7 Left (18/25 sold)</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<button class="btn-pos-add flex-1 h-8 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-1 transition-all active:scale-[0.97]" data-item="Vegan Blueberry Muffin" data-price="3.50">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span class="">+$3.50 (Cash)</span>
+</button>
+<button class="btn-pos-add h-8 px-3 rounded bg-surface-container-highest hover:bg-secondary-container hover:text-on-secondary-container text-on-surface font-label-md text-label-md flex items-center justify-center transition-all active:scale-[0.97]" data-digital="true" data-item="Vegan Blueberry Muffin" data-price="3.50" title="Tap Digital">
+<span class="material-symbols-outlined text-[16px]">qr_code_2</span>
+</button>
+</div>
+</div>
+<!-- Item 4: Skyline Cake Pops -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface">CampusFlow Specialty Cake Pops</div>
+<div class="font-code-mono text-code-mono text-secondary text-body-sm">$2.50 ea</div>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-semibold" id="stock-cakepop">3 Left (22/25 sold)</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<button class="btn-pos-add flex-1 h-8 rounded bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface font-label-md text-label-md flex items-center justify-center gap-1 transition-all active:scale-[0.97]" data-item="CampusFlow Cake Pop" data-price="2.50">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span class="">+$2.50 (Cash)</span>
+</button>
+<button class="btn-pos-add h-8 px-3 rounded bg-surface-container-highest hover:bg-secondary-container hover:text-on-secondary-container text-on-surface font-label-md text-label-md flex items-center justify-center transition-all active:scale-[0.97]" data-digital="true" data-item="CampusFlow Cake Pop" data-price="2.50" title="Tap Digital">
+<span class="material-symbols-outlined text-[16px]">qr_code_2</span>
+</button>
+</div>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-highest/60 flex items-center justify-between text-body-sm text-on-surface-variant font-label-sm">
+<span class="">Last logged transaction:</span>
+<span class="font-code-mono text-on-surface" id="last-tx-label">2 min ago (+$5.00 Cash)</span>
+</div>
+</section>
+<!-- Component D: Expense & Reimbursement Tracker -->
+<section class="bg-surface-container rounded-xl p-space-lg shadow-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Out-of-Pocket Receipts</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Submitted volunteer disbursements.</p>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Total Claims</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-code-mono">$84.50</span>
+</div>
+</div>
+<div class="space-y-space-sm">
+<!-- Receipt 1 -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">Marcus V.</span>
+<span class="font-code-mono text-code-mono text-on-surface font-semibold">$28.50</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span class="">Paper plates, tongs, sanitizers</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container">Approved</span>
+</div>
+</div>
+<!-- Receipt 2 -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">Elena R.</span>
+<span class="font-code-mono text-code-mono text-on-surface font-semibold">$56.00</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span class="">Organic butter, flour &amp; cocoa</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary">Pending Signoff</span>
+</div>
+</div>
+</div>
+<!-- Explanatory note -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-[18px] text-outline shrink-0 mt-0.5">info</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Reimbursements auto-deducted from gross bake sale revenue before net treasury deposit. Net projected profit: <span class="text-tertiary font-code-mono font-medium">$695.50</span>.
+          </p>
+</div>
+<button class="w-full h-[38px] rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center justify-center gap-space-xs transition-colors">
+<span class="material-symbols-outlined text-[18px]">receipt</span>
+<span class="">Submit Supply Receipt</span>
+</button>
+</section>
+</div>
+</div>
+<!-- Interactive Feedback Toast / Status Banner (hidden by default) -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-space-sm px-space-md py-space-sm rounded-lg bg-surface-container-highest text-on-surface shadow-xl" id="status-toast">
+<span class="material-symbols-outlined text-[20px] text-tertiary" id="toast-icon">check_circle</span>
+<span class="font-label-md text-label-md" id="toast-message">Cash sale logged successfully!</span>
+</div>
+</div>
+<script>
+  (function () {
+    let cashTotal = 520.00;
+    let digitalTotal = 260.00;
+    let totalTarget = 1200.00;
+
+    function showToast(msg, icon = 'check_circle') {
+      const toast = document.getElementById('status-toast');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+      if (!toast) return;
+
+      toastMsg.textContent = msg;
+      toastIcon.textContent = icon;
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2600);
+    }
+
+    // POS Fast Sale Buttons
+    const posButtons = document.querySelectorAll('.btn-pos-add');
+    posButtons.forEach(btn => {
+      btn.addEventListener('click', function () {
+        const item = this.dataset.item;
+        const price = parseFloat(this.dataset.price || 0);
+        const isDigital = this.dataset.digital === 'true';
+
+        if (isDigital) {
+          digitalTotal += price;
+          document.getElementById('kpi-digital-total').textContent = '$' + digitalTotal.toFixed(2);
+        } else {
+          cashTotal += price;
+          document.getElementById('kpi-cash-total').textContent = '$' + cashTotal.toFixed(2);
+        }
+
+        const grandTotal = cashTotal + digitalTotal;
+        document.getElementById('kpi-current-rev').textContent = '$' + Math.round(grandTotal);
+        document.getElementById('kpi-verified-balance').textContent = '$' + grandTotal.toFixed(2);
+
+        const method = isDigital ? 'Digital/NFC' : 'Cash';
+        document.getElementById('last-tx-label').textContent = 'Just now (+$' + price.toFixed(2) + ' ' + method + ')';
+
+        showToast('Logged ' + item + ' (+$' + price.toFixed(2) + ' ' + method + ')');
+      });
+    });
+
+    // Task Filter Tabs
+    const filterButtons = document.querySelectorAll('.task-filter-btn');
+    const taskCards = document.querySelectorAll('.task-card');
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', function () {
+        const filter = this.dataset.filter;
+
+        filterButtons.forEach(b => {
+          b.classList.remove('bg-primary-container', 'text-on-primary-container');
+          b.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+        });
+
+        this.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+        this.classList.add('bg-primary-container', 'text-on-primary-container');
+
+        taskCards.forEach(card => {
+          if (filter === 'all' || card.dataset.category === filter) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Top action triggers
+    document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
+      showToast('Generating printable PDF run-sheet...', 'picture_as_pdf');
+    });
+
+    document.getElementById('btn-open-pos')?.addEventListener('click', () => {
+      document.getElementById('pos-items-list')?.scrollIntoView({ behavior: 'smooth' });
+      showToast('POS quick tally active', 'point_of_sale');
+    });
+
+    document.getElementById('btn-signup-shift')?.addEventListener('click', () => {
+      showToast('Volunteer slot registration dialog ready', 'person_add');
+    });
+
+    document.getElementById('btn-new-task')?.addEventListener('click', () => {
+      showToast('Create new delegation task opened', 'add_task');
+    });
+  })();
+</script></main></div>
+
+</body></html>

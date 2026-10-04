@@ -344,25 +344,26 @@ EVENT_MANAGER can manage only events they organize. TREASURER cannot list regist
 - **Method**: `POST`
 - **Path**: `/api/events/:eventId/registrations`
 - **Auth**: bearer token. The user id is taken from the token.
-- **201**: `data.registration`, `data.ticket` (free events, including `qrToken` and `qrDataUrl`), `data.payment` (`null` until an order is created)
+- **Body**: `{ "quantity"?: number }` (integer 1-10, default 1)
+- **201**: `data.registration` (includes `quantity`), `data.tickets` (free events: array of issued tickets, including `qrToken` and `qrDataUrl`), `data.ticket` (backward-compatible first ticket), `data.payment` (`null` until an order is created)
 - **401** `UNAUTHORIZED`
 - **404** `NOT_FOUND`: missing event, or a non-published event hidden from the caller
-- **400** `EVENT_NOT_OPEN` or `REGISTRATION_CLOSED`
+- **400** `EVENT_NOT_OPEN`, `REGISTRATION_CLOSED`, or `INVALID_QUANTITY`
 - **409** `ALREADY_REGISTERED` or `CAPACITY_REACHED`
 
 ### 6.3 Read registrations
 
-- `GET /api/registrations/me` — own rows, with event summary and ticket status. No QR token.
+- `GET /api/registrations/me` — own rows, with event summary and tickets array. No QR token.
 - `GET /api/registrations/:registrationId` — owner, or staff allowed to manage that event. Anyone else receives **404**, including when the row exists.
 - `GET /api/events/:eventId/registrations` — staff roster. Query `status` optional. Ticket tokens are omitted.
-- `POST /api/registrations/:registrationId/cancel` — owner or managing staff. Open payments are marked `FAILED`. A paid payment stays `PAID` until a refund webhook. The seat is released.
+- `POST /api/registrations/:registrationId/cancel` — owner or managing staff. Open payments are marked `FAILED`. A paid payment stays `PAID` until a refund webhook. All unused tickets for the registration are marked `CANCELLED` and `quantity` seats are released.
 
 ### 6.4 Payment order
 
 - **Method**: `POST`
 - **Path**: `/api/registrations/:registrationId/payment-order`
 - **Auth**: owner of the registration
-- **201**: new order. `data.payment` includes `razorpayOrderId`, `amountPaise`, `currency`, `status: CREATED`, and public `keyId`
+- **201**: new order. `data.payment` includes `razorpayOrderId`, `amountPaise` (total = unit price × quantity), `currency`, `status: CREATED`, and public `keyId`
 - **200**: an open order already exists (`data.alreadyExisted: true`)
 - **404**: missing registration or another user's registration
 - **409** `ALREADY_CONFIRMED` or `REGISTRATION_NOT_PAYABLE`
@@ -375,7 +376,7 @@ The key secret is never returned.
 - **Method**: `POST`
 - **Path**: `/api/payments/verify`
 - **Body**: `{ "razorpay_order_id", "razorpay_payment_id", "razorpay_signature" }`
-- **200**: signature valid, provider payment is `captured`, amount and currency match the stored order. Registration becomes `CONFIRMED` and one ticket is issued. Repeating the same request returns the same ticket.
+- **200**: signature valid, provider payment is `captured`, amount and currency match the stored order. Registration becomes `CONFIRMED` and exactly $N$ (`quantity`) unique tickets are issued. Repeating the same request idempotently returns the same tickets. Response contains `data.payment`, `data.registration`, `data.tickets` (array of all issued tickets with `qrToken` and `qrDataUrl`), and `data.ticket`.
 - **400** `INVALID_SIGNATURE`: state is not changed
 - **404**: unknown order, or the order belongs to someone else
 - **409** `PAYMENT_MISMATCH`, `PAYMENT_PENDING`, `PAYMENT_FAILED`, `PAYMENT_ALREADY_COMPLETED`
