@@ -535,7 +535,7 @@ export function AdminDashboard() {
                 </div>
 
                 <div className="mt-4 flex items-center gap-2">
-                  <Link to="/events" className="flex-1">
+                  <Link to={`/events/${flagshipEvent.id}/registrations`} className="flex-1">
                     <Button size="sm" variant="secondary" className="w-full h-8 text-xs bg-[#1c2b3c] hover:bg-[#273647]">
                       Manage Guestlist
                     </Button>

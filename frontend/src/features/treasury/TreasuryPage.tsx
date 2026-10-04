@@ -17,7 +17,6 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Plus,
-  Receipt,
 } from 'lucide-react';
 
 export function TreasuryPage() {
@@ -164,14 +163,6 @@ export function TreasuryPage() {
           >
             <Download className="w-3.5 h-3.5 mr-1.5" />
             Download Full Audit Report
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-8 text-xs bg-[#1c2b3c] hover:bg-[#273647] border border-[#273647] text-[#d4e4fa]"
-          >
-            <Receipt className="w-3.5 h-3.5 mr-1.5 text-[#7bd0ff]" />
-            Reconcile POS Batch
           </Button>
           <Button
             size="sm"
@@ -565,13 +556,12 @@ export function TreasuryPage() {
                 <th className="px-3 py-2.5">Payment Channel</th>
                 <th className="px-3 py-2.5">Amount (INR)</th>
                 <th className="px-3 py-2.5">Status</th>
-                <th className="px-3 py-2.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#273647]/40 light:divide-slate-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-xs text-[#8e8fa3]">
+                  <td colSpan={6} className="p-8 text-center text-xs text-[#8e8fa3]">
                     Loading financial ledger transactions...
                   </td>
                 </tr>
@@ -586,10 +576,10 @@ export function TreasuryPage() {
                       <p className="text-[10px] text-[#8e8fa3] truncate max-w-[160px]">{tx.description}</p>
                     </td>
                     <td className="px-3 py-2 text-[#d4e4fa] light:text-slate-800 font-medium">
-                      Campus Student Organization
+                      {tx.source || tx.description}
                     </td>
                     <td className="px-3 py-2 text-[#8e8fa3]">
-                      Direct Transfer
+                      {tx.category}
                     </td>
                     <td className="px-3 py-2 font-mono font-bold text-xs">
                       <span className={tx.type === 'INFLOW' ? 'text-[#4edea3]' : 'text-[#ffb4ab]'}>
@@ -598,19 +588,14 @@ export function TreasuryPage() {
                     </td>
                     <td className="px-3 py-2">
                       <span className="text-[10px] font-semibold text-[#4edea3] bg-[#006e4b]/20 px-2 py-0.5 rounded-full border border-[#006e4b]/40">
-                        Reconciled
+                        {tx.status || 'Recorded'}
                       </span>
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-[#7bd0ff]">
-                        View Audit
-                      </Button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-xs text-[#8e8fa3]">
+                  <td colSpan={6} className="p-8 text-center text-xs text-[#8e8fa3]">
                     No transactions recorded in the ledger yet. Use "Record Transaction" above.
                   </td>
                 </tr>

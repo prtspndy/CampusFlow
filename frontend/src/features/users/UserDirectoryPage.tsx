@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   Lock,
   Download,
-  Key,
   ShieldAlert,
   UserPlus,
   RefreshCw,
@@ -117,13 +116,27 @@ export function UserDirectoryPage() {
 
         {/* Action Toolbelt matching Stitch */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="secondary" className="h-8 text-xs bg-[#1c2b3c] hover:bg-[#273647] border border-[#273647] text-[#d4e4fa]">
-            <Key className="w-3.5 h-3.5 mr-1.5 text-[#fbbf24]" />
-            Revoke All Stats
-          </Button>
-          <Button size="sm" variant="secondary" className="h-8 text-xs bg-[#1c2b3c] hover:bg-[#273647] border border-[#273647] text-[#d4e4fa]">
+          <Button
+            size="sm"
+            variant="secondary"
+            className="h-8 text-xs bg-[#1c2b3c] hover:bg-[#273647] border border-[#273647] text-[#d4e4fa]"
+            onClick={() => {
+              const header = ['Name', 'Email', 'Role', 'Status'];
+              const rows = users.map((person) => [person.name, person.email, person.role, person.status]);
+              const csv = [header, ...rows]
+                .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                .join('\n');
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = 'campusflow-users.csv';
+              link.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
             <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export Audit (RFC-4180)
+            Export users
           </Button>
           <Button
             size="sm"
@@ -423,17 +436,6 @@ export function UserDirectoryPage() {
           </div>
 
           {/* Delegation Callout matching Stitch */}
-          <div className="p-4 rounded-xl bg-[#122131] border border-[#273647]/60 flex items-center justify-between gap-4 light:bg-white light:border-slate-200">
-            <div>
-              <h4 className="text-xs font-bold text-[#d4e4fa] light:text-slate-900">Need to delegate specific sub-scopes?</h4>
-              <p className="text-[11px] text-[#8e8fa3] mt-0.5">
-                Create time-bounded volunteer roles for upcoming bake sale check-in or hoodie distribution.
-              </p>
-            </div>
-            <Button size="sm" variant="secondary" className="h-8 text-xs shrink-0 bg-[#1c2b3c] border border-[#273647]">
-              Configure Scopes
-            </Button>
-          </div>
         </div>
 
         {/* Right Column: 4-Role Canonical Matrix & Security Feed matching Stitch */}

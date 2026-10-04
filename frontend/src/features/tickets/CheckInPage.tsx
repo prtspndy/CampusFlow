@@ -42,7 +42,7 @@ export function CheckInPage() {
   // Attendance log
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<'ALL' | 'MEMBERS' | 'GUESTS' | 'UNCHECKED'>('ALL');
+  const [filterCategory, setFilterCategory] = useState<'ALL' | 'MEMBER' | 'STANDARD'>('ALL');
 
   // Load staff managed events
   useEffect(() => {
@@ -405,9 +405,6 @@ export function CheckInPage() {
               Automatic ID verification rules applied upon student single sign-on checkout.
             </p>
           </div>
-          <Button size="sm" variant="secondary" className="h-7 text-xs bg-[#1c2b3c] border border-[#273647]">
-            + Add Sub-Tier
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -486,7 +483,7 @@ export function CheckInPage() {
               Ticket Holders & Attendee Ledger
             </h3>
             <p className="text-[11px] text-[#8e8fa3] light:text-slate-500">
-              Real-time sync with stripe checkout and student verification registry.
+              People already checked in for the selected event.
             </p>
           </div>
 
@@ -503,25 +500,54 @@ export function CheckInPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setFilterCategory('MEMBERS')}
+                onClick={() => setFilterCategory('MEMBER')}
                 className={`px-2.5 py-0.5 rounded font-semibold text-[11px] ${
-                  filterCategory === 'MEMBERS' ? 'bg-[#0047FF] text-white' : 'text-[#8e8fa3]'
+                  filterCategory === 'MEMBER' ? 'bg-[#0047FF] text-white' : 'text-[#8e8fa3]'
                 }`}
               >
-                Checked In
+                Members
               </button>
               <button
                 type="button"
-                onClick={() => setFilterCategory('UNCHECKED')}
+                onClick={() => setFilterCategory('STANDARD')}
                 className={`px-2.5 py-0.5 rounded font-semibold text-[11px] ${
-                  filterCategory === 'UNCHECKED' ? 'bg-[#0047FF] text-white' : 'text-[#8e8fa3]'
+                  filterCategory === 'STANDARD' ? 'bg-[#0047FF] text-white' : 'text-[#8e8fa3]'
                 }`}
               >
-                Pending
+                Standard
               </button>
             </div>
 
-            <Button size="sm" variant="secondary" className="h-8 text-xs bg-[#1c2b3c] border border-[#273647]">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-8 text-xs bg-[#1c2b3c] border border-[#273647]"
+              onClick={() => {
+                const rows = attendance.filter((rec) => {
+                  if (filterCategory === 'ALL') return true;
+                  return rec.ticket?.tier === filterCategory;
+                });
+                const header = ['Name', 'Email', 'Tier', 'Checked in'];
+                const csv = [
+                  header,
+                  ...rows.map((rec) => [
+                    rec.ticket?.user?.name || '',
+                    rec.ticket?.user?.email || '',
+                    rec.ticket?.tier || '',
+                    rec.checkedInAt,
+                  ]),
+                ]
+                  .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                  .join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'campusflow-checkins.csv';
+                link.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
               <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
             </Button>
           </div>
@@ -534,20 +560,20 @@ export function CheckInPage() {
                 <th className="px-4 py-2.5">Order ID & QR</th>
                 <th className="px-3 py-2.5">Attendee Name & Contact</th>
                 <th className="px-3 py-2.5">Ticket Tier</th>
-                <th className="px-3 py-2.5">Payment Method</th>
                 <th className="px-3 py-2.5">Check-In Status</th>
-                <th className="px-3 py-2.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#273647]/40 light:divide-slate-200">
               {attendanceLoading ? (
                 <tr>
-                  <td colSpan={6} className="p-6 text-center text-xs text-[#8e8fa3]">
+                  <td colSpan={4} className="p-6 text-center text-xs text-[#8e8fa3]">
                     Loading attendee check-in records...
                   </td>
                 </tr>
-              ) : attendance.length > 0 ? (
-                attendance.map((rec) => (
+              ) : attendance.filter((rec) => filterCategory === 'ALL' || rec.ticket?.tier === filterCategory).length > 0 ? (
+                attendance
+                  .filter((rec) => filterCategory === 'ALL' || rec.ticket?.tier === filterCategory)
+                  .map((rec) => (
                   <tr key={rec.id} className="h-12 hover:bg-[#1c2b3c]/50 transition-colors">
                     <td className="px-4 py-2 font-mono text-[#7bd0ff]">
                       #{rec.ticket?.qrToken?.slice(0, 6).toUpperCase() || rec.ticketId?.slice(0, 6).toUpperCase() || 'TK-019'}
@@ -568,24 +594,16 @@ export function CheckInPage() {
                         {rec.ticket?.tier ? `${rec.ticket.tier} Tier` : 'Standard Pass'}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-[#8e8fa3] text-[11px]">
-                      Stripe Card Paid
-                    </td>
                     <td className="px-3 py-2">
                       <span className="text-[10px] font-semibold text-[#4edea3] bg-[#006e4b]/20 px-2 py-0.5 rounded-full border border-[#006e4b]/40">
                         Checked-in {formatDateTime(rec.checkedInAt)}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right">
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-[#7bd0ff]">
-                        View Receipt
-                      </Button>
-                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-xs text-[#8e8fa3]">
+                  <td colSpan={4} className="p-8 text-center text-xs text-[#8e8fa3]">
                     No attendees have checked in yet for this event. Enter or scan a ticket verification token above.
                   </td>
                 </tr>
