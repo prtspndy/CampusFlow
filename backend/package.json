@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:postgres": "vitest run --config vitest.postgres.config.ts",
     "test:watch": "vitest",
+    "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",

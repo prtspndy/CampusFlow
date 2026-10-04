@@ -19,15 +19,15 @@ export const createEventSchema = z
       .trim()
       .min(2, 'Venue must be at least 2 characters')
       .max(200, 'Venue must be at most 200 characters'),
-    category: z.string().trim().min(2).max(50).optional(),
-    imageUrl: z.string().url('Invalid image URL format').optional(),
+    category: z.string().trim().min(2).max(50).nullable().optional(),
+    imageUrl: z.string().url('Invalid image URL format').nullable().optional(),
     startsAt: isoDateTimeSchema,
     endsAt: isoDateTimeSchema,
     memberPrice: z.coerce.number().int().min(0, 'memberPrice cannot be negative').default(0),
     standardPrice: z.coerce.number().int().min(0, 'standardPrice cannot be negative').default(0),
     price: z.coerce.number().int().min(0).optional(),
-    totalCapacity: z.coerce.number().int().min(1, 'totalCapacity must be at least 1').optional(),
-    capacity: z.coerce.number().int().min(1).optional(),
+    totalCapacity: z.coerce.number().int().min(1, 'totalCapacity must be at least 1').nullable().optional(),
+    capacity: z.coerce.number().int().min(1).nullable().optional(),
     status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
     isFeatured: z.boolean().default(false),
   })
@@ -39,7 +39,7 @@ export const createEventSchema = z
   .transform((data) => ({
     ...data,
     standardPrice: data.standardPrice || (data.price ?? 0),
-    totalCapacity: data.totalCapacity || data.capacity,
+    totalCapacity: data.totalCapacity !== undefined ? data.totalCapacity : (data.capacity ?? null),
   }));
 
 export const updateEventSchema = z

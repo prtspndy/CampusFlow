@@ -25,8 +25,18 @@ export function parseApiError(error: unknown): ApiError {
     const data = error.response?.data as ApiResponse | undefined;
 
     if (data?.error) {
+      let message = data.error.message || 'An error occurred';
+      if (data.error.details && Array.isArray(data.error.details) && data.error.details.length > 0) {
+        const detailMsgs = data.error.details
+          .map((d: { field?: string; message: string }) => (d.field ? `${d.field}: ${d.message}` : d.message))
+          .filter(Boolean);
+        if (detailMsgs.length > 0) {
+          message = `${message} — ${detailMsgs.join('; ')}`;
+        }
+      }
+
       return new ApiError(
-        data.error.message || 'An error occurred',
+        message,
         data.error.code || 'API_ERROR',
         status,
         data.error.details,
