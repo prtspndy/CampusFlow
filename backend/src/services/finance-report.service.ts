@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { membershipCollectedAmount } from './membership.service.js';
 import type { ListLedgerQuery } from '../validators/finance.validators.js';
 import {
   ContributionStatus,
@@ -19,6 +20,7 @@ export async function getFinanceSummary() {
     merchOrdersAgg,
     expensesByCategoryRows,
     contributionsByFundraiserRows,
+    membershipRows,
   ] = await Promise.all([
     prisma.expense.aggregate({
       where: { status: ExpenseStatus.APPROVED },
@@ -72,6 +74,7 @@ export async function getFinanceSummary() {
       _sum: { amount: true },
       _count: { id: true },
     }),
+    prisma.membership.findMany(),
   ]);
 
   const totalApprovedExpenses = approvedExpensesAgg._sum.amount ?? 0;
@@ -84,9 +87,16 @@ export async function getFinanceSummary() {
   const totalVerifiedFundraiserContributions = verifiedFundraiserAgg._sum.amount ?? 0;
   const totalTicketRevenue = Math.round((ticketPaymentsAgg._sum.amountPaise ?? 0) / 100);
   const totalMerchRevenue = merchOrdersAgg._sum.totalAmount ?? 0;
+  const totalMembershipRevenue = membershipRows.reduce(
+    (sum, membership) => sum + membershipCollectedAmount(membership),
+    0,
+  );
 
   const totalInflows =
-    totalVerifiedFundraiserContributions + totalTicketRevenue + totalMerchRevenue;
+    totalVerifiedFundraiserContributions +
+    totalTicketRevenue +
+    totalMerchRevenue +
+    totalMembershipRevenue;
   const totalOutflows = totalSettledReimbursements;
   const netTreasuryBalance = totalInflows - totalOutflows;
 
@@ -121,6 +131,7 @@ export async function getFinanceSummary() {
     totalVerifiedFundraiserContributions,
     totalTicketRevenue,
     totalMerchRevenue,
+    totalMembershipRevenue,
     totalInflows,
     totalOutflows,
     netTreasuryBalance,
@@ -144,7 +155,7 @@ export async function getLedgerTransactions(query: ListLedgerQuery) {
   const limit = query.limit ?? 20;
 
   // Gather records from sources
-  const [contributions, reimbursements, ticketPayments, merchOrders] = await Promise.all([
+  const [contributions, reimbursements, ticketPayments, merchOrders, membershipRows] = await Promise.all([
     prisma.fundraiserContribution.findMany({
       where: { status: ContributionStatus.VERIFIED },
       orderBy: { createdAt: 'desc' },
@@ -168,6 +179,7 @@ export async function getLedgerTransactions(query: ListLedgerQuery) {
       orderBy: { createdAt: 'desc' },
       take: 100,
     }),
+    prisma.membership.findMany(),
   ]);
 
   const items: LedgerItem[] = [];
@@ -217,6 +229,21 @@ export async function getLedgerTransactions(query: ListLedgerQuery) {
       amount: o.totalAmount,
       status: 'COMPLETED',
       source: 'Merch Store',
+    });
+  }
+
+  for (const membership of membershipRows) {
+    const amount = membershipCollectedAmount(membership);
+    if (amount <= 0) continue;
+    const code = 'memberCode' in membership && membership.memberCode ? membership.memberCode : membership.id;
+    items.push({
+      id: `membership-${membership.id}`,
+      date: membership.createdAt.toISOString().slice(0, 10),
+      description: `Membership dues: ${membership.planName} (${code})`,
+      category: 'MEMBERSHIP',
+      amount,
+      status: 'COMPLETED',
+      source: 'Memberships',
     });
   }
 

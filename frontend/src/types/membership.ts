@@ -12,6 +12,9 @@ export interface Membership {
   startDate: string;
   validUntil: string;
   renewalCount: number;
+  feeAmount?: number;
+  amountCollected?: number;
+  paymentStatus?: 'PAID' | 'UNPAID';
   perks: string[];
   adminNotes?: string | null;
   createdAt: string;

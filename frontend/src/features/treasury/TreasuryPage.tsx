@@ -48,6 +48,9 @@ export function TreasuryPage() {
   const ticketRevenue = summary ? (summary.inflow?.eventRegistrations ?? summary.totalTicketRevenue ?? 0) : 0;
   const fundraiserRevenue = summary ? (summary.inflow?.fundraisers ?? summary.totalVerifiedFundraiserContributions ?? 0) : 0;
   const merchRevenue = summary?.totalMerchRevenue ?? 0;
+  const membershipRevenue = summary
+    ? (summary.inflow?.memberships ?? summary.totalMembershipRevenue ?? 0)
+    : 0;
   const settledReimbursements = summary ? (summary.outflow?.settledReimbursements ?? summary.totalSettledReimbursements ?? 0) : 0;
   const approvedExpenses = summary?.totalApprovedExpenses ?? 0;
   const pendingLiabilities = summary ? (summary.pendingLiabilities?.totalPending ?? summary.outstandingReimbursementObligations ?? 0) : 0;
@@ -56,7 +59,8 @@ export function TreasuryPage() {
 
   const ticketPct = totalInflow > 0 ? Math.round((ticketRevenue / totalInflow) * 100) : 0;
   const fundraiserPct = totalInflow > 0 ? Math.round((fundraiserRevenue / totalInflow) * 100) : 0;
-  const merchPct = totalInflow > 0 ? Math.max(0, 100 - ticketPct - fundraiserPct) : 0;
+  const membershipPct = totalInflow > 0 ? Math.round((membershipRevenue / totalInflow) * 100) : 0;
+  const merchPct = totalInflow > 0 ? Math.round((merchRevenue / totalInflow) * 100) : 0;
 
   const settledPct = totalOutflow > 0 ? Math.round((settledReimbursements / totalOutflow) * 100) : 0;
   const approvedPct = totalOutflow > 0 ? Math.max(0, 100 - settledPct) : 0;
@@ -228,6 +232,12 @@ export function TreasuryPage() {
               </span>
             </div>
             <div className="flex justify-between">
+              <span>Membership dues</span>
+              <span className="font-mono text-[#d4e4fa] light:text-slate-900">
+                {summary ? formatINR(membershipRevenue) : '—'}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span>Fundraisers & Merchandise</span>
               <span className="font-mono text-[#d4e4fa] light:text-slate-900">
                 {summary ? formatINR(fundraiserRevenue + merchRevenue) : '—'}
@@ -348,11 +358,13 @@ export function TreasuryPage() {
               <>
                 <div className="w-full h-3 rounded-full bg-[#1c2b3c] overflow-hidden flex">
                   <div className="bg-[#4edea3] h-full" style={{ width: `${ticketPct}%` }} title={`Tickets: ${formatINR(ticketRevenue)}`} />
+                  <div className="bg-[#fbbf24] h-full" style={{ width: `${membershipPct}%` }} title={`Membership dues: ${formatINR(membershipRevenue)}`} />
                   <div className="bg-[#7bd0ff] h-full" style={{ width: `${fundraiserPct}%` }} title={`Fundraisers: ${formatINR(fundraiserRevenue)}`} />
                   <div className="bg-[#b9c3ff] h-full" style={{ width: `${merchPct}%` }} title={`Merchandise: ${formatINR(merchRevenue)}`} />
                 </div>
-                <div className="flex justify-between text-[9px] text-[#8e8fa3] pt-0.5">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-[#8e8fa3] pt-0.5">
                   <span>• Tickets: {formatINR(ticketRevenue)} ({ticketPct}%)</span>
+                  <span>• Dues: {formatINR(membershipRevenue)} ({membershipPct}%)</span>
                   <span>• Fundraisers: {formatINR(fundraiserRevenue)} ({fundraiserPct}%)</span>
                   <span>• Merch: {formatINR(merchRevenue)} ({merchPct}%)</span>
                 </div>

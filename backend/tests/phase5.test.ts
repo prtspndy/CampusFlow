@@ -782,6 +782,45 @@ describe('Phase 5 — Volunteers, Fundraisers, Expenses, Reimbursements & Financ
       expect(exportRes.text).toContain('Equipment Fundraiser');
     });
 
+    it('counts activated membership dues in treasury inflows and the ledger', async () => {
+      const admin = await createAccount('admin_dues@campus.edu', 'ADMIN');
+      const member = await createAccount('member_dues@campus.edu', 'MEMBER');
+      const treasurer = await createAccount('treasurer_dues@campus.edu', 'TREASURER');
+
+      const pending = await request(app)
+        .post('/api/memberships')
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ planName: 'annual' });
+      expect(pending.status).toBe(201);
+      expect(pending.body.data.paymentStatus).toBe('UNPAID');
+      expect(pending.body.data.feeAmount).toBe(25);
+
+      const activated = await request(app)
+        .patch(`/api/memberships/${pending.body.data.id}/status`)
+        .set('Authorization', `Bearer ${admin.token}`)
+        .send({ status: 'ACTIVE' });
+      expect(activated.status).toBe(200);
+      expect(activated.body.data.paymentStatus).toBe('PAID');
+      expect(activated.body.data.amountCollected).toBe(25);
+
+      const summary = await request(app)
+        .get('/api/finance/summary')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(summary.status).toBe(200);
+      expect(summary.body.data.totalMembershipRevenue).toBe(25);
+      expect(summary.body.data.totalInflows).toBe(25);
+
+      const ledger = await request(app)
+        .get('/api/finance/ledger')
+        .set('Authorization', `Bearer ${treasurer.token}`);
+      expect(ledger.status).toBe(200);
+      expect(
+        ledger.body.data.transactions.some(
+          (tx: { category: string; amount: number }) => tx.category === 'MEMBERSHIP' && tx.amount === 25,
+        ),
+      ).toBe(true);
+    });
+
     it('blocks ordinary members from finance dashboard and export endpoints', async () => {
       const member = await createAccount('member_blocked@campus.edu', 'MEMBER');
 
