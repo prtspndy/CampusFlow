@@ -216,30 +216,30 @@ export function VolunteersPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#273647]/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#273647]/60 light:border-slate-200">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-xs text-[#b9c3ff] font-semibold tracking-wider uppercase">
+            <span className="font-mono text-xs text-[#b9c3ff] light:text-indigo-600 font-semibold tracking-wider uppercase">
               Operations • Volunteer Hub
             </span>
           </div>
-          <h1 className="text-2xl font-headline font-bold text-[#d4e4fa] flex items-center gap-2">
-            <HeartHandshake className="w-6 h-6 text-[#b9c3ff]" />
+          <h1 className="text-2xl font-headline font-bold text-[#d4e4fa] light:text-slate-900 flex items-center gap-2">
+            <HeartHandshake className="w-6 h-6 text-[#b9c3ff] light:text-indigo-600" />
             Volunteer Opportunities & Service
           </h1>
-          <p className="text-xs text-[#c4c5da] mt-0.5">
+          <p className="text-xs text-[#c4c5da] light:text-slate-600 mt-0.5">
             Support student activities, manage festival logistics, and log verified community hours
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-[#273647] p-0.5 bg-[#010f1f] text-xs">
+          <div className="flex rounded-lg border border-[#273647] light:border-slate-200 p-0.5 bg-[#010f1f] light:bg-white text-xs">
             <button
               onClick={() => setActiveTab('catalog')}
               className={`px-3 py-1.5 rounded font-medium transition-colors ${
                 activeTab === 'catalog'
                   ? 'bg-[#0047ff] text-white shadow-sm'
-                  : 'text-[#8e8fa3] hover:text-[#d4e4fa]'
+                  : 'text-[#8e8fa3] light:text-slate-500 hover:text-[#d4e4fa] light:hover:text-slate-900'
               }`}
             >
               Available Shifts
@@ -249,7 +249,7 @@ export function VolunteersPage() {
               className={`px-3 py-1.5 rounded font-medium transition-colors ${
                 activeTab === 'my'
                   ? 'bg-[#0047ff] text-white shadow-sm'
-                  : 'text-[#8e8fa3] hover:text-[#d4e4fa]'
+                  : 'text-[#8e8fa3] light:text-slate-500 hover:text-[#d4e4fa] light:hover:text-slate-900'
               }`}
             >
               My Shifts
@@ -260,7 +260,7 @@ export function VolunteersPage() {
                 className={`px-3 py-1.5 rounded font-medium transition-colors ${
                   activeTab === 'manage'
                     ? 'bg-[#0047ff] text-white shadow-sm'
-                    : 'text-[#8e8fa3] hover:text-[#d4e4fa]'
+                    : 'text-[#8e8fa3] light:text-slate-500 hover:text-[#d4e4fa] light:hover:text-slate-900'
                 }`}
               >
                 Staff Management
@@ -318,7 +318,7 @@ export function VolunteersPage() {
               {opportunities.map((opp) => {
                 const isFull = opp.registeredCount >= opp.capacity;
                 return (
-                  <Card key={opp.id} className="flex flex-col justify-between overflow-hidden bg-[#122131] border border-[#273647]/60">
+                  <Card key={opp.id} className="flex flex-col justify-between overflow-hidden bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200">
                     <div className="p-5 space-y-3">
                       <div className="flex items-center justify-between">
                         {opp.category && (
@@ -329,17 +329,17 @@ export function VolunteersPage() {
                         <Badge status={opp.status} />
                       </div>
 
-                      <h3 className="font-headline font-bold text-base text-[#d4e4fa]">
+                      <h3 className="font-headline font-bold text-base text-[#d4e4fa] light:text-slate-900">
                         {opp.title}
                       </h3>
 
-                      <p className="text-xs text-[#c4c5da] line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-[#c4c5da] light:text-slate-600 line-clamp-2 leading-relaxed">
                         {opp.description}
                       </p>
 
-                      <div className="space-y-1.5 pt-2 border-t border-[#273647]/40 text-xs text-[#8e8fa3]">
+                      <div className="space-y-1.5 pt-2 border-t border-[#273647]/40 light:border-slate-200 text-xs text-[#8e8fa3] light:text-slate-500">
                         <div className="flex items-center gap-2">
-                          <Clock className="w-3.5 h-3.5 text-[#b9c3ff] shrink-0" />
+                          <Clock className="w-3.5 h-3.5 text-[#b9c3ff] light:text-indigo-600 shrink-0" />
                           <span>{formatDateTime(opp.startsAt)}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -348,19 +348,19 @@ export function VolunteersPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Users className="w-3.5 h-3.5 text-[#4edea3] shrink-0" />
-                          <span className="font-mono text-[#d4e4fa]">
+                          <span className="font-mono text-[#d4e4fa] light:text-slate-900">
                             {opp.registeredCount} / {opp.capacity} volunteers signed up
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="px-5 py-3.5 border-t border-[#273647]/60 bg-[#010f1f]/50 flex items-center justify-between gap-2">
+                    <div className="px-5 py-3.5 border-t border-[#273647]/60 light:border-slate-200 bg-[#010f1f] light:bg-white/50 flex items-center justify-between gap-2">
                       {isStaff ? (
                         <div className="flex items-center gap-2 w-full justify-between">
                           <button
                             type="button"
-                            className="h-8 px-3 rounded-lg bg-[#1c2b3c] hover:bg-[#273647] text-[#d4e4fa] text-xs flex-1 flex items-center justify-center gap-1 transition-colors"
+                            className="h-8 px-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 hover:bg-[#273647] light:hover:bg-slate-200 text-[#d4e4fa] light:text-slate-900 text-xs flex-1 flex items-center justify-center gap-1 transition-colors"
                             onClick={() => handleOpenRoster(opp)}
                           >
                             <Users className="w-3.5 h-3.5 mr-1" />
@@ -400,7 +400,7 @@ export function VolunteersPage() {
 
       {/* MY SIGNUPS TAB */}
       {activeTab === 'my' && (
-        <Card className="bg-[#122131] border border-[#273647]/60">
+        <Card className="bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200">
           <CardHeader>
             <CardTitle>My Volunteer Commitments ({mySignups.length})</CardTitle>
           </CardHeader>
@@ -434,7 +434,7 @@ export function VolunteersPage() {
                   {mySignups.map((s) => (
                     <TableRow key={s.id}>
                       <TableCell>
-                        <span className="font-semibold text-[#d4e4fa]">
+                        <span className="font-semibold text-[#d4e4fa] light:text-slate-900">
                           {s.opportunity?.title || 'Volunteer Role'}
                         </span>
                       </TableCell>
@@ -474,7 +474,7 @@ export function VolunteersPage() {
         >
           <form onSubmit={handleConfirmSignup} className="space-y-4 pt-2">
             <div>
-              <label className="block text-xs font-semibold text-[#c4c5da] mb-1.5">
+              <label className="block text-xs font-semibold text-[#c4c5da] light:text-slate-600 mb-1.5">
                 Volunteer Notes (Optional)
               </label>
               <textarea
@@ -482,15 +482,15 @@ export function VolunteersPage() {
                 placeholder="Mention past experience, preferred station, or dietary restrictions..."
                 value={signupNotes}
                 onChange={(e) => setSignupNotes(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-lg bg-[#1c2b3c] text-[#d4e4fa] border border-[#273647] focus:outline-none focus:ring-1 focus:ring-[#0047ff]"
+                className="w-full px-3 py-2 text-xs rounded-lg bg-[#1c2b3c] light:bg-slate-100 text-[#d4e4fa] light:text-slate-900 border border-[#273647] light:border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#0047ff]"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#273647]/60">
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#273647]/60 light:border-slate-200">
               <button
                 type="button"
                 onClick={() => setSignupTarget(null)}
-                className="px-3 py-1.5 rounded-lg bg-[#1c2b3c] text-xs text-[#c4c5da]"
+                className="px-3 py-1.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 text-xs text-[#c4c5da] light:text-slate-600"
               >
                 Cancel
               </button>
@@ -529,7 +529,7 @@ export function VolunteersPage() {
         >
           <form onSubmit={handleCreateOpportunity} className="space-y-4 pt-2">
             <div>
-              <label className="block text-xs font-semibold text-[#c4c5da] mb-1">
+              <label className="block text-xs font-semibold text-[#c4c5da] light:text-slate-600 mb-1">
                 Opportunity Title
               </label>
               <input
@@ -537,12 +537,12 @@ export function VolunteersPage() {
                 placeholder="e.g. Stage Setup & Artist Hospitality"
                 value={oppTitle}
                 onChange={(e) => setOppTitle(e.target.value)}
-                className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa]"
+                className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#c4c5da] mb-1">
+              <label className="block text-xs font-semibold text-[#c4c5da] light:text-slate-600 mb-1">
                 Description
               </label>
               <textarea
@@ -551,34 +551,34 @@ export function VolunteersPage() {
                 placeholder="Key volunteer duties, reporting instructions, dress requirements..."
                 value={oppDesc}
                 onChange={(e) => setOppDesc(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-lg bg-[#1c2b3c] text-[#d4e4fa] border border-[#273647] focus:outline-none focus:ring-1 focus:ring-[#0047ff]"
+                className="w-full px-3 py-2 text-xs rounded-lg bg-[#1c2b3c] light:bg-slate-100 text-[#d4e4fa] light:text-slate-900 border border-[#273647] light:border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#0047ff]"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-[#c4c5da] mb-1">Location</label>
+                <label className="block text-xs font-semibold text-[#c4c5da] light:text-slate-600 mb-1">Location</label>
                 <input
                   required
                   placeholder="e.g. Backstage Gate 2"
                   value={oppLoc}
                   onChange={(e) => setOppLoc(e.target.value)}
-                  className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa]"
+                  className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#c4c5da] mb-1">Category</label>
+                <label className="block text-xs font-semibold text-[#c4c5da] light:text-slate-600 mb-1">Category</label>
                 <input
                   value={oppCategory}
                   onChange={(e) => setOppCategory(e.target.value)}
-                  className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa]"
+                  className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-[#c4c5da] mb-1">
+                <label className="block text-xs font-semibold text-[#c4c5da] light:text-slate-600 mb-1">
                   Shift Starts
                 </label>
                 <input
@@ -586,11 +586,11 @@ export function VolunteersPage() {
                   required
                   value={oppStartsAt}
                   onChange={(e) => setOppStartsAt(e.target.value)}
-                  className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa]"
+                  className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#c4c5da] mb-1">
+                <label className="block text-xs font-semibold text-[#c4c5da] light:text-slate-600 mb-1">
                   Shift Ends
                 </label>
                 <input
@@ -598,13 +598,13 @@ export function VolunteersPage() {
                   required
                   value={oppEndsAt}
                   onChange={(e) => setOppEndsAt(e.target.value)}
-                  className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa]"
+                  className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-[#c4c5da] mb-1">
+              <label className="block text-xs font-semibold text-[#c4c5da] light:text-slate-600 mb-1">
                 Volunteer Capacity
               </label>
               <input
@@ -613,15 +613,15 @@ export function VolunteersPage() {
                 required
                 value={oppCapacity}
                 onChange={(e) => setOppCapacity(Number(e.target.value))}
-                className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa] font-mono"
+                className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900 font-mono"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-[#273647]/60">
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#273647]/60 light:border-slate-200">
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
-                className="px-3 py-1.5 rounded-lg bg-[#1c2b3c] text-xs text-[#c4c5da]"
+                className="px-3 py-1.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 text-xs text-[#c4c5da] light:text-slate-600"
               >
                 Cancel
               </button>
@@ -654,7 +654,7 @@ export function VolunteersPage() {
                 ))}
               </div>
             ) : participants.length === 0 ? (
-              <div className="text-center py-6 text-xs text-[#8e8fa3]">
+              <div className="text-center py-6 text-xs text-[#8e8fa3] light:text-slate-500">
                 No volunteers have signed up for this shift yet.
               </div>
             ) : (
@@ -669,7 +669,7 @@ export function VolunteersPage() {
                   {participants.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell>
-                        <span className="font-semibold text-[#d4e4fa]">
+                        <span className="font-semibold text-[#d4e4fa] light:text-slate-900">
                           {p.user?.name || 'Student'}
                         </span>
                       </TableCell>
@@ -704,7 +704,7 @@ export function VolunteersPage() {
             <div className="flex justify-end pt-2">
               <button
                 type="button"
-                className="px-3.5 py-1.5 rounded-lg bg-[#1c2b3c] hover:bg-[#273647] text-[#d4e4fa] text-xs"
+                className="px-3.5 py-1.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 hover:bg-[#273647] light:hover:bg-slate-200 text-[#d4e4fa] light:text-slate-900 text-xs"
                 onClick={() => setRosterOpp(null)}
               >
                 Done
