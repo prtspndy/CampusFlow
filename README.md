@@ -338,15 +338,12 @@ CampusFlow/
 │   └── React frontend application
 │
 ├── docs/
-│   └── Project documentation
+│   ├── design/          # Visual system
+│   ├── product/         # Brief and project context
+│   ├── reference/       # API, roles, flows, codebase guide
+│   └── delivery/        # Phase notes and viva prep
 │
-├── DESIGN.md
-├── project_context.md
-├── front_end_implementation_plan.md
 ├── SECURITY.md
-│
-├── Student_Organization_System.pdf
-├── Student_Organization_System_README.md
 │
 └── README.md
 ```

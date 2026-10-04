@@ -489,7 +489,7 @@ feature in parallel.
 ## 9. API conventions
 
 The backend should document the final routes and schemas in
-`docs/API_CONTRACT.md`. This section defines defaults until the team
+`docs/reference/API_CONTRACT.md`. This section defines defaults until the team
 agrees otherwise.
 
 -   Prefix API routes with `/api`.

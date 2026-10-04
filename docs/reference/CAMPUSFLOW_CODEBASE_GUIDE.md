@@ -203,12 +203,11 @@ D:\Projects\CampusFlow\
 │   ├── package.json                           # Frontend scripts and dependencies
 │   └── vite.config.ts                         # Vite build and Tailwind configuration
 │
-├── docs/                                      # Technical Architecture & Assessment Documentation
-│   ├── API_CONTRACT.md                        # Formal REST contract specifications
-│   ├── CAMPUSFLOW_CODEBASE_GUIDE.md           # [This Document] Full codebase guide
-│   ├── CAMPUSFLOW_ROLE_PERMISSIONS.md         # Four-role RBAC permissions reference
-│   ├── CAMPUSFLOW_APPLICATION_FLOWS.md        # Step-by-step application execution traces
-│   └── CAMPUSFLOW_VIVA_PREPARATION.md         # Presentation, Q&A, and viva prep
+├── docs/
+│   ├── reference/                             # API, roles, flows, and this guide
+│   ├── delivery/                              # Phase notes and viva preparation
+│   ├── design/                                # Visual system
+│   └── product/                               # Brief and project context
 ├── README.md                                  # Product vision and design principles
 └── SECURITY.md                                # Vulnerability disclosure policy
 ```
@@ -256,7 +255,7 @@ pie title Implementation State of CampusFlow Features
    - **Frontend**: [MemberListPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/members/pages/MemberListPage.tsx) and [MemberPassPage.tsx](file:///D:/Projects/CampusFlow/frontend/src/features/members/pages/MemberPassPage.tsx) display static data from `MOCK_MEMBERS`.
 
 ### ⚪ 3. What is implemented vs still a prototype
-Merchandise, pickup orders, and announcements have Prisma models and APIs. Setup and stock rules are in [PHASE04_MERCHANDISE_ANNOUNCEMENTS.md](file:///D:/Projects/CampusFlow/docs/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md).
+Merchandise, pickup orders, and announcements have Prisma models and APIs. Setup and stock rules are in [PHASE04_MERCHANDISE_ANNOUNCEMENTS.md](../delivery/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md).
 
 - **Merchandise & Stock** (`/shop`, `/shop/:id`, `/admin/shop`, `/member/orders`): These screens call `/api/products` and `/api/orders`. The landing page still renders `MOCK_PRODUCTS`.
 - **Announcements** (`/announcements`, `/announcements/:id`, `/admin/announcements`): These screens call `/api/announcements`. Drafts are not public. The member home tile still uses `MOCK_ANNOUNCEMENTS`.
