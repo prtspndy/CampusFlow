@@ -52,6 +52,7 @@ export function EventsPage() {
   const [isFeatured, setIsFeatured] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
@@ -79,20 +80,51 @@ export function EventsPage() {
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
+    setModalError(null);
+
+    const trimmedTitle = title.trim();
+    const trimmedDesc = description.trim();
+    const trimmedVenue = venue.trim();
+
+    if (trimmedTitle.length < 3) {
+      setModalError('Title must be at least 3 characters');
+      return;
+    }
+    if (trimmedDesc.length < 10) {
+      setModalError('Description must be at least 10 characters');
+      return;
+    }
+    if (trimmedVenue.length < 2) {
+      setModalError('Venue must be at least 2 characters');
+      return;
+    }
+
+    const startDate = new Date(startsAt);
+    const endDate = new Date(endsAt);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      setModalError('Please specify valid start and end dates/times');
+      return;
+    }
+
+    if (endDate <= startDate) {
+      setModalError('End date/time must be strictly after start date/time');
+      return;
+    }
+
     setIsCreating(true);
-    setFeedback(null);
 
     try {
       const newEvent = await eventsService.createEvent({
-        title: title.trim(),
-        description: description.trim(),
-        venue: venue.trim(),
+        title: trimmedTitle,
+        description: trimmedDesc,
+        venue: trimmedVenue,
         category: category.trim() || undefined,
-        startsAt: new Date(startsAt).toISOString(),
-        endsAt: new Date(endsAt).toISOString(),
+        startsAt: startDate.toISOString(),
+        endsAt: endDate.toISOString(),
         memberPrice: Number(memberPrice),
         standardPrice: Number(standardPrice),
-        totalCapacity: totalCapacity ? Number(totalCapacity) : null,
+        totalCapacity: totalCapacity ? Number(totalCapacity) : undefined,
         isFeatured,
       });
 
@@ -102,7 +134,7 @@ export function EventsPage() {
       await loadEvents();
     } catch (err) {
       const parsed = parseApiError(err);
-      setFeedback({ type: 'error', message: parsed.message });
+      setModalError(parsed.message);
     } finally {
       setIsCreating(false);
     }
@@ -119,6 +151,7 @@ export function EventsPage() {
     setStandardPrice(0);
     setTotalCapacity(undefined);
     setIsFeatured(false);
+    setModalError(null);
   };
 
   return (
@@ -135,7 +168,14 @@ export function EventsPage() {
         </div>
 
         {isStaff && (
-          <Button size="sm" variant="primary" onClick={() => setIsCreateOpen(true)}>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => {
+              setModalError(null);
+              setIsCreateOpen(true);
+            }}
+          >
             <Plus className="w-3.5 h-3.5 mr-1" />
             Create Event
           </Button>
@@ -308,24 +348,41 @@ export function EventsPage() {
           maxWidth="lg"
         >
           <form onSubmit={handleCreateEvent} className="space-y-4 pt-2">
+            {modalError && (
+              <div className="p-3 rounded text-xs font-medium flex items-center gap-2 bg-status-error-bg border border-status-error-border text-status-error-text">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <Input
               label="Event Title"
               required
+              minLength={3}
+              maxLength={120}
               placeholder="e.g. Annual Tech Symposium 2026"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (modalError) setModalError(null);
+              }}
             />
 
             <div>
               <label className="block text-xs font-semibold text-dark-muted light:text-light-muted mb-1.5">
-                Description <span className="text-status-error-text">*</span>
+                Description <span className="text-status-error-text">*</span> (min 10 characters)
               </label>
               <textarea
                 rows={3}
                 required
+                minLength={10}
+                maxLength={5000}
                 placeholder="Detailed event agenda, guest speakers, dress code..."
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  if (modalError) setModalError(null);
+                }}
                 className="w-full px-3 py-2 text-xs rounded bg-dark-canvas text-dark-text border border-dark-border focus:outline-none focus:border-brand light:bg-white light:text-light-text light:border-light-border"
               />
             </div>
@@ -334,16 +391,24 @@ export function EventsPage() {
               <Input
                 label="Venue / Room"
                 required
+                minLength={2}
+                maxLength={200}
                 placeholder="e.g. Main Auditorium Hall B"
                 value={venue}
-                onChange={(e) => setVenue(e.target.value)}
+                onChange={(e) => {
+                  setVenue(e.target.value);
+                  if (modalError) setModalError(null);
+                }}
               />
 
               <Input
                 label="Category"
                 placeholder="e.g. Tech, Cultural, Sports"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  if (modalError) setModalError(null);
+                }}
               />
             </div>
 
