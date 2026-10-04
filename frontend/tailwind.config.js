@@ -1,3 +1,5 @@
+import plugin from 'tailwindcss/plugin';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
@@ -109,5 +111,10 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(({ addVariant }) => {
+      // Theme toggle puts `light` on <html>. Components opt into light colors with `light:` classes.
+      addVariant('light', '.light &');
+    }),
+  ],
 };

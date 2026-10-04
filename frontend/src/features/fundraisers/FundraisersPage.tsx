@@ -243,25 +243,25 @@ export function FundraisersPage() {
     <div className="flex flex-col w-full pb-16 space-y-6">
       {/* Top Header Banner & Context Bar */}
       <div className="flex flex-col gap-2 pt-2">
-        <div className="flex items-center gap-1.5 text-[#8e8fa3] text-xs tracking-wide">
-          <span className="hover:text-[#d4e4fa] transition-colors cursor-pointer">Operations</span>
+        <div className="flex items-center gap-1.5 text-[#8e8fa3] light:text-slate-500 text-xs tracking-wide">
+          <span className="hover:text-[#d4e4fa] light:hover:text-slate-900 transition-colors cursor-pointer">Operations</span>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="hover:text-[#d4e4fa] transition-colors cursor-pointer">Fundraiser & Tasks</span>
+          <span className="hover:text-[#d4e4fa] light:hover:text-slate-900 transition-colors cursor-pointer">Fundraiser & Tasks</span>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-[#b9c3ff] font-medium">Spring Quad Bake Sale 2026</span>
+          <span className="text-[#b9c3ff] light:text-indigo-600 font-medium">Spring Quad Bake Sale 2026</span>
         </div>
 
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mt-1">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold font-headline text-[#d4e4fa] tracking-tight">
+              <h1 className="text-3xl font-bold font-headline text-[#d4e4fa] light:text-slate-900 tracking-tight">
                 Quad Bake Sale & Volunteer Dispatch
               </h1>
               <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#006e4b] text-[#67f4b7] font-semibold">
                 Live Booth
               </span>
             </div>
-            <p className="text-sm text-[#c4c5da] mt-1">
+            <p className="text-sm text-[#c4c5da] light:text-slate-600 mt-1">
               Real-time task delegation, shift signups, baking commitments & live cashbox tracker for Spring 2026 club fundraiser.
             </p>
           </div>
@@ -272,9 +272,9 @@ export function FundraisersPage() {
                 setFeedback({ type: 'success', message: 'Generating printable PDF run-sheet...' });
               }}
               type="button"
-              className="h-[38px] px-3.5 rounded-lg bg-[#1c2b3c] hover:bg-[#273647] text-[#d4e4fa] border border-[#273647]/60 text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
+              className="h-[38px] px-3.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 hover:bg-[#273647] light:hover:bg-slate-200 text-[#d4e4fa] light:text-slate-900 border border-[#273647]/60 light:border-slate-200 text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
             >
-              <Download className="w-4 h-4 text-[#8e8fa3]" />
+              <Download className="w-4 h-4 text-[#8e8fa3] light:text-slate-500" />
               <span>Run-Sheet (PDF)</span>
             </button>
             <button
@@ -282,14 +282,14 @@ export function FundraisersPage() {
                 document.getElementById('pos-section')?.scrollIntoView({ behavior: 'smooth' });
               }}
               type="button"
-              className="h-[38px] px-3.5 rounded-lg bg-[#1c2b3c] hover:bg-[#273647] text-[#d4e4fa] border border-[#273647]/60 text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
+              className="h-[38px] px-3.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 hover:bg-[#273647] light:hover:bg-slate-200 text-[#d4e4fa] light:text-slate-900 border border-[#273647]/60 light:border-slate-200 text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
             >
               <CreditCard className="w-4 h-4 text-[#4edea3]" />
               <span>Log Table Sale</span>
             </button>
             <Link
               to="/volunteers"
-              className="h-[38px] px-3.5 rounded-lg bg-[#1c2b3c] hover:bg-[#273647] text-[#d4e4fa] border border-[#273647]/60 text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
+              className="h-[38px] px-3.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 hover:bg-[#273647] light:hover:bg-slate-200 text-[#d4e4fa] light:text-slate-900 border border-[#273647]/60 light:border-slate-200 text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
             >
               <Users className="w-4 h-4 text-[#7bd0ff]" />
               <span>Volunteer Roster</span>
@@ -328,85 +328,85 @@ export function FundraisersPage() {
       {/* KPI Metric Summary Bar (4 Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Card 1 */}
-        <div className="p-5 rounded-xl bg-[#122131] border border-[#273647]/60 shadow-sm flex flex-col justify-between">
+        <div className="p-5 rounded-xl bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-[#8e8fa3] font-semibold">
+              <span className="text-[11px] uppercase tracking-wider text-[#8e8fa3] light:text-slate-500 font-semibold">
                 Target Revenue
               </span>
               <div className="flex items-baseline gap-1 mt-1 font-mono">
-                <span className="text-2xl text-[#d4e4fa] font-bold">
+                <span className="text-2xl text-[#d4e4fa] light:text-slate-900 font-bold">
                   {formatINR(totalRaised)}
                 </span>
-                <span className="text-xs text-[#8e8fa3]">/ {formatINR(totalGoal)}</span>
+                <span className="text-xs text-[#8e8fa3] light:text-slate-500">/ {formatINR(totalGoal)}</span>
               </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-[#0047ff]/20 flex items-center justify-center text-[#b9c3ff]">
+            <div className="w-10 h-10 rounded-lg bg-[#0047ff]/20 flex items-center justify-center text-[#b9c3ff] light:text-indigo-600">
               <Target className="w-5 h-5" />
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-[#273647]/40">
+          <div className="mt-4 pt-3 border-t border-[#273647]/40 light:border-slate-200">
             <div className="flex items-center justify-between text-[11px] mb-1.5">
-              <span className="text-[#b9c3ff] font-medium">{overallProgress}% Reached</span>
-              <span className="text-[#8e8fa3] font-mono">{activeCount} Active</span>
+              <span className="text-[#b9c3ff] light:text-indigo-600 font-medium">{overallProgress}% Reached</span>
+              <span className="text-[#8e8fa3] light:text-slate-500 font-mono">{activeCount} Active</span>
             </div>
-            <div className="w-full h-2 rounded-full bg-[#1c2b3c] overflow-hidden">
+            <div className="w-full h-2 rounded-full bg-[#1c2b3c] light:bg-slate-100 overflow-hidden">
               <div className="h-full rounded-full bg-[#0047ff]" style={{ width: `${overallProgress}%` }} />
             </div>
           </div>
         </div>
 
         {/* Card 2 */}
-        <div className="p-5 rounded-xl bg-[#122131] border border-[#273647]/60 shadow-sm flex flex-col justify-between">
+        <div className="p-5 rounded-xl bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-[#8e8fa3] font-semibold">
+              <span className="text-[11px] uppercase tracking-wider text-[#8e8fa3] light:text-slate-500 font-semibold">
                 Volunteer Operations
               </span>
               <div className="flex items-baseline gap-1 mt-1 font-mono">
-                <span className="text-2xl text-[#d4e4fa] font-bold">{opportunities.length}</span>
-                <span className="text-xs text-[#8e8fa3]">Active Shifts</span>
+                <span className="text-2xl text-[#d4e4fa] light:text-slate-900 font-bold">{opportunities.length}</span>
+                <span className="text-xs text-[#8e8fa3] light:text-slate-500">Active Shifts</span>
               </div>
             </div>
             <div className="w-10 h-10 rounded-lg bg-[#006e4b]/30 flex items-center justify-center text-[#4edea3]">
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-[#273647]/40 flex items-center justify-between text-[11px]">
+          <div className="mt-4 pt-3 border-t border-[#273647]/40 light:border-slate-200 flex items-center justify-between text-[11px]">
             <span className="px-2 py-0.5 rounded-full bg-[#006e4b] text-[#67f4b7] font-semibold flex items-center gap-1">
               <Check className="w-3.5 h-3.5" /> {opportunities.reduce((sum, o) => sum + o.registeredCount, 0)} Registrations
             </span>
-            <span className="text-[#8e8fa3]">Live Operations</span>
+            <span className="text-[#8e8fa3] light:text-slate-500">Live Operations</span>
           </div>
         </div>
 
         {/* Card 3 */}
-        <div className="p-5 rounded-xl bg-[#122131] border border-[#273647]/60 shadow-sm flex flex-col justify-between">
+        <div className="p-5 rounded-xl bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-[#8e8fa3] font-semibold">
+              <span className="text-[11px] uppercase tracking-wider text-[#8e8fa3] light:text-slate-500 font-semibold">
                 Backers & Donors
               </span>
               <div className="flex items-baseline gap-1 mt-1 font-mono">
-                <span className="text-2xl text-[#d4e4fa] font-bold">{totalDonors}</span>
-                <span className="text-xs text-[#8e8fa3]">verified donors</span>
+                <span className="text-2xl text-[#d4e4fa] light:text-slate-900 font-bold">{totalDonors}</span>
+                <span className="text-xs text-[#8e8fa3] light:text-slate-500">verified donors</span>
               </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-[#1c2b3c] flex items-center justify-center text-[#7bd0ff]">
+            <div className="w-10 h-10 rounded-lg bg-[#1c2b3c] light:bg-slate-100 flex items-center justify-center text-[#7bd0ff]">
               <Heart className="w-5 h-5" />
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-[#273647]/40 flex items-center justify-between text-[11px]">
+          <div className="mt-4 pt-3 border-t border-[#273647]/40 light:border-slate-200 flex items-center justify-between text-[11px]">
             <span className="text-[#7bd0ff] font-medium">{activeCount} Campaigns Active</span>
-            <span className="text-[#8e8fa3] font-mono">{fundraisers.length} Total</span>
+            <span className="text-[#8e8fa3] light:text-slate-500 font-mono">{fundraisers.length} Total</span>
           </div>
         </div>
 
         {/* Card 4 */}
-        <div className="p-5 rounded-xl bg-[#122131] border border-[#273647]/60 shadow-sm flex flex-col justify-between">
+        <div className="p-5 rounded-xl bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200 shadow-sm flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-[#8e8fa3] font-semibold">
+              <span className="text-[11px] uppercase tracking-wider text-[#8e8fa3] light:text-slate-500 font-semibold">
                 Table Register Balance
               </span>
               <div className="flex items-baseline gap-1 mt-1 font-mono">
@@ -415,14 +415,14 @@ export function FundraisersPage() {
                 </span>
               </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-[#1c2b3c] flex items-center justify-center text-[#b9c3ff]">
+            <div className="w-10 h-10 rounded-lg bg-[#1c2b3c] light:bg-slate-100 flex items-center justify-center text-[#b9c3ff] light:text-indigo-600">
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-[#273647]/40 flex items-center justify-between text-xs font-mono text-[#c4c5da]">
-            <span>Cash: <strong className="text-[#d4e4fa]">{formatINR(cashTotal)}</strong></span>
-            <span className="text-[#8e8fa3]">|</span>
-            <span>Digital: <strong className="text-[#d4e4fa]">{formatINR(digitalTotal)}</strong></span>
+          <div className="mt-4 pt-3 border-t border-[#273647]/40 light:border-slate-200 flex items-center justify-between text-xs font-mono text-[#c4c5da] light:text-slate-600">
+            <span>Cash: <strong className="text-[#d4e4fa] light:text-slate-900">{formatINR(cashTotal)}</strong></span>
+            <span className="text-[#8e8fa3] light:text-slate-500">|</span>
+            <span>Digital: <strong className="text-[#d4e4fa] light:text-slate-900">{formatINR(digitalTotal)}</strong></span>
           </div>
         </div>
       </div>
@@ -432,14 +432,14 @@ export function FundraisersPage() {
         {/* Left Column: Tasks & Volunteer Schedule (8 cols) */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           {/* Active Campaigns Board (Backend API Data) */}
-          <section className="bg-[#122131] border border-[#273647]/60 rounded-xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#273647]/40">
+          <section className="bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#273647]/40 light:border-slate-200">
               <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-[#b9c3ff]" />
-                <h2 className="text-base font-bold font-headline text-[#d4e4fa]">
+                <Target className="w-5 h-5 text-[#b9c3ff] light:text-indigo-600" />
+                <h2 className="text-base font-bold font-headline text-[#d4e4fa] light:text-slate-900">
                   Active Fundraising Campaigns
                 </h2>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#1c2b3c] text-[#c4c5da] font-mono">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#1c2b3c] light:bg-slate-100 text-[#c4c5da] light:text-slate-600 font-mono">
                   {fundraisers.length} Total
                 </span>
               </div>
@@ -447,11 +447,11 @@ export function FundraisersPage() {
 
             <div className="space-y-3">
               {isLoading ? (
-                <div className="p-4 text-center text-xs text-[#8e8fa3]">
+                <div className="p-4 text-center text-xs text-[#8e8fa3] light:text-slate-500">
                   Loading registered campaigns...
                 </div>
               ) : fundraisers.length === 0 ? (
-                <div className="p-4 text-center text-xs text-[#8e8fa3] bg-[#010f1f] rounded-lg">
+                <div className="p-4 text-center text-xs text-[#8e8fa3] light:text-slate-500 bg-[#010f1f] light:bg-white rounded-lg">
                   No active campaigns found. Create one using the button above!
                 </div>
               ) : (
@@ -463,29 +463,29 @@ export function FundraisersPage() {
                   return (
                     <div
                       key={f.id}
-                      className="p-4 rounded-lg bg-[#1c2b3c] border border-[#273647]/50 space-y-3"
+                      className="p-4 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 space-y-3"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-[#d4e4fa]">{f.title}</span>
+                            <span className="text-sm font-bold text-[#d4e4fa] light:text-slate-900">{f.title}</span>
                             <span
                               className={`text-[10px] px-2 py-0.5 rounded font-semibold ${
                                 f.status === 'ACTIVE'
                                   ? 'bg-[#006e4b] text-[#67f4b7]'
-                                  : 'bg-[#122131] text-[#8e8fa3]'
+                                  : 'bg-[#122131] light:bg-white text-[#8e8fa3] light:text-slate-500'
                               }`}
                             >
                               {f.status}
                             </span>
                           </div>
-                          <p className="text-xs text-[#c4c5da] mt-0.5">{f.description}</p>
+                          <p className="text-xs text-[#c4c5da] light:text-slate-600 mt-0.5">{f.description}</p>
                         </div>
                         <div className="flex items-center gap-2 self-end sm:self-center">
                           {isStaff && (
                             <button
                               onClick={() => handleInspectCampaign(f)}
-                              className="px-2.5 py-1.5 rounded bg-[#122131] hover:bg-[#273647] text-[#d4e4fa] text-xs font-medium"
+                              className="px-2.5 py-1.5 rounded bg-[#122131] light:bg-white hover:bg-[#273647] light:hover:bg-slate-200 text-[#d4e4fa] light:text-slate-900 text-xs font-medium"
                             >
                               Audit
                             </button>
@@ -508,11 +508,11 @@ export function FundraisersPage() {
                           <span className="text-[#4edea3]">
                             {formatINR(f.totalRaised || 0)} raised
                           </span>
-                          <span className="text-[#8e8fa3]">
+                          <span className="text-[#8e8fa3] light:text-slate-500">
                             Goal: {formatINR(f.goalAmount)} ({pct}%)
                           </span>
                         </div>
-                        <div className="w-full h-1.5 rounded-full bg-[#122131] overflow-hidden">
+                        <div className="w-full h-1.5 rounded-full bg-[#122131] light:bg-white overflow-hidden">
                           <div
                             className="h-full rounded-full bg-[#0047ff]"
                             style={{ width: `${pct}%` }}
@@ -527,18 +527,18 @@ export function FundraisersPage() {
           </section>
 
           {/* Component A: Operational Tasks & Volunteer Pipeline */}
-          <section className="bg-[#122131] border border-[#273647]/60 rounded-xl p-5 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#273647]/40">
+          <section className="bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#273647]/40 light:border-slate-200">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold font-headline text-[#d4e4fa]">
+                  <h2 className="text-base font-bold font-headline text-[#d4e4fa] light:text-slate-900">
                     Operational Tasks & Volunteer Shifts
                   </h2>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#1c2b3c] text-[#c4c5da] font-mono">
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#1c2b3c] light:bg-slate-100 text-[#c4c5da] light:text-slate-600 font-mono">
                     {opportunities.length} Listed
                   </span>
                 </div>
-                <p className="text-xs text-[#c4c5da] mt-0.5">
+                <p className="text-xs text-[#c4c5da] light:text-slate-600 mt-0.5">
                   Live operational commitments, booth support, and supply tasks.
                 </p>
               </div>
@@ -552,16 +552,16 @@ export function FundraisersPage() {
             <div className="flex flex-col gap-2.5">
               {opportunities.length > 0 ? (
                 opportunities.map((opp) => (
-                  <div key={opp.id} className="flex flex-col md:flex-row md:items-center justify-between p-3.5 rounded-lg bg-[#1c2b3c] border border-[#273647]/50 gap-2">
+                  <div key={opp.id} className="flex flex-col md:flex-row md:items-center justify-between p-3.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 gap-2">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#006e4b]/30 text-[#4edea3] flex items-center justify-center shrink-0 mt-0.5">
                         <ShieldCheck className="w-4 h-4" />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-[#d4e4fa]">
+                        <span className="text-xs font-bold text-[#d4e4fa] light:text-slate-900">
                           {opp.title}
                         </span>
-                        <div className="flex items-center gap-2 mt-1 text-[11px] text-[#8e8fa3]">
+                        <div className="flex items-center gap-2 mt-1 text-[11px] text-[#8e8fa3] light:text-slate-500">
                           <span>{opp.location}</span>
                           <span>•</span>
                           <span>{opp.startsAt ? formatDate(opp.startsAt) : 'Upcoming'}</span>
@@ -571,14 +571,14 @@ export function FundraisersPage() {
                       </div>
                     </div>
                     <span className={`text-[10px] px-2.5 py-1 rounded-full font-semibold self-end md:self-center ${
-                      opp.status === 'PUBLISHED' ? 'bg-[#006e4b] text-[#67f4b7]' : 'bg-[#122131] text-[#7bd0ff] border border-[#273647]'
+                      opp.status === 'PUBLISHED' ? 'bg-[#006e4b] text-[#67f4b7]' : 'bg-[#122131] light:bg-white text-[#7bd0ff] border border-[#273647] light:border-slate-200'
                     }`}>
                       {opp.status}
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="py-8 text-center text-xs text-[#8e8fa3]">
+                <div className="py-8 text-center text-xs text-[#8e8fa3] light:text-slate-500">
                   No operational volunteer tasks registered yet.
                 </div>
               )}
@@ -589,25 +589,25 @@ export function FundraisersPage() {
         {/* Right Column: Inventory POS & Out-of-Pocket Reimbursements (4 cols) */}
         <div id="pos-section" className="lg:col-span-4 flex flex-col gap-6">
           {/* Component C: Baked Goods & Pricing Inventory + Live POS Counter */}
-          <section className="bg-[#122131] border border-[#273647]/60 rounded-xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#273647]/40">
-              <h2 className="text-base font-bold font-headline text-[#d4e4fa]">
+          <section className="bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#273647]/40 light:border-slate-200">
+              <h2 className="text-base font-bold font-headline text-[#d4e4fa] light:text-slate-900">
                 Baked Goods Live POS
               </h2>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-[#1c2b3c] text-[#4edea3] font-mono">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-[#1c2b3c] light:bg-slate-100 text-[#4edea3] font-mono">
                 Instant Tap
               </span>
             </div>
-            <p className="text-xs text-[#c4c5da] -mt-2">
+            <p className="text-xs text-[#c4c5da] light:text-slate-600 -mt-2">
               Tap item button to rapidly log a physical cash sale and update remaining inventory.
             </p>
 
             <div className="flex flex-col gap-2.5">
               {/* Item 1 */}
-              <div className="p-3 rounded-lg bg-[#1c2b3c] border border-[#273647]/50 flex flex-col gap-2">
+              <div className="p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-[#d4e4fa]">Double Fudge Brownies</span>
+                    <span className="text-xs font-bold text-[#d4e4fa] light:text-slate-900">Double Fudge Brownies</span>
                     <div className="font-mono text-xs text-[#7bd0ff]">$3.00 ea</div>
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#93000a] text-[#ffdad6] font-semibold">
@@ -618,14 +618,14 @@ export function FundraisersPage() {
                   <button
                     type="button"
                     onClick={() => handlePosAdd('Double Fudge Brownie', 3.0, false)}
-                    className="flex-1 h-8 rounded bg-[#122131] hover:bg-[#0047ff] hover:text-white text-[#d4e4fa] text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-[0.97]"
+                    className="flex-1 h-8 rounded bg-[#122131] light:bg-white hover:bg-[#0047ff] hover:text-white text-[#d4e4fa] light:text-slate-900 text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-[0.97]"
                   >
                     <Plus className="w-3.5 h-3.5" /> +$3.00 (Cash)
                   </button>
                   <button
                     type="button"
                     onClick={() => handlePosAdd('Double Fudge Brownie', 3.0, true)}
-                    className="h-8 px-3 rounded bg-[#273647] hover:bg-[#00a6e0] hover:text-white text-[#d4e4fa] text-xs flex items-center justify-center transition-all active:scale-[0.97]"
+                    className="h-8 px-3 rounded bg-[#273647] hover:bg-[#00a6e0] hover:text-white text-[#d4e4fa] light:text-slate-900 text-xs flex items-center justify-center transition-all active:scale-[0.97]"
                     title="Tap Digital (Square/Venmo)"
                   >
                     <QrCode className="w-3.5 h-3.5" />
@@ -634,13 +634,13 @@ export function FundraisersPage() {
               </div>
 
               {/* Item 2 */}
-              <div className="p-3 rounded-lg bg-[#1c2b3c] border border-[#273647]/50 flex flex-col gap-2">
+              <div className="p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-[#d4e4fa]">Choc Chip Cookies</span>
+                    <span className="text-xs font-bold text-[#d4e4fa] light:text-slate-900">Choc Chip Cookies</span>
                     <div className="font-mono text-xs text-[#7bd0ff]">$2.00 ea (3 for $5.00)</div>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#122131] text-[#c4c5da] font-semibold">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#122131] light:bg-white text-[#c4c5da] light:text-slate-600 font-semibold">
                     12 Left (48/60 sold)
                   </span>
                 </div>
@@ -648,14 +648,14 @@ export function FundraisersPage() {
                   <button
                     type="button"
                     onClick={() => handlePosAdd('Choc Chip Cookie', 2.0, false)}
-                    className="flex-1 h-8 rounded bg-[#122131] hover:bg-[#0047ff] hover:text-white text-[#d4e4fa] text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-[0.97]"
+                    className="flex-1 h-8 rounded bg-[#122131] light:bg-white hover:bg-[#0047ff] hover:text-white text-[#d4e4fa] light:text-slate-900 text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-[0.97]"
                   >
                     <Plus className="w-3.5 h-3.5" /> +$2.00 (1x)
                   </button>
                   <button
                     type="button"
                     onClick={() => handlePosAdd('Choc Chip Cookie Trio', 5.0, false)}
-                    className="flex-1 h-8 rounded bg-[#122131] hover:bg-[#0047ff] hover:text-white text-[#d4e4fa] text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-[0.97]"
+                    className="flex-1 h-8 rounded bg-[#122131] light:bg-white hover:bg-[#0047ff] hover:text-white text-[#d4e4fa] light:text-slate-900 text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-[0.97]"
                   >
                     <Plus className="w-3.5 h-3.5" /> +$5.00 (3x)
                   </button>
@@ -663,13 +663,13 @@ export function FundraisersPage() {
               </div>
 
               {/* Item 3 */}
-              <div className="p-3 rounded-lg bg-[#1c2b3c] border border-[#273647]/50 flex flex-col gap-2">
+              <div className="p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-[#d4e4fa]">Vegan Blueberry Muffins</span>
+                    <span className="text-xs font-bold text-[#d4e4fa] light:text-slate-900">Vegan Blueberry Muffins</span>
                     <div className="font-mono text-xs text-[#7bd0ff]">$3.50 ea</div>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#122131] text-[#c4c5da] font-semibold">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#122131] light:bg-white text-[#c4c5da] light:text-slate-600 font-semibold">
                     7 Left (18/25 sold)
                   </span>
                 </div>
@@ -677,14 +677,14 @@ export function FundraisersPage() {
                   <button
                     type="button"
                     onClick={() => handlePosAdd('Vegan Blueberry Muffin', 3.5, false)}
-                    className="flex-1 h-8 rounded bg-[#122131] hover:bg-[#0047ff] hover:text-white text-[#d4e4fa] text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-[0.97]"
+                    className="flex-1 h-8 rounded bg-[#122131] light:bg-white hover:bg-[#0047ff] hover:text-white text-[#d4e4fa] light:text-slate-900 text-xs font-medium flex items-center justify-center gap-1 transition-all active:scale-[0.97]"
                   >
                     <Plus className="w-3.5 h-3.5" /> +$3.50 (Cash)
                   </button>
                   <button
                     type="button"
                     onClick={() => handlePosAdd('Vegan Blueberry Muffin', 3.5, true)}
-                    className="h-8 px-3 rounded bg-[#273647] hover:bg-[#00a6e0] hover:text-white text-[#d4e4fa] text-xs flex items-center justify-center transition-all active:scale-[0.97]"
+                    className="h-8 px-3 rounded bg-[#273647] hover:bg-[#00a6e0] hover:text-white text-[#d4e4fa] light:text-slate-900 text-xs flex items-center justify-center transition-all active:scale-[0.97]"
                     title="Tap Digital"
                   >
                     <QrCode className="w-3.5 h-3.5" />
@@ -693,26 +693,26 @@ export function FundraisersPage() {
               </div>
             </div>
 
-            <div className="p-2.5 rounded-lg bg-[#010f1f] flex items-center justify-between text-xs text-[#c4c5da]">
+            <div className="p-2.5 rounded-lg bg-[#010f1f] light:bg-white flex items-center justify-between text-xs text-[#c4c5da] light:text-slate-600">
               <span>Last logged transaction:</span>
-              <span className="font-mono text-[#d4e4fa]">{lastTx}</span>
+              <span className="font-mono text-[#d4e4fa] light:text-slate-900">{lastTx}</span>
             </div>
           </section>
 
           {/* Component D: Expense & Reimbursement Tracker */}
-          <section className="bg-[#122131] border border-[#273647]/60 rounded-xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#273647]/40">
+          <section className="bg-[#122131] light:bg-white border border-[#273647]/60 light:border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#273647]/40 light:border-slate-200">
               <div>
-                <h2 className="text-base font-bold font-headline text-[#d4e4fa]">
+                <h2 className="text-base font-bold font-headline text-[#d4e4fa] light:text-slate-900">
                   Out-of-Pocket Receipts
                 </h2>
-                <p className="text-xs text-[#c4c5da] mt-0.5">Submitted volunteer disbursements.</p>
+                <p className="text-xs text-[#c4c5da] light:text-slate-600 mt-0.5">Submitted volunteer disbursements.</p>
               </div>
               <div className="text-right">
-                <span className="text-[10px] uppercase tracking-wider text-[#8e8fa3] block">
+                <span className="text-[10px] uppercase tracking-wider text-[#8e8fa3] light:text-slate-500 block">
                   Total Claims
                 </span>
-                <span className="text-sm font-bold text-[#d4e4fa] font-mono">
+                <span className="text-sm font-bold text-[#d4e4fa] light:text-slate-900 font-mono">
                   {formatINR(reimbursements.reduce((sum, r) => sum + r.amount, 0))}
                 </span>
               </div>
@@ -721,15 +721,15 @@ export function FundraisersPage() {
             <div className="space-y-2">
               {reimbursements.length > 0 ? (
                 reimbursements.map((r) => (
-                  <div key={r.id} className="p-2.5 rounded-lg bg-[#1c2b3c] border border-[#273647]/50 flex flex-col gap-1">
-                    <div className="flex items-center justify-between text-xs font-semibold text-[#d4e4fa]">
+                  <div key={r.id} className="p-2.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-xs font-semibold text-[#d4e4fa] light:text-slate-900">
                       <span className="truncate">{r.notes || 'Disbursement Claim'}</span>
                       <span className="font-mono text-[#4edea3]">{formatINR(r.amount)}</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-[#c4c5da]">
+                    <div className="flex items-center justify-between text-[11px] text-[#c4c5da] light:text-slate-600">
                       <span>{r.expense?.category || 'General Claim'} • {formatDate(r.createdAt)}</span>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        r.status === 'SETTLED' ? 'bg-[#006e4b] text-[#67f4b7]' : 'bg-[#122131] text-[#7bd0ff] border border-[#273647]'
+                        r.status === 'SETTLED' ? 'bg-[#006e4b] text-[#67f4b7]' : 'bg-[#122131] light:bg-white text-[#7bd0ff] border border-[#273647] light:border-slate-200'
                       }`}>
                         {r.status}
                       </span>
@@ -737,7 +737,7 @@ export function FundraisersPage() {
                   </div>
                 ))
               ) : (
-                <div className="py-6 text-center text-xs text-[#8e8fa3]">
+                <div className="py-6 text-center text-xs text-[#8e8fa3] light:text-slate-500">
                   No reimbursement receipts filed.
                 </div>
               )}
@@ -745,7 +745,7 @@ export function FundraisersPage() {
 
             <Link
               to="/treasury"
-              className="w-full h-[38px] rounded-lg bg-[#1c2b3c] hover:bg-[#273647] text-[#d4e4fa] text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+              className="w-full h-[38px] rounded-lg bg-[#1c2b3c] light:bg-slate-100 hover:bg-[#273647] light:hover:bg-slate-200 text-[#d4e4fa] light:text-slate-900 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
             >
               <Receipt className="w-4 h-4" />
               <span>Submit Supply Receipt in Treasury</span>
@@ -768,7 +768,7 @@ export function FundraisersPage() {
             {!createdContribution ? (
               <form onSubmit={handleDonate} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#c4c5da] mb-1">
+                  <label className="block text-xs font-medium text-[#c4c5da] light:text-slate-600 mb-1">
                     Your Full Name
                   </label>
                   <input
@@ -776,11 +776,11 @@ export function FundraisersPage() {
                     required
                     value={donorName}
                     onChange={(e) => setDonorName(e.target.value)}
-                    className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa]"
+                    className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#c4c5da] mb-1">
+                  <label className="block text-xs font-medium text-[#c4c5da] light:text-slate-600 mb-1">
                     Email Address
                   </label>
                   <input
@@ -788,11 +788,11 @@ export function FundraisersPage() {
                     required
                     value={donorEmail}
                     onChange={(e) => setDonorEmail(e.target.value)}
-                    className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa]"
+                    className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#c4c5da] mb-1">
+                  <label className="block text-xs font-medium text-[#c4c5da] light:text-slate-600 mb-1">
                     Contribution Amount (INR)
                   </label>
                   <input
@@ -802,14 +802,14 @@ export function FundraisersPage() {
                     required
                     value={donateAmount}
                     onChange={(e) => setDonateAmount(Number(e.target.value))}
-                    className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa] font-mono"
+                    className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900 font-mono"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setDonateTarget(null)}
-                    className="px-3 py-1.5 rounded-lg bg-[#1c2b3c] text-xs text-[#c4c5da]"
+                    className="px-3 py-1.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 text-xs text-[#c4c5da] light:text-slate-600"
                   >
                     Cancel
                   </button>
@@ -824,12 +824,12 @@ export function FundraisersPage() {
               </form>
             ) : (
               <div className="space-y-4 text-center">
-                <div className="p-4 rounded-xl bg-[#010f1f] border border-[#273647] space-y-2">
-                  <span className="text-xs text-[#8e8fa3]">Order ID: {createdContribution.id}</span>
+                <div className="p-4 rounded-xl bg-[#010f1f] light:bg-white border border-[#273647] light:border-slate-200 space-y-2">
+                  <span className="text-xs text-[#8e8fa3] light:text-slate-500">Order ID: {createdContribution.id}</span>
                   <div className="text-2xl font-bold font-mono text-[#4edea3]">
                     {formatINR(createdContribution.amount)}
                   </div>
-                  <p className="text-xs text-[#c4c5da]">
+                  <p className="text-xs text-[#c4c5da] light:text-slate-600">
                     Razorpay Gateway Verification Ready
                   </p>
                 </div>
@@ -856,7 +856,7 @@ export function FundraisersPage() {
         >
           <form onSubmit={handleCreateFundraiser} className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-[#c4c5da] mb-1">
+              <label className="block text-xs font-medium text-[#c4c5da] light:text-slate-600 mb-1">
                 Campaign Title
               </label>
               <input
@@ -865,22 +865,22 @@ export function FundraisersPage() {
                 value={fTitle}
                 onChange={(e) => setFTitle(e.target.value)}
                 placeholder="e.g. Quad Bake Sale 2026"
-                className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa]"
+                className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#c4c5da] mb-1">Description</label>
+              <label className="block text-xs font-medium text-[#c4c5da] light:text-slate-600 mb-1">Description</label>
               <textarea
                 required
                 rows={3}
                 value={fDesc}
                 onChange={(e) => setFDesc(e.target.value)}
                 placeholder="Explain the purpose of this fundraiser..."
-                className="w-full p-2.5 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa]"
+                className="w-full p-2.5 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#c4c5da] mb-1">
+              <label className="block text-xs font-medium text-[#c4c5da] light:text-slate-600 mb-1">
                 Target Amount (INR)
               </label>
               <input
@@ -889,14 +889,14 @@ export function FundraisersPage() {
                 required
                 value={fGoal}
                 onChange={(e) => setFGoal(Number(e.target.value))}
-                className="w-full h-9 px-3 bg-[#1c2b3c] border border-[#273647] rounded-lg text-xs text-[#d4e4fa] font-mono"
+                className="w-full h-9 px-3 bg-[#1c2b3c] light:bg-slate-100 border border-[#273647] light:border-slate-200 rounded-lg text-xs text-[#d4e4fa] light:text-slate-900 font-mono"
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
-                className="px-3 py-1.5 rounded-lg bg-[#1c2b3c] text-xs text-[#c4c5da]"
+                className="px-3 py-1.5 rounded-lg bg-[#1c2b3c] light:bg-slate-100 text-xs text-[#c4c5da] light:text-slate-600"
               >
                 Cancel
               </button>
@@ -921,34 +921,34 @@ export function FundraisersPage() {
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-[#1c2b3c]">
-                <span className="text-[11px] text-[#8e8fa3] block">Total Raised</span>
+              <div className="p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100">
+                <span className="text-[11px] text-[#8e8fa3] light:text-slate-500 block">Total Raised</span>
                 <span className="text-lg font-bold font-mono text-[#4edea3]">
                   {formatINR(inspectSummary.collectedAmount ?? inspectSummary.totalVerifiedAmount ?? 0)}
                 </span>
               </div>
-              <div className="p-3 rounded-lg bg-[#1c2b3c]">
-                <span className="text-[11px] text-[#8e8fa3] block">Donor Count</span>
-                <span className="text-lg font-bold font-mono text-[#d4e4fa]">
+              <div className="p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100">
+                <span className="text-[11px] text-[#8e8fa3] light:text-slate-500 block">Donor Count</span>
+                <span className="text-lg font-bold font-mono text-[#d4e4fa] light:text-slate-900">
                   {inspectSummary.donorCount ?? inspectSummary.contributionCount ?? 0}
                 </span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h4 className="text-xs font-bold text-[#d4e4fa]">Contribution Ledger</h4>
+              <h4 className="text-xs font-bold text-[#d4e4fa] light:text-slate-900">Contribution Ledger</h4>
               {campaignContributions.length === 0 ? (
-                <p className="text-xs text-[#8e8fa3]">No contributions logged yet.</p>
+                <p className="text-xs text-[#8e8fa3] light:text-slate-500">No contributions logged yet.</p>
               ) : (
                 <div className="max-h-48 overflow-y-auto space-y-1.5">
                   {campaignContributions.map((c) => (
                     <div
                       key={c.id}
-                      className="p-2 rounded bg-[#010f1f] flex items-center justify-between text-xs"
+                      className="p-2 rounded bg-[#010f1f] light:bg-white flex items-center justify-between text-xs"
                     >
                       <div>
-                        <span className="text-[#d4e4fa] font-medium">{c.donorName}</span>
-                        <span className="text-[#8e8fa3] text-[10px] ml-2">
+                        <span className="text-[#d4e4fa] light:text-slate-900 font-medium">{c.donorName}</span>
+                        <span className="text-[#8e8fa3] light:text-slate-500 text-[10px] ml-2">
                           {formatDate(c.createdAt)}
                         </span>
                       </div>
