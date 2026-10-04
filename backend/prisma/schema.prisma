@@ -218,12 +218,13 @@ model EventRegistration {
   user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   status      RegistrationStatus
   tier        TicketTier
+  quantity    Int                @default(1)
   amountPaise Int
   currency    String             @default("INR")
   cancelledAt DateTime?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
-  ticket      Ticket?
+  tickets     Ticket[]
   payments    Payment[]
 
   @@index([userId])
@@ -262,7 +263,7 @@ model Payment {
 /// AES-GCM ciphertext so it can be shown again to the owner.
 model Ticket {
   id                           String            @id @default(uuid())
-  registrationId               String            @unique
+  registrationId               String
   registration                 EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   eventId                      String
   event                        Event             @relation(fields: [eventId], references: [id], onDelete: Restrict)
@@ -279,6 +280,7 @@ model Ticket {
   createdAt                    DateTime          @default(now())
   updatedAt                    DateTime          @updatedAt
 
+  @@index([registrationId])
   @@index([eventId])
   @@index([userId])
   @@index([status])

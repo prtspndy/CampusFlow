@@ -780,5 +780,82 @@ describe('Razorpay payments', () => {
       expect(treasurerRes.body.data.keyId).toBeUndefined();
     });
   });
+
+  describe('Multi-quantity payment verification and ticket issuance', () => {
+    it('issues exactly N unique tickets upon verifying payment for quantity N', async () => {
+      const member = await login('member-multi-pay@campus.edu', 'MEMBER');
+      const event = insertEvent({
+        title: 'Spring Concert',
+        description: 'Live musical showcase',
+        category: 'Concert',
+        venue: 'Grand Arena',
+        startsAt: new Date(Date.now() + 86_400_000),
+        endsAt: new Date(Date.now() + 90_000_000),
+        capacity: 100,
+        price: 500,
+        status: EventStatus.PUBLISHED,
+        organizerId: member.user.id,
+      });
+
+      const regRes = await request(app)
+        .post(`/api/events/${event.id}/registrations`)
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({ quantity: 3 });
+
+      expect(regRes.status).toBe(201);
+      const regId = regRes.body.data.registration.id;
+      expect(regRes.body.data.registration.amountPaise).toBe(150000); // 3 * ₹500 * 100
+
+      const orderRes = await createOrder(member.token, regId);
+      expect(orderRes.status).toBe(201);
+      const orderId = orderRes.body.data.payment.razorpayOrderId as string;
+      const paymentId = 'pay_multi_captured_123';
+      mockProvider(orderId, paymentId, 150000, 'captured');
+
+      const verifyRes = await request(app)
+        .post('/api/payments/verify')
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({
+          razorpay_order_id: orderId,
+          razorpay_payment_id: paymentId,
+          razorpay_signature: signPayment(orderId, paymentId),
+        });
+
+      expect(verifyRes.status).toBe(200);
+      expect(verifyRes.body.data.payment.status).toBe('PAID');
+      expect(verifyRes.body.data.registration.status).toBe('CONFIRMED');
+
+      // Exactly 3 unique tickets issued
+      expect(verifyRes.body.data.tickets).toHaveLength(3);
+      const ticketIds = verifyRes.body.data.tickets.map((t: any) => t.id);
+      expect(new Set(ticketIds).size).toBe(3);
+
+      const qrTokens = verifyRes.body.data.tickets.map((t: any) => t.qrToken);
+      expect(new Set(qrTokens).size).toBe(3);
+
+      for (const t of verifyRes.body.data.tickets) {
+        expect(t.status).toBe('ISSUED');
+        expect(t.qrToken).toMatch(/^cf_[A-Za-z0-9_-]+$/);
+        expect(t.qrDataUrl).toMatch(/^data:image\/png;base64,/);
+      }
+
+      expect(memoryTickets()).toHaveLength(3);
+
+      // Verify idempotent re-verification returns the same 3 tickets
+      const retryRes = await request(app)
+        .post('/api/payments/verify')
+        .set('Authorization', `Bearer ${member.token}`)
+        .send({
+          razorpay_order_id: orderId,
+          razorpay_payment_id: paymentId,
+          razorpay_signature: signPayment(orderId, paymentId),
+        });
+
+      expect(retryRes.status).toBe(200);
+      expect(retryRes.body.data.tickets).toHaveLength(3);
+      expect(retryRes.body.data.tickets.map((t: any) => t.id)).toEqual(ticketIds);
+      expect(memoryTickets()).toHaveLength(3);
+    });
+  });
 });
 

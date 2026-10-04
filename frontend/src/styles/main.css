@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas-default: #051424;
+  --surface-base: #122131;
+  --surface-elevated: #1c2b3c;
+  --text-primary: #d4e4fa;
+  --text-muted: #8e8fa3;
+  --border-subtle: #273647;
+  --border-focus: #0047FF;
+}
+
+.light {
+  --canvas-default: #F8FAFC;
+  --surface-base: #FFFFFF;
+  --surface-elevated: #F1F5F9;
+  --text-primary: #0F172A;
+  --text-muted: #64748B;
+  --border-subtle: #E2E8F0;
+  --border-focus: #0047FF;
+}
+
+@layer base {
+  body {
+    background-color: var(--canvas-default);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.015em;
+  }
+}
+
+/* Tabular figures for amounts, numbers, currency, and IDs */
+.tabular-nums {
+  font-feature-settings: 'tnum' on, 'cv05' on;
+}
+
+/* Custom crisp dark scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.22);
+}

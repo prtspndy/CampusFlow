@@ -4,14 +4,16 @@ import { asyncHandler } from '../utils/async-handler.js';
 import { sendSuccess } from '../utils/response.js';
 import { authenticate } from '../middleware/authenticate.middleware.js';
 import { requirePermission } from '../middleware/authorize.middleware.js';
-import { validateParams, validateQuery } from '../middleware/validate.middleware.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate.middleware.js';
 import { eventIdParamSchema } from '../validators/event.validators.js';
 import {
   listEventRegistrationsQuerySchema,
   paginationQuerySchema,
   registrationIdParamSchema,
+  registerForEventSchema,
   PaginationQuery,
   ListEventRegistrationsQuery,
+  RegisterForEventInput,
 } from '../validators/ticketing.validators.js';
 import {
   cancelRegistration,
@@ -32,8 +34,10 @@ eventRegistrationRouter.post(
   '/:eventId/registrations',
   authenticate,
   validateParams(eventIdParamSchema),
+  validateBody(registerForEventSchema),
   asyncHandler(async (req: Request, res: Response) => {
-    const result = await registerForEvent(req.user!, req.params.eventId!);
+    const input = (req.body ?? {}) as RegisterForEventInput;
+    const result = await registerForEvent(req.user!, req.params.eventId!, input.quantity ?? 1);
     const created = result.registration.status === 'CONFIRMED';
     return sendSuccess(
       res,

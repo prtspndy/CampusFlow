@@ -12,7 +12,7 @@ import { AuthenticatedUser, hasPermission } from '../types/auth.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../utils/errors.js';
 import { canManageRegistrationEvent, loadManagedEvent } from './event-access.js';
 import { quoteEventPrice } from './pricing.js';
-import { issueTicketRecord, toPublicTicket, withQr } from './ticket.service.js';
+import { issueTicketsForRegistration, toPublicTicket, withQr } from './ticket.service.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -43,10 +43,13 @@ function assertRegistrationWindow(event: Event, user: AuthenticatedUser, now: Da
   }
 }
 
-async function reserveSeat(tx: Tx, eventId: string): Promise<boolean> {
+async function reserveSeat(tx: Tx, eventId: string, quantity = 1): Promise<boolean> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const current = await tx.event.findUnique({ where: { id: eventId } });
     if (!current || current.status !== EventStatus.PUBLISHED) {
+      return false;
+    }
+    if (current.totalCapacity !== null && current.registeredCount + quantity > current.totalCapacity) {
       return false;
     }
     const reserved = await tx.event.updateMany({
@@ -54,9 +57,9 @@ async function reserveSeat(tx: Tx, eventId: string): Promise<boolean> {
         id: current.id,
         status: EventStatus.PUBLISHED,
         registeredCount: current.registeredCount,
-        OR: [{ totalCapacity: null }, { totalCapacity: { gt: current.registeredCount } }],
+        OR: [{ totalCapacity: null }, { totalCapacity: { gte: current.registeredCount + quantity } }],
       },
-      data: { registeredCount: { increment: 1 } },
+      data: { registeredCount: { increment: quantity } },
     });
     if (reserved.count === 1) {
       return true;
@@ -65,10 +68,10 @@ async function reserveSeat(tx: Tx, eventId: string): Promise<boolean> {
   return false;
 }
 
-async function releaseSeat(tx: Tx, eventId: string): Promise<void> {
+async function releaseSeat(tx: Tx, eventId: string, quantity = 1): Promise<void> {
   await tx.event.updateMany({
-    where: { id: eventId, registeredCount: { gt: 0 } },
-    data: { registeredCount: { decrement: 1 } },
+    where: { id: eventId, registeredCount: { gte: quantity } },
+    data: { registeredCount: { decrement: quantity } },
   });
 }
 
@@ -78,6 +81,7 @@ export function toPublicRegistration(registration: {
   userId: string;
   status: RegistrationStatus;
   tier: string;
+  quantity?: number;
   amountPaise: number;
   currency: string;
   cancelledAt: Date | null;
@@ -90,6 +94,7 @@ export function toPublicRegistration(registration: {
     userId: registration.userId,
     status: registration.status,
     tier: registration.tier,
+    quantity: registration.quantity ?? 1,
     amountPaise: registration.amountPaise,
     currency: registration.currency,
     cancelledAt: registration.cancelledAt,
@@ -98,13 +103,25 @@ export function toPublicRegistration(registration: {
   };
 }
 
-export async function registerForEvent(user: AuthenticatedUser, eventId: string) {
+export async function registerForEvent(
+  user: AuthenticatedUser,
+  eventId: string,
+  quantity = 1,
+) {
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
+    throw new BadRequestError('Quantity must be an integer between 1 and 10', [], 'INVALID_QUANTITY');
+  }
+
   const now = new Date();
   const preview = await prisma.event.findUnique({ where: { id: eventId } });
   if (!preview) {
     throw new NotFoundError('Event not found');
   }
   assertRegistrationWindow(preview, user, now);
+
+  if (preview.totalCapacity !== null && preview.registeredCount + quantity > preview.totalCapacity) {
+    throw new ConflictError('This event is at capacity', 'CAPACITY_REACHED');
+  }
 
   const existing = await prisma.eventRegistration.findFirst({
     where: { eventId, userId: user.id, status: { in: ACTIVE_REGISTRATION } },
@@ -128,40 +145,45 @@ export async function registerForEvent(user: AuthenticatedUser, eventId: string)
         throw new ConflictError('You are already registered for this event', 'ALREADY_REGISTERED');
       }
 
-      const reserved = await reserveSeat(tx, event.id);
+      const reserved = await reserveSeat(tx, event.id, quantity);
       if (!reserved) {
         throw new ConflictError('This event is at capacity', 'CAPACITY_REACHED');
       }
 
       const quote = await quoteEventPrice(tx, user.id, event, now);
+      const totalAmountPaise = quote.amountPaise * quantity;
+
       const registration = await tx.eventRegistration.create({
         data: {
           eventId: event.id,
           userId: user.id,
           status:
-            quote.amountPaise === 0
+            totalAmountPaise === 0
               ? RegistrationStatus.CONFIRMED
               : RegistrationStatus.PENDING_PAYMENT,
           tier: quote.tier,
-          amountPaise: quote.amountPaise,
+          quantity,
+          amountPaise: totalAmountPaise,
           currency: quote.currency,
         },
       });
 
-      if (quote.amountPaise === 0) {
-        const issued = await issueTicketRecord(tx, registration);
-        return { registration, issued };
+      if (totalAmountPaise === 0) {
+        const issuedTickets = await issueTicketsForRegistration(tx, registration);
+        return { registration, issuedTickets };
       }
 
-      return { registration, issued: null };
+      return { registration, issuedTickets: [] };
     });
 
-    const ticket = created.issued
-      ? await withQr(created.issued.ticket, created.issued.qrToken)
-      : null;
+    const publicTickets = await Promise.all(
+      created.issuedTickets.map((i) => withQr(i.ticket, i.qrToken)),
+    );
+
     return {
       registration: toPublicRegistration(created.registration),
-      ticket,
+      ticket: publicTickets[0] ?? null,
+      tickets: publicTickets,
       payment: null,
     };
   } catch (error) {
@@ -177,7 +199,7 @@ async function loadRegistration(registrationId: string) {
     where: { id: registrationId },
     include: {
       event: true,
-      ticket: true,
+      tickets: true,
     },
   });
   if (!registration) {
@@ -204,9 +226,11 @@ function assertCanReadRegistration(
 export async function getRegistration(user: AuthenticatedUser, registrationId: string) {
   const registration = await loadRegistration(registrationId);
   assertCanReadRegistration(user, registration);
+  const publicTickets = (registration.tickets || []).map((t) => toPublicTicket(t));
   return {
     registration: toPublicRegistration(registration),
-    ticket: registration.ticket ? toPublicTicket(registration.ticket) : null,
+    ticket: publicTickets[0] ?? null,
+    tickets: publicTickets,
   };
 }
 
@@ -230,17 +254,21 @@ export async function listOwnRegistrations(userId: string, page: number, limit: 
             status: true,
           },
         },
-        ticket: true,
+        tickets: true,
       },
     }),
   ]);
 
   return {
-    registrations: rows.map((row) => ({
-      ...toPublicRegistration(row),
-      event: row.event,
-      ticket: row.ticket ? toPublicTicket(row.ticket) : null,
-    })),
+    registrations: rows.map((row) => {
+      const publicTickets = (row.tickets || []).map((t) => toPublicTicket(t));
+      return {
+        ...toPublicRegistration(row),
+        event: row.event,
+        ticket: publicTickets[0] ?? null,
+        tickets: publicTickets,
+      };
+    }),
     pagination: {
       total,
       page,
@@ -271,7 +299,7 @@ export async function listEventRegistrations(
       take: limit,
       include: {
         user: { select: { id: true, name: true, email: true } },
-        ticket: { select: { id: true, status: true, checkedInAt: true } },
+        tickets: { select: { id: true, status: true, checkedInAt: true } },
       },
     }),
   ]);
@@ -280,7 +308,8 @@ export async function listEventRegistrations(
     registrations: rows.map((row) => ({
       ...toPublicRegistration(row),
       user: row.user,
-      ticket: row.ticket,
+      ticket: row.tickets?.[0] ?? null,
+      tickets: row.tickets ?? [],
     })),
     pagination: {
       total,
@@ -300,7 +329,7 @@ export async function cancelRegistration(user: AuthenticatedUser, registrationId
   if (!isOwner && !staff) {
     throw new NotFoundError('Registration not found');
   }
-  if (registration.ticket?.status === TicketStatus.USED) {
+  if (registration.tickets?.some((t) => t.status === TicketStatus.USED)) {
     throw new ConflictError('A checked-in registration cannot be cancelled', 'ALREADY_CHECKED_IN');
   }
   if (!ACTIVE_REGISTRATION.includes(registration.status)) {
@@ -327,13 +356,15 @@ export async function cancelRegistration(user: AuthenticatedUser, registrationId
       },
       data: { status: PaymentStatus.FAILED, failureReason: 'Registration cancelled' },
     });
-    await releaseSeat(tx, registration.eventId);
+    await releaseSeat(tx, registration.eventId, registration.quantity);
   });
 
   const updated = await loadRegistration(registrationId);
+  const publicTickets = (updated.tickets || []).map((t) => toPublicTicket(t));
   return {
     registration: toPublicRegistration(updated),
-    ticket: updated.ticket ? toPublicTicket(updated.ticket) : null,
+    ticket: publicTickets[0] ?? null,
+    tickets: publicTickets,
   };
 }
 
@@ -369,7 +400,7 @@ export async function expirePendingRegistration(registrationId: string): Promise
       },
       data: { status: PaymentStatus.FAILED, failureReason: 'Registration expired' },
     });
-    await releaseSeat(tx, registration.eventId);
+    await releaseSeat(tx, registration.eventId, registration.quantity);
   });
   return true;
 }
