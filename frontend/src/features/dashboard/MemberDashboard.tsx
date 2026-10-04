@@ -16,6 +16,7 @@ import { Order } from '../../types/commerce';
 import { VolunteerRegistration } from '../../types/volunteers';
 import { Reimbursement } from '../../types/finance';
 import { Button } from '../../components/ui/Button';
+import { BrandMark } from '../../components/brand/BrandMark';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { formatDateTime, formatINR } from '../../lib/formatters';
 import {
@@ -146,9 +147,7 @@ export function MemberDashboard() {
         <div className="rounded-xl bg-gradient-to-br from-[#122131] via-[#0d1c2d] to-[#051424] border border-[#273647]/80 p-5 shadow-sm relative flex flex-col justify-between min-h-[260px] light:from-white light:to-slate-50 light:border-slate-200">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded bg-[#0047FF] flex items-center justify-center text-white text-xs font-bold">
-                CF
-              </div>
+              <BrandMark labelled className="w-7 h-7" />
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-[#d4e4fa] light:text-slate-900">CampusFlow</span>
                 <span className="text-[9px] text-[#8e8fa3] uppercase">Digital Student ID</span>

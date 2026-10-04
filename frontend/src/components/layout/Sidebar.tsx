@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getNavigationItems, NavItem } from '../../config/navigation';
 import { cn } from '../../lib/utils';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { BrandMark } from '../brand/BrandMark';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -53,19 +54,15 @@ export function Sidebar({
             onClick={onCloseMobile}
             className="flex items-center gap-2.5 overflow-hidden"
           >
-            <div className="w-8 h-8 rounded-lg bg-[#0047FF] flex items-center justify-center text-white shrink-0 shadow-sm">
-              <svg width="20" height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 9L29 14.5V25.5L20 31L11 25.5V14.5L20 9Z" stroke="#38BDF8" strokeWidth="3" strokeLinejoin="round"/>
-                <path d="M20 15L24.5 17.5V22.5L20 25L15.5 22.5V17.5L20 15Z" fill="#38BDF8"/>
-              </svg>
-            </div>
+            <BrandMark className="w-8 h-8 shrink-0" />
             {!isCollapsed && (
               <div className="flex flex-col">
-                <span className="font-headline font-bold text-sm text-[#d4e4fa] tracking-tight leading-none light:text-slate-900">
-                  CampusFlow
+                <span className="font-headline font-bold text-sm tracking-tight leading-none">
+                  <span className="text-[#d4e4fa] light:text-slate-900">Campus</span>
+                  <span className="text-[#3b9eff]">Flow</span>
                 </span>
                 <span className="text-[10px] text-[#8e8fa3] font-medium leading-none mt-1 light:text-slate-500">
-                  OS for Student Organizations
+                  Organize · Engage · Grow
                 </span>
               </div>
             )}
