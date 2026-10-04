@@ -1,6 +1,12 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandMark } from '../../components/brand/BrandMark';
 import { useAuth } from '../../context/AuthContext';
+import { eventsService } from '../../services/events.service';
+import { volunteersService } from '../../services/volunteers.service';
+import { EventItem } from '../../types/events';
+import { VolunteerOpportunity } from '../../types/volunteers';
+import { formatDateTime } from '../../lib/formatters';
 import {
   Calendar,
   Ticket,
@@ -23,6 +29,31 @@ import {
 
 export function HomePage() {
   const { user, isAuthenticated } = useAuth();
+  const [liveEvents, setLiveEvents] = useState<EventItem[]>([]);
+  const [liveShifts, setLiveShifts] = useState<VolunteerOpportunity[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    eventsService
+      .listEvents({ status: 'PUBLISHED', limit: 2 })
+      .then((result) => {
+        if (!cancelled) setLiveEvents(result.events || []);
+      })
+      .catch(() => {
+        if (!cancelled) setLiveEvents([]);
+      });
+    volunteersService
+      .listOpportunities({ status: 'PUBLISHED', limit: 2 })
+      .then((result) => {
+        if (!cancelled) setLiveShifts(result.opportunities || []);
+      })
+      .catch(() => {
+        if (!cancelled) setLiveShifts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="flex flex-col w-full pb-16 space-y-12">
@@ -151,61 +182,53 @@ export function HomePage() {
                 Upcoming Events & Door Passes
               </span>
               <div className="space-y-2">
-                <div className="p-3 rounded-lg bg-[#122131] border border-[#273647]/50 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold text-[#d4e4fa] block">
-                      Tech Talk: AI Innovations
-                    </span>
-                    <span className="text-[10px] text-[#8e8fa3]">
-                      Friday • 5:00 PM • Aud Hall A
-                    </span>
-                  </div>
-                  <Link
-                    to="/events"
-                    className="px-2.5 py-1 rounded bg-[#0047ff] text-white text-[10px] font-semibold"
-                  >
-                    Register Now
-                  </Link>
-                </div>
-
-                <div className="p-3 rounded-lg bg-[#122131] border border-[#273647]/50 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold text-[#d4e4fa] block">
-                      Spring Gala 2026
-                    </span>
-                    <span className="text-[10px] text-[#8e8fa3]">
-                      April 24 • 7:00 PM • Grand Ballroom
-                    </span>
-                  </div>
-                  <Link
-                    to="/tickets"
-                    className="px-2.5 py-1 rounded bg-[#0047ff] text-white text-[10px] font-semibold"
-                  >
-                    View Pass
-                  </Link>
-                </div>
+                {liveEvents.length === 0 ? (
+                  <p className="text-[11px] text-[#8e8fa3]">No published events yet.</p>
+                ) : (
+                  liveEvents.map((event) => (
+                    <div key={event.id} className="p-3 rounded-lg bg-[#122131] border border-[#273647]/50 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-semibold text-[#d4e4fa] block">
+                          {event.title}
+                        </span>
+                        <span className="text-[10px] text-[#8e8fa3]">
+                          {formatDateTime(event.startsAt)} • {event.venue}
+                        </span>
+                      </div>
+                      <Link
+                        to={`/events/${event.id}`}
+                        className="px-2.5 py-1 rounded bg-[#0047ff] text-white text-[10px] font-semibold"
+                      >
+                        Register Now
+                      </Link>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
             <div className="space-y-2 pt-2 border-t border-[#273647]/40">
               <span className="text-[11px] uppercase tracking-wider text-[#8e8fa3] font-semibold block">
-                My Active Clubs
+                Open Volunteer Shifts
               </span>
               <div className="grid grid-cols-2 gap-2">
-                <div className="p-2.5 rounded-lg bg-[#122131] border border-[#273647]/50 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold text-[#d4e4fa] block">Coding Club</span>
-                    <span className="text-[10px] text-[#8e8fa3]">17 members</span>
-                  </div>
-                  <span className="text-[10px] text-[#7bd0ff]">View Details</span>
-                </div>
-                <div className="p-2.5 rounded-lg bg-[#122131] border border-[#273647]/50 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold text-[#d4e4fa] block">Photography</span>
-                    <span className="text-[10px] text-[#8e8fa3]">12 members</span>
-                  </div>
-                  <span className="text-[10px] text-[#7bd0ff]">View Details</span>
-                </div>
+                {liveShifts.length === 0 ? (
+                  <p className="col-span-2 text-[11px] text-[#8e8fa3]">No open shifts yet.</p>
+                ) : (
+                  liveShifts.map((shift) => (
+                    <Link
+                      key={shift.id}
+                      to="/volunteers"
+                      className="p-2.5 rounded-lg bg-[#122131] border border-[#273647]/50 flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="text-xs font-semibold text-[#d4e4fa] block">{shift.title}</span>
+                        <span className="text-[10px] text-[#8e8fa3]">{shift.registeredCount} signed up</span>
+                      </div>
+                      <span className="text-[10px] text-[#7bd0ff]">View</span>
+                    </Link>
+                  ))
+                )}
               </div>
             </div>
           </div>

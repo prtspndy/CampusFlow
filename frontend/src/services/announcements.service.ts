@@ -16,6 +16,7 @@ export interface ListAnnouncementsResult {
 export const announcementsService = {
   async listPublished(params?: {
     audience?: string;
+    search?: string;
     page?: number;
     limit?: number;
   }): Promise<ListAnnouncementsResult> {
