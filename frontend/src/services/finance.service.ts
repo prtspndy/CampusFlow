@@ -30,6 +30,7 @@ export const financeService = {
       inflow: {
         eventRegistrations: raw.totalTicketRevenue ?? 0,
         fundraisers: raw.totalVerifiedFundraiserContributions ?? 0,
+        memberships: raw.totalMembershipRevenue ?? 0,
         totalInflow: raw.totalInflows ?? 0,
       },
       outflow: {

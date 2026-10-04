@@ -23,7 +23,6 @@ import {
   Users,
   Search,
   Download,
-  Bell,
   QrCode,
   ShieldCheck,
   CheckCircle2,
@@ -38,21 +37,21 @@ const PLANS: { id: MembershipPlan; title: string; price: string; period: string;
   {
     id: 'semester',
     title: 'Semester Pass',
-    price: '$15.00',
+    price: '₹15',
     period: 'Per Semester',
     perks: ['Discounted event tickets', 'Free entry to club mixer', 'Priority merchandise drop'],
   },
   {
     id: 'annual',
     title: 'Annual Pass',
-    price: '$25.00',
+    price: '₹25',
     period: 'Per Academic Year',
     perks: ['All Semester benefits', 'Official club badge & hoodie voucher', 'Voting rights in student elections', 'Free workshop access'],
   },
   {
     id: 'lifetime',
     title: 'Alumni & Lifetime Pass',
-    price: '$75.00',
+    price: '₹75',
     period: 'Full Degree Tenure',
     perks: ['All Annual benefits', 'Lifetime digital pass', 'Executive committee eligibility', 'Special gala invitations'],
   },
@@ -181,6 +180,32 @@ export function MembershipsPage() {
     }
   };
 
+  const visibleMemberships = canManage ? allMemberships : myMemberships;
+  const visibleTotal = canManage ? totalCount : myMemberships.length;
+
+  const exportRoster = () => {
+    const header = ['Name', 'Email', 'Plan', 'Status', 'Payment', 'Fee', 'Valid until'];
+    const rows = visibleMemberships.map((membership) => [
+      membership.user?.name || '',
+      membership.user?.email || '',
+      membership.planName,
+      membership.status,
+      membership.paymentStatus || '',
+      String(membership.feeAmount ?? ''),
+      membership.validUntil || '',
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'campusflow-memberships.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Breadcrumb & Page Header matching Stitch stitch_members_dues.png */}
@@ -201,14 +226,12 @@ export function MembershipsPage() {
 
         {/* Action Toolbelt matching Stitch */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="secondary" className="h-8 text-xs bg-[#1c2b3c] hover:bg-[#273647] border border-[#273647] text-[#d4e4fa]">
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export CSV
-          </Button>
-          <Button size="sm" variant="secondary" className="h-8 text-xs bg-[#1c2b3c] hover:bg-[#273647] border border-[#273647] text-[#d4e4fa]">
-            <Bell className="w-3.5 h-3.5 mr-1.5 text-[#7bd0ff]" />
-            Send Renewal Reminders (14)
-          </Button>
+          {canManage && (
+            <Button size="sm" variant="secondary" className="h-8 text-xs bg-[#1c2b3c] hover:bg-[#273647] border border-[#273647] text-[#d4e4fa]" onClick={exportRoster}>
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+              Export CSV
+            </Button>
+          )}
           <Button
             size="sm"
             variant="primary"
@@ -236,10 +259,10 @@ export function MembershipsPage() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#8e8fa3] light:text-slate-400">Total Enrolled</span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-2xl font-bold font-headline text-[#d4e4fa] tabular-nums light:text-slate-900">
-                  {totalCount}
+                  {visibleTotal}
                 </span>
                 <span className="text-[10px] font-semibold text-[#4edea3]">
-                  {allMemberships.filter((m) => m.status === 'ACTIVE').length} Active
+                  {visibleMemberships.filter((m) => m.status === 'ACTIVE').length} Active
                 </span>
               </div>
             </div>
@@ -250,14 +273,14 @@ export function MembershipsPage() {
           <div className="mt-3 pt-1 flex items-center justify-between text-[10px] text-[#8e8fa3]">
             <span>Active Rate</span>
             <span className="font-mono text-[#d4e4fa] font-semibold light:text-slate-900">
-              {totalCount > 0 ? Math.min(100, Math.round((allMemberships.filter((m) => m.status === 'ACTIVE').length / totalCount) * 100)) : 100}%
+              {visibleTotal > 0 ? Math.min(100, Math.round((visibleMemberships.filter((m) => m.status === 'ACTIVE').length / visibleTotal) * 100)) : 100}%
             </span>
           </div>
           <div className="w-full h-1.5 rounded-full bg-[#1c2b3c] overflow-hidden mt-1 light:bg-slate-200">
             <div
               className="h-full bg-[#0047FF] rounded-full"
               style={{
-                width: `${totalCount > 0 ? Math.min(100, Math.round((allMemberships.filter((m) => m.status === 'ACTIVE').length / totalCount) * 100)) : 100}%`,
+                width: `${visibleTotal > 0 ? Math.min(100, Math.round((visibleMemberships.filter((m) => m.status === 'ACTIVE').length / visibleTotal) * 100)) : 100}%`,
               }}
             />
           </div>
@@ -290,7 +313,7 @@ export function MembershipsPage() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#8e8fa3] light:text-slate-400">Pending Review</span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-2xl font-bold font-mono text-[#ffb4ab] tabular-nums">
-                  {allMemberships.filter((m) => m.status === 'PENDING').length}
+                  {visibleMemberships.filter((m) => m.status === 'PENDING').length}
                 </span>
                 <span className="text-[10px] font-semibold text-[#ffb4ab] bg-[#93000a]/20 px-1.5 py-0.5 rounded">
                   Students
@@ -313,7 +336,7 @@ export function MembershipsPage() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#8e8fa3] light:text-slate-400">Digital Passes</span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-2xl font-bold font-mono text-[#d4e4fa] tabular-nums light:text-slate-900">
-                  {allMemberships.filter((m) => m.status === 'ACTIVE').length}
+                  {visibleMemberships.filter((m) => m.status === 'ACTIVE').length}
                 </span>
                 <span className="text-[10px] font-semibold text-[#7bd0ff]">Active</span>
               </div>
@@ -388,7 +411,7 @@ export function MembershipsPage() {
             <div className="px-4 py-3 border-b border-[#273647]/50 flex items-center justify-between text-xs">
               <span className="font-bold text-[#d4e4fa] light:text-slate-900 flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-[#7bd0ff]" />
-                Active Roster ({allMemberships.length} records)
+                Active Roster ({visibleMemberships.length} records)
               </span>
               <span className="text-[10px] text-[#8e8fa3]">Click row to preview Digital Pass</span>
             </div>
@@ -413,8 +436,8 @@ export function MembershipsPage() {
                         <Skeleton className="h-20 w-full" />
                       </td>
                     </tr>
-                  ) : allMemberships.length > 0 ? (
-                    allMemberships.map((m) => (
+                  ) : visibleMemberships.length > 0 ? (
+                    visibleMemberships.map((m) => (
                       <tr
                         key={m.id}
                         onClick={() => setSelectedMember(m)}
@@ -444,17 +467,21 @@ export function MembershipsPage() {
                           </span>
                         </td>
                         <td className="px-3 py-2">
-                          {m.status === 'ACTIVE' ? (
+                          {m.paymentStatus === 'PAID' || m.status === 'ACTIVE' || m.status === 'SUSPENDED' || m.status === 'EXPIRED' ? (
                             <span className="text-[10px] font-semibold text-[#4edea3] bg-[#006e4b]/20 px-2 py-0.5 rounded-full border border-[#006e4b]/40">
-                              Paid - Verified
+                              {m.status === 'EXPIRED'
+                                ? 'Paid · Expired'
+                                : m.status === 'SUSPENDED'
+                                  ? 'Paid · Suspended'
+                                  : `Paid · ${formatINR(m.feeAmount ?? (m.planName === 'semester' ? 15 : m.planName === 'lifetime' ? 75 : 25))}`}
                             </span>
-                          ) : m.status === 'PENDING' ? (
-                            <span className="text-[10px] font-semibold text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-full border border-[#fbbf24]/30">
-                              Pending Cash ($25)
+                          ) : m.status === 'REJECTED' ? (
+                            <span className="text-[10px] font-semibold text-[#ffb4ab] bg-[#93000a]/20 px-2 py-0.5 rounded-full border border-[#93000a]/40">
+                              Unpaid · Rejected
                             </span>
                           ) : (
-                            <span className="text-[10px] font-semibold text-[#ffb4ab] bg-[#93000a]/20 px-2 py-0.5 rounded-full border border-[#93000a]/40">
-                              Expired
+                            <span className="text-[10px] font-semibold text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-full border border-[#fbbf24]/30">
+                              Unpaid · {formatINR(m.feeAmount ?? (m.planName === 'semester' ? 15 : m.planName === 'lifetime' ? 75 : 25))}
                             </span>
                           )}
                         </td>
@@ -498,7 +525,7 @@ export function MembershipsPage() {
 
             {/* Pagination footer */}
             <div className="px-4 py-2.5 border-t border-[#273647]/50 flex items-center justify-between text-xs text-[#8e8fa3] bg-[#0d1c2d]/40 light:bg-slate-50">
-              <span>Showing 1 to {allMemberships.length} of {totalCount} members</span>
+              <span>Showing {visibleMemberships.length === 0 ? 0 : 1} to {visibleMemberships.length} of {visibleTotal} members</span>
               <div className="flex items-center gap-1">
                 <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage(page - 1)} className="h-7 text-xs">
                   Previous
@@ -697,9 +724,9 @@ export function MembershipsPage() {
                 value={selectedPlan}
                 onChange={(e) => setSelectedPlan(e.target.value as MembershipPlan)}
                 options={[
-                  { value: 'semester', label: 'Semester Pass ($15.00)' },
-                  { value: 'annual', label: 'Annual Pass ($25.00)' },
-                  { value: 'lifetime', label: 'Alumni & Lifetime Pass ($75.00)' },
+                  { value: 'semester', label: 'Semester Pass (₹15)' },
+                  { value: 'annual', label: 'Annual Pass (₹25)' },
+                  { value: 'lifetime', label: 'Alumni & Lifetime Pass (₹75)' },
                 ]}
               />
             </div>

@@ -185,6 +185,7 @@ export function normalizeRole(role: UserRole | string | undefined | null): UserR
   if (upper === 'MEMBER') return 'MEMBER';
   if (
     upper === 'EVENT_MANAGER' ||
+    upper === 'ORGANIZER' ||
     upper === 'VOLUNTEER' ||
     upper === 'DOOR_STAFF' ||
     upper === 'STAFF'

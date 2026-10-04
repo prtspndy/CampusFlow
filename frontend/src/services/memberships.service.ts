@@ -28,10 +28,22 @@ export const membershipsService = {
   },
 
   async listMemberships(query?: ListMembershipsQuery): Promise<ListMembershipsResult> {
-    const response = await apiClient.get<ApiResponse<ListMembershipsResult>>('/memberships', {
-      params: query,
-    });
-    return response.data.data;
+    const response = await apiClient.get<
+      ApiResponse<
+        ListMembershipsResult & {
+          pagination?: { total?: number; page?: number; limit?: number; totalPages?: number };
+        }
+      >
+    >('/memberships', { params: query });
+    const data = response.data.data;
+    const pagination = data?.pagination;
+    return {
+      memberships: data?.memberships ?? [],
+      total: data?.total ?? pagination?.total ?? 0,
+      page: data?.page ?? pagination?.page ?? query?.page ?? 1,
+      limit: data?.limit ?? pagination?.limit ?? query?.limit ?? 20,
+      totalPages: data?.totalPages ?? pagination?.totalPages ?? 1,
+    };
   },
 
   async getMembershipById(id: string): Promise<Membership> {

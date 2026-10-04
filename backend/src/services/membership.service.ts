@@ -13,13 +13,40 @@ import {
 export interface PlanConfig {
   name: string;
   durationDays: number;
+  /** Dues collected in rupees when the membership is activated, plus once per renewal. */
+  feeAmount: number;
   perks: string[];
+}
+
+const COLLECTED_MEMBERSHIP_STATUSES = new Set<string>(['ACTIVE', 'SUSPENDED', 'EXPIRED']);
+
+export function membershipCollectedAmount(membership: {
+  planName: string;
+  status: string;
+  renewalCount?: number | null;
+}): number {
+  if (!COLLECTED_MEMBERSHIP_STATUSES.has(membership.status)) return 0;
+  const fee = PLAN_CONFIGS[membership.planName as MembershipPlanType]?.feeAmount ?? 0;
+  return fee * (1 + Math.max(0, membership.renewalCount ?? 0));
+}
+
+export function presentMembership<
+  T extends { planName: string; status: string; renewalCount?: number | null },
+>(membership: T) {
+  const amountCollected = membershipCollectedAmount(membership);
+  return {
+    ...membership,
+    feeAmount: PLAN_CONFIGS[membership.planName as MembershipPlanType]?.feeAmount ?? 0,
+    amountCollected,
+    paymentStatus: amountCollected > 0 ? ('PAID' as const) : ('UNPAID' as const),
+  };
 }
 
 export const PLAN_CONFIGS: Record<MembershipPlanType, PlanConfig> = {
   annual: {
     name: 'Annual Gold Member',
     durationDays: 365,
+    feeAmount: 25,
     perks: [
       'Free admission to general events',
       'Discounted Spring Gala ticket',
@@ -30,6 +57,7 @@ export const PLAN_CONFIGS: Record<MembershipPlanType, PlanConfig> = {
   semester: {
     name: 'Semester Member',
     durationDays: 120,
+    feeAmount: 15,
     perks: [
       'Discounted event tickets',
       '10% merchandise discount',
@@ -39,6 +67,7 @@ export const PLAN_CONFIGS: Record<MembershipPlanType, PlanConfig> = {
   lifetime: {
     name: 'Alumni & Lifetime Pass',
     durationDays: 36500, // 100 years
+    feeAmount: 75,
     perks: [
       'All Gold member perks permanently',
       'Alumni networking receptions',
@@ -106,7 +135,7 @@ export async function applyForMembership(
     }
   }
 
-  return prisma.membership.create({
+  return presentMembership(await prisma.membership.create({
     data: {
       userId,
       memberCode,
@@ -118,7 +147,7 @@ export async function applyForMembership(
       perks: plan.perks,
       adminNotes: adminNotes ?? null,
     },
-  });
+  }));
 }
 
 export async function getOwnMembership(userId: string): Promise<Membership[]> {
@@ -138,7 +167,7 @@ export async function getOwnMembership(userId: string): Promise<Membership[]> {
     }
   }
 
-  return memberships;
+  return memberships.map((membership) => presentMembership(membership));
 }
 
 export async function getMembershipById(
@@ -172,7 +201,7 @@ export async function getMembershipById(
     throw new ForbiddenError('You do not have permission to view this membership record');
   }
 
-  return membership;
+  return presentMembership(membership);
 }
 
 export async function renewMembership(
@@ -226,16 +255,18 @@ export async function renewMembership(
   const baseDate = currentExpiry > now.getTime() ? membership.validUntil! : now;
   const newValidUntil = new Date(baseDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
 
-  return prisma.membership.update({
-    where: { id: membershipId },
-    data: {
-      planName: finalPlanName,
-      status: MembershipStatus.ACTIVE,
-      validUntil: newValidUntil,
-      renewalCount: { increment: 1 },
-      perks: plan.perks,
-    },
-  });
+  return presentMembership(
+    await prisma.membership.update({
+      where: { id: membershipId },
+      data: {
+        planName: finalPlanName,
+        status: MembershipStatus.ACTIVE,
+        validUntil: newValidUntil,
+        renewalCount: { increment: 1 },
+        perks: plan.perks,
+      },
+    }),
+  );
 }
 
 export async function updateMembershipStatus(
@@ -278,10 +309,12 @@ export async function updateMembershipStatus(
     dataToUpdate.validUntil = new Date(now.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
   }
 
-  return prisma.membership.update({
-    where: { id: membershipId },
-    data: dataToUpdate,
-  });
+  return presentMembership(
+    await prisma.membership.update({
+      where: { id: membershipId },
+      data: dataToUpdate,
+    }),
+  );
 }
 
 export async function listMemberships(query: ListMembershipsQuery): Promise<{
@@ -331,7 +364,7 @@ export async function listMemberships(query: ListMembershipsQuery): Promise<{
   ]);
 
   return {
-    memberships,
+    memberships: memberships.map((membership) => presentMembership(membership)),
     pagination: {
       total,
       page,

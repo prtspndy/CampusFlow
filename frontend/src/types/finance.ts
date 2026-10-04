@@ -84,6 +84,7 @@ export interface RawFinanceSummary {
   totalVerifiedFundraiserContributions: number;
   totalTicketRevenue: number;
   totalMerchRevenue: number;
+  totalMembershipRevenue?: number;
   totalInflows: number;
   totalOutflows: number;
   netTreasuryBalance: number;
@@ -104,6 +105,7 @@ export interface FinanceSummary extends Partial<RawFinanceSummary> {
   inflow: {
     eventRegistrations: number;
     fundraisers: number;
+    memberships?: number;
     totalInflow: number;
   };
   outflow: {

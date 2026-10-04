@@ -9,6 +9,23 @@ export interface ListOrdersResult {
   limit: number;
 }
 
+function normalizeOrders(
+  data:
+    | (ListOrdersResult & {
+        pagination?: { total?: number; page?: number; limit?: number };
+      })
+    | undefined,
+  params?: { page?: number; limit?: number },
+): ListOrdersResult {
+  const pagination = data?.pagination;
+  return {
+    orders: data?.orders ?? [],
+    total: data?.total ?? pagination?.total ?? 0,
+    page: data?.page ?? pagination?.page ?? params?.page ?? 1,
+    limit: data?.limit ?? pagination?.limit ?? params?.limit ?? 20,
+  };
+}
+
 export const ordersService = {
   async createOrder(input: CreateOrderInput): Promise<Order> {
     const response = await apiClient.post<ApiResponse<Order>>('/orders', input);
@@ -17,12 +34,12 @@ export const ordersService = {
 
   async getMyOrders(params?: { page?: number; limit?: number }): Promise<ListOrdersResult> {
     const response = await apiClient.get<ApiResponse<ListOrdersResult>>('/orders/me', { params });
-    return response.data.data;
+    return normalizeOrders(response.data.data, params);
   },
 
   async listAllOrders(params?: { page?: number; limit?: number }): Promise<ListOrdersResult> {
     const response = await apiClient.get<ApiResponse<ListOrdersResult>>('/orders', { params });
-    return response.data.data;
+    return normalizeOrders(response.data.data, params);
   },
 
   async getOrderById(orderId: string): Promise<Order> {

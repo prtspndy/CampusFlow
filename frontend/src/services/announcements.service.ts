@@ -20,10 +20,21 @@ export const announcementsService = {
     page?: number;
     limit?: number;
   }): Promise<ListAnnouncementsResult> {
-    const response = await apiClient.get<ApiResponse<ListAnnouncementsResult>>('/announcements', {
-      params,
-    });
-    return response.data.data;
+    const response = await apiClient.get<
+      ApiResponse<
+        ListAnnouncementsResult & {
+          pagination?: { total?: number; page?: number; limit?: number };
+        }
+      >
+    >('/announcements', { params });
+    const data = response.data.data;
+    const pagination = data?.pagination;
+    return {
+      announcements: data?.announcements ?? [],
+      total: data?.total ?? pagination?.total ?? 0,
+      page: data?.page ?? pagination?.page ?? params?.page ?? 1,
+      limit: data?.limit ?? pagination?.limit ?? params?.limit ?? 20,
+    };
   },
 
   async listManaged(params?: {
@@ -31,11 +42,21 @@ export const announcementsService = {
     page?: number;
     limit?: number;
   }): Promise<ListAnnouncementsResult> {
-    const response = await apiClient.get<ApiResponse<ListAnnouncementsResult>>(
-      '/announcements/manage',
-      { params },
-    );
-    return response.data.data;
+    const response = await apiClient.get<
+      ApiResponse<
+        ListAnnouncementsResult & {
+          pagination?: { total?: number; page?: number; limit?: number };
+        }
+      >
+    >('/announcements/manage', { params });
+    const data = response.data.data;
+    const pagination = data?.pagination;
+    return {
+      announcements: data?.announcements ?? [],
+      total: data?.total ?? pagination?.total ?? 0,
+      page: data?.page ?? pagination?.page ?? params?.page ?? 1,
+      limit: data?.limit ?? pagination?.limit ?? params?.limit ?? 20,
+    };
   },
 
   async getAnnouncementById(id: string): Promise<Announcement> {
