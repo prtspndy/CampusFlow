@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { announcementsService } from '../../services/announcements.service';
+import { eventsService } from '../../services/events.service';
+import { volunteersService } from '../../services/volunteers.service';
+import { membershipsService } from '../../services/memberships.service';
 import { Announcement, AnnouncementAudience } from '../../types/announcements';
 import { hasPermission } from '../../config/permissions';
 import { parseApiError } from '../../lib/api-errors';
@@ -13,7 +16,6 @@ import {
   Eye,
   CheckCircle,
   AlertCircle,
-  RefreshCw,
   Send,
   PlusCircle,
   Smartphone,
@@ -21,8 +23,6 @@ import {
   Mail,
   AlertTriangle,
   Info,
-  Link as LinkIcon,
-  Clock,
   Bold,
   Italic,
   List,
@@ -42,19 +42,16 @@ export function AnnouncementsPage() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Composer Form State
-  const [title, setTitle] = useState('Mandatory Quad Bake Sale Relocation & Volunteer Briefing');
-  const [body, setBody] = useState(
-    'Hey Skyline & CampusFlow crew! 🌧️\n\nDue to expected heavy rain on Friday afternoon, the Quad Bake Sale setup is officially shifting to the **Student Center North Atrium**.\n\n1. Please check your assigned volunteer shift times in your portal roster.\n2. Setup team begins staging at 08:30 AM inside Door 4.\n3. Reminder: Gala early bird tickets close tonight at 11:59 PM!'
-  );
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
   const [audience, setAudience] = useState<AnnouncementAudience>('ALL_MEMBERS');
-  const [priority, setPriority] = useState<'standard' | 'urgent'>('urgent');
-  const [channels, setChannels] = useState({
-    push: true,
-    whatsapp: true,
-    email: true,
-  });
+  const [priority, setPriority] = useState<'standard' | 'urgent'>('standard');
+  const [audienceCounts, setAudienceCounts] = useState<{
+    members: number | null;
+    volunteers: number | null;
+    attendees: number | null;
+  }>({ members: null, volunteers: null, attendees: null });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSyncingWa, setIsSyncingWa] = useState(false);
 
   const loadAnnouncements = useCallback(async () => {
     setIsLoading(true);
@@ -79,6 +76,46 @@ export function AnnouncementsPage() {
   useEffect(() => {
     loadAnnouncements();
   }, [loadAnnouncements]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAudienceCounts() {
+      const next = {
+        members: null as number | null,
+        volunteers: null as number | null,
+        attendees: null as number | null,
+      };
+      try {
+        const events = await eventsService.listEvents({ status: 'PUBLISHED', limit: 100 });
+        next.attendees = (events.events || []).reduce((sum, event) => sum + (event.registeredCount || 0), 0);
+      } catch {
+        next.attendees = null;
+      }
+      try {
+        const shifts = await volunteersService.listOpportunities({ status: 'PUBLISHED', limit: 100 });
+        next.volunteers = (shifts.opportunities || []).reduce(
+          (sum, shift) => sum + (shift.registeredCount || 0),
+          0,
+        );
+      } catch {
+        next.volunteers = null;
+      }
+      if (hasPermission(user, 'membership:read:any')) {
+        try {
+          const members = await membershipsService.listMemberships({ status: 'ACTIVE', limit: 1 });
+          const paged = members as typeof members & { pagination?: { total: number } };
+          next.members = paged.pagination?.total ?? paged.total ?? 0;
+        } catch {
+          next.members = null;
+        }
+      }
+      if (!cancelled) setAudienceCounts(next);
+    }
+    loadAudienceCounts();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const handleBroadcast = async (publishImmediate: boolean) => {
     if (!title.trim() || !body.trim()) {
@@ -135,17 +172,6 @@ export function AnnouncementsPage() {
     }
   };
 
-  const handleSyncWhatsApp = () => {
-    setIsSyncingWa(true);
-    setTimeout(() => {
-      setIsSyncingWa(false);
-      setFeedback({
-        type: 'success',
-        message: 'WhatsApp Meta Cloud API synchronized: 3 group channels & templates active.',
-      });
-    }, 1200);
-  };
-
   const insertMarkdown = (prefix: string, suffix: string = '') => {
     setBody((prev) => `${prev}\n${prefix}sample${suffix}`);
   };
@@ -163,29 +189,20 @@ export function AnnouncementsPage() {
               Section E.9 • Broadcast Engine
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] bg-[#006e4b] text-[#67f4b7] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse" />
-              Channels Operational (100%)
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3]" />
+              In-app feed
             </span>
           </div>
           <h1 className="text-3xl font-bold font-headline text-[#d4e4fa] light:text-slate-900 tracking-tight leading-tight">
             Announcements & Broadcast Engine
           </h1>
           <p className="text-sm text-[#c4c5da] light:text-slate-600 max-w-3xl mt-0.5">
-            One-click multi-channel distribution across Student In-App Feed, Email Digest & WhatsApp Broadcast integration. Maintain an unalterable log without chat room clutter.
+            Publish announcements to the in-app feed for members, volunteers, or event attendees. WhatsApp and email are not connected.
           </p>
         </div>
 
         {/* Header Actions */}
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            onClick={handleSyncWhatsApp}
-            disabled={isSyncingWa}
-            type="button"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#122131] light:bg-white hover:bg-[#1c2b3c] light:hover:bg-slate-200 text-[#d4e4fa] light:text-slate-900 border border-[#273647]/60 light:border-slate-200 text-xs font-medium transition-all active:scale-[0.98] shadow-sm disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 text-[#4edea3] ${isSyncingWa ? 'animate-spin' : ''}`} />
-            <span>Sync WhatsApp Groups</span>
-          </button>
           <button
             onClick={() => {
               setTitle('');
@@ -281,7 +298,7 @@ export function AnnouncementsPage() {
           </div>
           <div className="mt-4 pt-3 border-t border-[#273647]/40 light:border-slate-200 flex items-center justify-between text-[11px]">
             <span className="text-[#4edea3] font-semibold flex items-center gap-1">
-              <Check className="w-3.5 h-3.5" /> Instant Push
+              <Check className="w-3.5 h-3.5" /> In-app only
             </span>
             <span className="text-[#8e8fa3] light:text-slate-500">{draftCount} In Queue</span>
           </div>
@@ -332,7 +349,7 @@ export function AnnouncementsPage() {
               <label className="block text-[11px] uppercase tracking-wider text-[#8e8fa3] light:text-slate-500 font-semibold mb-2">
                 1. Target Audience Segment
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setAudience('ALL_MEMBERS')}
@@ -345,7 +362,9 @@ export function AnnouncementsPage() {
                   <span className="text-[11px] uppercase tracking-wider opacity-80 block font-semibold">
                     All Registered
                   </span>
-                  <span className="text-base font-bold block mt-0.5 font-mono">842</span>
+                  <span className="text-base font-bold block mt-0.5 font-mono">
+                    {audienceCounts.members === null ? '—' : audienceCounts.members}
+                  </span>
                   <span className="font-mono text-[10px] opacity-90">ALL_MEMBERS</span>
                 </button>
 
@@ -361,8 +380,10 @@ export function AnnouncementsPage() {
                   <span className="text-[11px] uppercase tracking-wider opacity-80 block font-semibold">
                     Volunteers
                   </span>
-                  <span className="text-base font-bold block mt-0.5 font-mono">38</span>
-                  <span className="font-mono text-[10px] opacity-90">Bake & Ops</span>
+                  <span className="text-base font-bold block mt-0.5 font-mono">
+                    {audienceCounts.volunteers === null ? '—' : audienceCounts.volunteers}
+                  </span>
+                  <span className="font-mono text-[10px] opacity-90">VOLUNTEERS</span>
                 </button>
 
                 <button
@@ -375,22 +396,12 @@ export function AnnouncementsPage() {
                   }`}
                 >
                   <span className="text-[11px] uppercase tracking-wider opacity-80 block font-semibold">
-                    Gala Guests
+                    Event attendees
                   </span>
-                  <span className="text-base font-bold block mt-0.5 font-mono">485</span>
-                  <span className="font-mono text-[10px] opacity-90">TICKET_HOLDERS</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setAudience('ALL_MEMBERS')}
-                  className="p-3 rounded-lg text-left transition-all bg-[#1c2b3c] light:bg-slate-100 text-[#c4c5da] light:text-slate-600 hover:text-[#d4e4fa] light:hover:text-slate-900 border border-transparent"
-                >
-                  <span className="text-[11px] uppercase tracking-wider opacity-80 block font-semibold">
-                    Execs
+                  <span className="text-base font-bold block mt-0.5 font-mono">
+                    {audienceCounts.attendees === null ? '—' : audienceCounts.attendees}
                   </span>
-                  <span className="text-base font-bold block mt-0.5 font-mono">7</span>
-                  <span className="font-mono text-[10px] opacity-90">EXECUTIVE_BOARD</span>
+                  <span className="font-mono text-[10px] opacity-90">EVENT_ATTENDEES</span>
                 </button>
               </div>
             </div>
@@ -401,50 +412,40 @@ export function AnnouncementsPage() {
                 2. Distribution Channels
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <label className="flex items-center gap-3 p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 cursor-pointer select-none">
+                <label className="flex items-center gap-3 p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 select-none">
                   <input
                     type="checkbox"
-                    checked={channels.push}
-                    onChange={(e) => setChannels({ ...channels, push: e.target.checked })}
-                    className="w-4 h-4 rounded bg-[#010f1f] light:bg-white text-[#0047ff] focus:ring-0 cursor-pointer"
+                    checked
+                    readOnly
+                    className="w-4 h-4 rounded bg-[#010f1f] light:bg-white text-[#0047ff] focus:ring-0"
                   />
                   <div className="flex flex-col">
                     <span className="text-xs text-[#d4e4fa] light:text-slate-900 font-semibold flex items-center gap-1">
-                      <Smartphone className="w-3.5 h-3.5 text-[#7bd0ff]" /> In-App Push
+                      <Smartphone className="w-3.5 h-3.5 text-[#7bd0ff]" /> In-App Feed
                     </span>
-                    <span className="text-[10px] text-[#4edea3]">Real-time Feed</span>
+                    <span className="text-[10px] text-[#4edea3]">Published on the site</span>
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={channels.whatsapp}
-                    onChange={(e) => setChannels({ ...channels, whatsapp: e.target.checked })}
-                    className="w-4 h-4 rounded bg-[#010f1f] light:bg-white text-[#0047ff] focus:ring-0 cursor-pointer"
-                  />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#1c2b3c]/60 light:bg-slate-50 border border-[#273647]/50 light:border-slate-200 opacity-70">
+                  <input type="checkbox" checked={false} disabled className="w-4 h-4 rounded" />
                   <div className="flex flex-col">
                     <span className="text-xs text-[#d4e4fa] light:text-slate-900 font-semibold flex items-center gap-1">
-                      <MessageSquare className="w-3.5 h-3.5 text-[#4edea3]" /> WhatsApp API
+                      <MessageSquare className="w-3.5 h-3.5 text-[#4edea3]" /> WhatsApp
                     </span>
-                    <span className="text-[10px] text-[#c4c5da] light:text-slate-600">Verified Template</span>
+                    <span className="text-[10px] text-[#c4c5da] light:text-slate-600">Not connected</span>
                   </div>
-                </label>
+                </div>
 
-                <label className="flex items-center gap-3 p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={channels.email}
-                    onChange={(e) => setChannels({ ...channels, email: e.target.checked })}
-                    className="w-4 h-4 rounded bg-[#010f1f] light:bg-white text-[#0047ff] focus:ring-0 cursor-pointer"
-                  />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#1c2b3c]/60 light:bg-slate-50 border border-[#273647]/50 light:border-slate-200 opacity-70">
+                  <input type="checkbox" checked={false} disabled className="w-4 h-4 rounded" />
                   <div className="flex flex-col">
                     <span className="text-xs text-[#d4e4fa] light:text-slate-900 font-semibold flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5 text-[#b9c3ff] light:text-indigo-600" /> Email Digest
+                      <Mail className="w-3.5 h-3.5 text-[#b9c3ff] light:text-indigo-600" /> Email
                     </span>
-                    <span className="text-[10px] text-[#c4c5da] light:text-slate-600">Batch Deliver</span>
+                    <span className="text-[10px] text-[#c4c5da] light:text-slate-600">Not connected</span>
                   </div>
-                </label>
+                </div>
               </div>
             </div>
 
@@ -454,7 +455,7 @@ export function AnnouncementsPage() {
                 <label className="text-[11px] uppercase tracking-wider text-[#8e8fa3] light:text-slate-500 font-semibold">
                   3. Broadcast Priority Level
                 </label>
-                <span className="text-[11px] text-[#c4c5da] light:text-slate-600">Overrides quiet hours if Critical</span>
+                <span className="text-[11px] text-[#c4c5da] light:text-slate-600">Preview only — not saved</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -545,23 +546,6 @@ export function AnnouncementsPage() {
               />
             </div>
 
-            {/* Embedded Deep Links */}
-            <div className="p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <LinkIcon className="w-4 h-4 text-[#8e8fa3] light:text-slate-500" />
-                <span className="text-xs text-[#d4e4fa] light:text-slate-900">Embed Deep Link:</span>
-                <span className="text-[11px] bg-[#122131] light:bg-white px-2 py-0.5 rounded text-[#b9c3ff] light:text-indigo-600 font-medium">
-                  Event: Spring Gala 2026
-                </span>
-                <span className="text-[11px] bg-[#122131] light:bg-white px-2 py-0.5 rounded text-[#4edea3] font-medium">
-                  CTA: Volunteer Roster
-                </span>
-              </div>
-              <button type="button" className="text-xs text-[#7bd0ff] hover:underline font-medium">
-                Change Actions
-              </button>
-            </div>
-
             {/* Action Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#273647]/40 light:border-slate-200">
               <button
@@ -573,13 +557,6 @@ export function AnnouncementsPage() {
                 Save as Draft
               </button>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1c2b3c] light:bg-slate-100 hover:bg-[#273647] light:hover:bg-slate-200 text-[#c4c5da] light:text-slate-600 text-xs font-medium transition-colors"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Schedule (Oct 4, 09:00 AM)</span>
-                </button>
                 <button
                   type="button"
                   disabled={isSubmitting}
@@ -626,19 +603,19 @@ export function AnnouncementsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-full bg-[#0047ff] text-white flex items-center justify-center text-xs font-semibold">
-                    {user?.name ? user.name[0] : 'R'}
+                    {user?.name ? user.name[0] : 'C'}
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs text-[#d4e4fa] light:text-slate-900 font-semibold leading-tight">
-                      {user?.name || 'Rahul Sharma'}
+                      {user?.name || 'Not signed in'}
                     </span>
                     <span className="text-[10px] text-[#8e8fa3] light:text-slate-500 leading-tight">
-                      {user?.roleDisplayName || 'VP / Co-Lead'} • to {audience}
+                      {user?.roleDisplayName || 'Preview'} • to {audience}
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] text-[#4edea3] bg-[#006e4b] px-1.5 py-0.5 rounded font-semibold">
-                  Broadcasting
+                <span className="text-[10px] text-[#8e8fa3] light:text-slate-500 bg-[#1c2b3c] light:bg-slate-100 px-1.5 py-0.5 rounded font-semibold">
+                  Preview
                 </span>
               </div>
 
@@ -650,43 +627,24 @@ export function AnnouncementsPage() {
                 {body || 'No payload content...'}
               </div>
 
-              {/* Action Buttons */}
-              <div className="pt-2 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="px-2.5 py-1 rounded bg-[#0047ff] text-white text-[11px] font-semibold flex items-center gap-1"
-                >
-                  <span>Gala Tickets (11:59 PM)</span>
-                </button>
-                <button
-                  type="button"
-                  className="px-2.5 py-1 rounded bg-[#1c2b3c] light:bg-slate-100 text-[#d4e4fa] light:text-slate-900 text-[11px] flex items-center gap-1"
-                >
-                  <span>View Shifts</span>
-                </button>
-              </div>
-
               {/* Delivery Metadata */}
               <div className="pt-2 border-t border-[#273647]/40 light:border-slate-200 flex items-center justify-between text-[#8e8fa3] light:text-slate-500 text-[10px]">
-                <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1 text-[#4edea3]">
-                    <Check className="w-3 h-3" /> Push Sent
-                  </span>
-                  <span className="flex items-center gap-1 text-[#4edea3]">
-                    <MessageSquare className="w-3 h-3" /> WhatsApp 842/842
-                  </span>
-                </div>
-                <span className="font-mono">#E9-8812</span>
+                <span className="flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Not published yet
+                </span>
+                <span className="flex items-center gap-1">
+                  <MessageSquare className="w-3 h-3" /> WhatsApp not connected
+                </span>
               </div>
             </div>
 
             {/* WhatsApp Simulation */}
             <div className="p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 space-y-1">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#4edea3] font-semibold flex items-center gap-1">
-                  <MessageSquare className="w-3.5 h-3.5" /> Meta Cloud API Sync
+                <span className="text-[#8e8fa3] light:text-slate-500 font-semibold flex items-center gap-1">
+                  <MessageSquare className="w-3.5 h-3.5" /> In-app preview
                 </span>
-                <span className="text-[#8e8fa3] light:text-slate-500 font-mono text-[10px]">TEMPLATE_APPROVED</span>
+                <span className="text-[#8e8fa3] light:text-slate-500 font-mono text-[10px]">NOT SENT</span>
               </div>
               <p className="text-xs text-[#c4c5da] light:text-slate-600 italic">
                 "{title ? title.slice(0, 50) : 'CampusFlow'}: Tap to view details: campusflow.app/announcements"
@@ -749,9 +707,7 @@ export function AnnouncementsPage() {
 
                     <div className="flex items-center justify-between pt-1 border-t border-[#273647]/30 light:border-slate-200 text-[10px]">
                       <div className="flex items-center gap-1.5 text-[#c4c5da] light:text-slate-600">
-                        <span className="px-1.5 py-0.5 rounded bg-[#122131] light:bg-white text-[#8e8fa3] light:text-slate-500">App</span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#122131] light:bg-white text-[#8e8fa3] light:text-slate-500">Email</span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#122131] light:bg-white text-[#8e8fa3] light:text-slate-500">WhatsApp</span>
+                        <span className="px-1.5 py-0.5 rounded bg-[#122131] light:bg-white text-[#8e8fa3] light:text-slate-500">In-app</span>
                       </div>
                       <div className="flex items-center gap-2">
                         {canPublish && (

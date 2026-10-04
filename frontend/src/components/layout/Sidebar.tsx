@@ -1,6 +1,10 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getNavigationItems, NavItem } from '../../config/navigation';
+import { canManageTreasury } from '../../config/permissions';
+import { financeService } from '../../services/finance.service';
+import { formatINR } from '../../lib/formatters';
 import { cn } from '../../lib/utils';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { BrandMark } from '../brand/BrandMark';
@@ -20,6 +24,28 @@ export function Sidebar({
 }: SidebarProps) {
   const { user } = useAuth();
   const navItems = getNavigationItems(user);
+  const showTreasury = canManageTreasury(user);
+  const [treasuryBalance, setTreasuryBalance] = useState<number | null>(null);
+  const [treasuryState, setTreasuryState] = useState<'loading' | 'ready' | 'error'>('loading');
+
+  useEffect(() => {
+    if (!showTreasury) return;
+    let cancelled = false;
+    setTreasuryState('loading');
+    financeService
+      .getSummary()
+      .then((summary) => {
+        if (cancelled) return;
+        setTreasuryBalance(summary.netBalance);
+        setTreasuryState('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setTreasuryState('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showTreasury]);
 
   // Group items by section
   const sections: { key: 'OVERVIEW' | 'OPERATIONS' | 'GOVERNANCE'; label: string; items: NavItem[] }[] = [
@@ -142,23 +168,29 @@ export function Sidebar({
         {/* Bottom Treasury & Settings Footer matching Stitch */}
         {!isCollapsed && (
           <div className="p-3 border-t border-[#273647]/50 bg-[#0d1c2d] space-y-2 light:bg-white light:border-slate-200">
-            <Link
-              to="/treasury"
-              onClick={onCloseMobile}
-              className="p-2 rounded-lg bg-[#122131] border border-[#273647]/60 flex items-center justify-between hover:border-[#38BDF8]/40 transition-colors light:bg-slate-50 light:border-slate-200 block"
-            >
-              <div className="flex flex-col">
-                <span className="text-[9px] uppercase tracking-wider text-[#8e8fa3] font-semibold light:text-slate-400">
-                  Club Treasury
+            {showTreasury && (
+              <Link
+                to="/treasury"
+                onClick={onCloseMobile}
+                className="p-2 rounded-lg bg-[#122131] border border-[#273647]/60 flex items-center justify-between hover:border-[#38BDF8]/40 transition-colors light:bg-slate-50 light:border-slate-200 block"
+              >
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase tracking-wider text-[#8e8fa3] font-semibold light:text-slate-400">
+                    Club Treasury
+                  </span>
+                  <span className="font-mono text-xs font-bold text-[#4edea3] light:text-emerald-600">
+                    {treasuryState === 'ready' && treasuryBalance !== null
+                      ? formatINR(treasuryBalance)
+                      : treasuryState === 'error'
+                        ? '—'
+                        : '…'}
+                  </span>
+                </div>
+                <span className="text-[10px] font-medium text-[#4edea3] bg-[#1c2b3c] px-2 py-0.5 rounded border border-[#273647] light:bg-slate-200 light:text-slate-700">
+                  {treasuryState === 'error' ? 'Unavailable' : 'Live'}
                 </span>
-                <span className="font-mono text-xs font-bold text-[#4edea3] light:text-emerald-600">
-                  $8,420.50
-                </span>
-              </div>
-              <span className="text-[10px] font-medium text-[#4edea3] bg-[#1c2b3c] px-2 py-0.5 rounded border border-[#273647] light:bg-slate-200 light:text-slate-700">
-                Available
-              </span>
-            </Link>
+              </Link>
+            )}
 
             <div className="flex items-center justify-between px-2 py-1 text-xs text-[#8e8fa3] light:text-slate-500">
               <Link
