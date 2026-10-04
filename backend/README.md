@@ -101,9 +101,9 @@ Open `.env` and fill in your variables:
 | `RAZORPAY_KEY_SECRET` | Razorpay test key secret. Checkout signatures only | unset | For paid checkout |
 | `RAZORPAY_WEBHOOK_SECRET` | Razorpay webhook secret. Separate from the key secret | unset | For webhooks |
 
-Phase 03 routes, payment flow, and migration steps are documented in [docs/PHASE03_TICKETS_PAYMENTS.md](../docs/PHASE03_TICKETS_PAYMENTS.md) and [docs/API_CONTRACT.md](../docs/API_CONTRACT.md).
+Phase 03 routes, payment flow, and migration steps are documented in [docs/delivery/PHASE03_TICKETS_PAYMENTS.md](../docs/delivery/PHASE03_TICKETS_PAYMENTS.md) and [docs/reference/API_CONTRACT.md](../docs/reference/API_CONTRACT.md).
 
-Phase 04 merchandise, pickup orders, stock rules, and announcements are documented in [docs/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md](../docs/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md). Merchandise orders do not use Razorpay. Apply `20261003220000_phase04_merchandise_and_announcements` with `npx prisma migrate deploy` from this directory. Do not run `prisma migrate reset` against the shared Neon database. Isolated PostgreSQL checks use `npm run test:postgres` and require `PHASE4_TEST_DATABASE_URL` on localhost.
+Phase 04 merchandise, pickup orders, stock rules, and announcements are documented in [docs/delivery/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md](../docs/delivery/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md). Merchandise orders do not use Razorpay. Apply `20261003220000_phase04_merchandise_and_announcements` with `npx prisma migrate deploy` from this directory. Do not run `prisma migrate reset` against the shared Neon database. Isolated PostgreSQL checks use `npm run test:postgres` and require `PHASE4_TEST_DATABASE_URL` on localhost.
 
 ---
 
@@ -172,7 +172,7 @@ Once running:
 
 ### Authentication
 
-Phase 01 uses signed JWT access tokens and hashed rotating refresh tokens. See [docs/API_CONTRACT.md](../docs/API_CONTRACT.md).
+Phase 01 uses signed JWT access tokens and hashed rotating refresh tokens. See [docs/reference/API_CONTRACT.md](../docs/reference/API_CONTRACT.md).
 
 - `POST /api/auth/register` creates a `member`. It does not accept a role.
 - `POST /api/auth/login` returns `token`, `refreshToken`, `expiresIn`, and the public user.
@@ -215,7 +215,7 @@ npm run format
 
 ## 📡 API Conventions & Response Contracts
 
-See [docs/API_CONTRACT.md](../docs/API_CONTRACT.md) for full details.
+See [docs/reference/API_CONTRACT.md](../docs/reference/API_CONTRACT.md) for full details.
 
 ### Success Envelope
 ```json

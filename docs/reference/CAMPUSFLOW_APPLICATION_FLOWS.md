@@ -683,7 +683,7 @@ CampusFlow presents a high-fidelity frontend UI, but different features are at d
 ### 3. Prototype Modules (No Backend Tables Yet)
 | Module | Frontend Path | Current Behavior | What Backend Needs |
 |---|---|---|---|
-| **Shop & Merchandise** | `/shop`, `/shop/:id`, `/admin/shop`, `/member/orders` | Catalogue, product page, admin stock, and cart checkout call the API. The landing page still shows `MOCK_PRODUCTS` | `products`, `product_variants`, `merch_orders`, `merch_order_items`. Routes are `/api/products` and `/api/orders`, not `/api/shop`. See `docs/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md` |
+| **Shop & Merchandise** | `/shop`, `/shop/:id`, `/admin/shop`, `/member/orders` | Catalogue, product page, admin stock, and cart checkout call the API. The landing page still shows `MOCK_PRODUCTS` | `products`, `product_variants`, `merch_orders`, `merch_order_items`. Routes are `/api/products` and `/api/orders`, not `/api/shop`. See `docs/delivery/PHASE04_MERCHANDISE_ANNOUNCEMENTS.md` |
 | **Treasury & Reimbursements** | `/admin/treasury` | Renders mock ledger, budget bars, reimbursement cards | `Transaction`, `BudgetCategory`, `Reimbursement` Prisma models + `/api/treasury` routes |
 | **Fundraisers** | `/admin/fundraisers` | Renders mock campaign cards and goal thermometers | `Campaign`, `Donation` Prisma models + `/api/fundraisers` routes |
 | **Announcements** | `/announcements`, `/announcements/:id`, `/admin/announcements` | Feed, detail, and composer call `/api/announcements`. The member home tile still uses `MOCK_ANNOUNCEMENTS` | `announcements`. Drafts are not public. Publish is `POST /api/announcements/:id/publish` |
