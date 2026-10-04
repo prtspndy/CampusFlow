@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { BrandMark } from '../../components/brand/BrandMark';
 import { useAuth } from '../../context/AuthContext';
 import {
   Calendar,
@@ -128,9 +129,7 @@ export function HomePage() {
           <div className="bg-[#051424] p-5 space-y-4 border-b lg:border-b-0 lg:border-r border-[#273647]">
             <div className="flex items-center justify-between pb-3 border-b border-[#273647]">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded bg-[#0047ff] flex items-center justify-center text-[10px] text-white font-bold">
-                  CF
-                </div>
+                <BrandMark className="w-5 h-5" />
                 <span className="font-bold text-xs text-[#d4e4fa]">CampusFlow Executive</span>
               </div>
               <div className="flex items-center gap-2">
@@ -215,9 +214,7 @@ export function HomePage() {
           <div className="bg-[#f8fafc] p-5 space-y-4 text-slate-800">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded bg-[#0047ff] flex items-center justify-center text-[10px] text-white font-bold">
-                  CF
-                </div>
+                <BrandMark className="w-5 h-5" />
                 <span className="font-bold text-xs text-slate-900">Member Portal</span>
               </div>
               <div className="flex items-center gap-2">

@@ -8,6 +8,7 @@ import { hasRole } from '../../config/permissions';
 import { parseApiError } from '../../lib/api-errors';
 import { formatDate, formatINR } from '../../lib/formatters';
 import { Button } from '../../components/ui/Button';
+import { BrandMark } from '../../components/brand/BrandMark';
 import { Modal } from '../../components/ui/Modal';
 import { Select } from '../../components/ui/Select';
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '../../components/ui/Table';
@@ -539,9 +540,7 @@ export function MembershipsPage() {
                         {selectedMember.planName} Member
                       </h4>
                     </div>
-                    <div className="w-6 h-6 rounded bg-[#0047FF] flex items-center justify-center text-white text-[10px] font-bold">
-                      CF
-                    </div>
+                    <BrandMark labelled className="w-7 h-7 shrink-0" />
                   </div>
 
                   <div className="flex items-center gap-3 pt-1">
