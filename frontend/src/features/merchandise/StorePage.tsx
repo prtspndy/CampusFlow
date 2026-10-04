@@ -255,7 +255,20 @@ export function StorePage() {
               <Package className="w-4 h-4 mr-1.5" />
               + Order Size Now
             </Button>
-            <Button size="sm" variant="secondary" className="h-9 px-3 bg-[#1c2b3c] border border-[#273647] text-xs">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-9 px-3 bg-[#1c2b3c] border border-[#273647] text-xs"
+              aria-label="Copy store link"
+              onClick={() => {
+                const url = window.location.href;
+                if (navigator.share) {
+                  void navigator.share({ title: 'CampusFlow Store', url }).catch(() => undefined);
+                  return;
+                }
+                void navigator.clipboard.writeText(url);
+              }}
+            >
               <Share2 className="w-4 h-4" />
             </Button>
           </div>

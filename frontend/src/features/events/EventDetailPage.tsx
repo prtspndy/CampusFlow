@@ -755,7 +755,7 @@ export function EventDetailPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-2 pt-2 border-t border-dark-border/60 light:border-light-border">
-              <Link to="/my-tickets" className="w-full sm:w-auto flex-1">
+              <Link to="/tickets" className="w-full sm:w-auto flex-1">
                 <Button variant="primary" className="w-full h-10 font-semibold text-xs">
                   <Ticket className="w-4 h-4 mr-1.5" />
                   View in My Tickets

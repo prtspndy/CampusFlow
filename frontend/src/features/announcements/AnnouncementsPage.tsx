@@ -19,10 +19,6 @@ import {
   Send,
   PlusCircle,
   Smartphone,
-  MessageSquare,
-  Mail,
-  AlertTriangle,
-  Info,
   Bold,
   Italic,
   List,
@@ -45,7 +41,6 @@ export function AnnouncementsPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<AnnouncementAudience>('ALL_MEMBERS');
-  const [priority, setPriority] = useState<'standard' | 'urgent'>('standard');
   const [audienceCounts, setAudienceCounts] = useState<{
     members: number | null;
     volunteers: number | null;
@@ -197,7 +192,7 @@ export function AnnouncementsPage() {
             Announcements & Broadcast Engine
           </h1>
           <p className="text-sm text-[#c4c5da] light:text-slate-600 max-w-3xl mt-0.5">
-            Publish announcements to the in-app feed for members, volunteers, or event attendees. WhatsApp and email are not connected.
+            Publish announcements to the in-app feed for members, volunteers, or event attendees.
           </p>
         </div>
 
@@ -207,7 +202,6 @@ export function AnnouncementsPage() {
             onClick={() => {
               setTitle('');
               setBody('');
-              setPriority('standard');
             }}
             type="button"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0047ff] hover:bg-[#0047ff]/90 text-white text-xs font-semibold shadow-md transition-all active:scale-[0.98]"
@@ -411,7 +405,7 @@ export function AnnouncementsPage() {
               <label className="block text-[11px] uppercase tracking-wider text-[#8e8fa3] light:text-slate-500 font-semibold mb-2">
                 2. Distribution Channels
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2 max-w-sm">
                 <label className="flex items-center gap-3 p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 select-none">
                   <input
                     type="checkbox"
@@ -426,60 +420,6 @@ export function AnnouncementsPage() {
                     <span className="text-[10px] text-[#4edea3]">Published on the site</span>
                   </div>
                 </label>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#1c2b3c]/60 light:bg-slate-50 border border-[#273647]/50 light:border-slate-200 opacity-70">
-                  <input type="checkbox" checked={false} disabled className="w-4 h-4 rounded" />
-                  <div className="flex flex-col">
-                    <span className="text-xs text-[#d4e4fa] light:text-slate-900 font-semibold flex items-center gap-1">
-                      <MessageSquare className="w-3.5 h-3.5 text-[#4edea3]" /> WhatsApp
-                    </span>
-                    <span className="text-[10px] text-[#c4c5da] light:text-slate-600">Not connected</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-[#1c2b3c]/60 light:bg-slate-50 border border-[#273647]/50 light:border-slate-200 opacity-70">
-                  <input type="checkbox" checked={false} disabled className="w-4 h-4 rounded" />
-                  <div className="flex flex-col">
-                    <span className="text-xs text-[#d4e4fa] light:text-slate-900 font-semibold flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5 text-[#b9c3ff] light:text-indigo-600" /> Email
-                    </span>
-                    <span className="text-[10px] text-[#c4c5da] light:text-slate-600">Not connected</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Priority Level */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[11px] uppercase tracking-wider text-[#8e8fa3] light:text-slate-500 font-semibold">
-                  3. Broadcast Priority Level
-                </label>
-                <span className="text-[11px] text-[#c4c5da] light:text-slate-600">Preview only — not saved</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPriority('standard')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all border ${
-                    priority === 'standard'
-                      ? 'bg-[#0047ff] text-white border-[#0047ff] shadow-sm'
-                      : 'bg-[#1c2b3c] light:bg-slate-100 text-[#c4c5da] light:text-slate-600 border-transparent'
-                  }`}
-                >
-                  <Info className="w-3.5 h-3.5" /> Standard Member Feed
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPriority('urgent')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all border ${
-                    priority === 'urgent'
-                      ? 'bg-[#93000a] text-[#ffdad6] border-[#ffb4ab]/40 shadow-sm'
-                      : 'bg-[#1c2b3c] light:bg-slate-100 text-[#c4c5da] light:text-slate-600 border-transparent'
-                  }`}
-                >
-                  <AlertTriangle className="w-3.5 h-3.5" /> Urgent / Critical Alert (Pins to top)
-                </button>
               </div>
             </div>
 
@@ -589,16 +529,6 @@ export function AnnouncementsPage() {
 
             {/* Simulated Portal Card */}
             <div className="rounded-xl bg-[#010f1f] light:bg-white border border-[#273647]/50 light:border-slate-200 p-4 shadow-inner space-y-3">
-              {priority === 'urgent' && (
-                <div className="flex items-center justify-between px-2.5 py-1 rounded bg-[#93000a] text-[#ffdad6] text-[11px] font-semibold">
-                  <div className="flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>CRITICAL NOTIFICATION • PINNED</span>
-                  </div>
-                  <span className="font-mono text-[10px]">NOW</span>
-                </div>
-              )}
-
               {/* Author Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -632,23 +562,7 @@ export function AnnouncementsPage() {
                 <span className="flex items-center gap-1">
                   <Check className="w-3 h-3" /> Not published yet
                 </span>
-                <span className="flex items-center gap-1">
-                  <MessageSquare className="w-3 h-3" /> WhatsApp not connected
-                </span>
               </div>
-            </div>
-
-            {/* WhatsApp Simulation */}
-            <div className="p-3 rounded-lg bg-[#1c2b3c] light:bg-slate-100 border border-[#273647]/50 light:border-slate-200 space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#8e8fa3] light:text-slate-500 font-semibold flex items-center gap-1">
-                  <MessageSquare className="w-3.5 h-3.5" /> In-app preview
-                </span>
-                <span className="text-[#8e8fa3] light:text-slate-500 font-mono text-[10px]">NOT SENT</span>
-              </div>
-              <p className="text-xs text-[#c4c5da] light:text-slate-600 italic">
-                "{title ? title.slice(0, 50) : 'CampusFlow'}: Tap to view details: campusflow.app/announcements"
-              </p>
             </div>
           </div>
 

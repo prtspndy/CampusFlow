@@ -24,7 +24,6 @@ import {
   Search,
   Download,
   QrCode,
-  ShieldCheck,
   CheckCircle2,
   Clock,
   Sparkles,
@@ -98,6 +97,8 @@ export function MembershipsPage() {
         membershipsService.listMemberships({
           page,
           limit: 10,
+          search: searchQuery.trim() || undefined,
+          planName: tierFilter === 'ALL' ? undefined : tierFilter,
           status: statusFilter === 'ALL' ? undefined : (statusFilter as MembershipStatus),
         }),
         canManage ? financeService.getSummary() : Promise.resolve(null),
@@ -122,7 +123,7 @@ export function MembershipsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, statusFilter, canManage, selectedMember]);
+  }, [page, searchQuery, tierFilter, statusFilter, canManage, selectedMember]);
 
   useEffect(() => {
     loadData();
@@ -360,7 +361,10 @@ export function MembershipsPage() {
             type="text"
             placeholder="Search by student ID (e.g. SKY-), name, or email..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
             className="w-full h-8 pl-9 pr-3 text-xs rounded-lg bg-[#0d1c2d] border border-[#273647] text-[#d4e4fa] placeholder:text-[#8e8fa3] focus:outline-none focus:border-[#0047FF] light:bg-slate-50 light:border-slate-200 light:text-slate-900"
           />
         </div>
@@ -368,7 +372,10 @@ export function MembershipsPage() {
         <div className="flex items-center gap-2 text-xs">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
             className="h-8 px-2.5 rounded-lg bg-[#0d1c2d] border border-[#273647] text-[#d4e4fa] text-xs focus:outline-none light:bg-slate-50 light:border-slate-200 light:text-slate-900"
           >
             <option value="ALL">Status: All Statuses</option>
@@ -379,7 +386,10 @@ export function MembershipsPage() {
 
           <select
             value={tierFilter}
-            onChange={(e) => setTierFilter(e.target.value)}
+            onChange={(e) => {
+              setTierFilter(e.target.value);
+              setPage(1);
+            }}
             className="h-8 px-2.5 rounded-lg bg-[#0d1c2d] border border-[#273647] text-[#d4e4fa] text-xs focus:outline-none light:bg-slate-50 light:border-slate-200 light:text-slate-900"
           >
             <option value="ALL">Tier: All Tiers</option>
@@ -633,26 +643,6 @@ export function MembershipsPage() {
               </div>
             )}
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-2 pt-1">
-              <Button size="sm" variant="secondary" className="flex-1 h-8 text-xs bg-[#1c2b3c] hover:bg-[#273647]">
-                Scan at Booth
-              </Button>
-              <Button size="sm" variant="primary" className="flex-1 h-8 text-xs bg-[#0047FF] hover:bg-[#0038CC] shadow-none">
-                Push to Wallet
-              </Button>
-            </div>
-
-            {/* Check-in policy notice from Stitch */}
-            <div className="p-3 rounded-lg bg-[#0d1c2d] border border-[#273647]/60 text-[10px] text-[#8e8fa3] space-y-1 light:bg-slate-50">
-              <span className="font-bold text-[#d4e4fa] flex items-center gap-1.5 light:text-slate-900">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#7bd0ff]" />
-                Campus Table Check-In Policy
-              </span>
-              <p>
-                Cash walkups must be marked as paid immediately before handing out physical merchandise or activating Apple Wallet NFC credentials.
-              </p>
-            </div>
           </div>
         </div>
       </section>
