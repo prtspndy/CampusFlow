@@ -21,13 +21,21 @@ export function createApp(): Express {
   );
 
   // 2. CORS Configuration
+  // 2. CORS Configuration
   const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
       // Allow server-to-server, curl, Postman, and mobile clients with no origin header
       if (!origin) {
         return callback(null, true);
       }
-      if (env.allowedOrigins.includes('*') || env.allowedOrigins.includes(origin)) {
+      
+      // Add your Vercel frontend URL here explicitly
+      const allowed = [
+        'https://campusflow-os.vercel.app',
+        ...(Array.isArray(env.allowedOrigins) ? env.allowedOrigins : [env.allowedOrigins])
+      ];
+
+      if (allowed.includes('*') || allowed.includes(origin)) {
         return callback(null, true);
       }
       return callback(new Error(`Origin '${origin}' not allowed by CORS`));
